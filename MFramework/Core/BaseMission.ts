@@ -7,10 +7,10 @@ export abstract class BaseMission {
     private missionState: int = 0;
     private missionNameGxtKey: string = "";
 	private missionAbortError: Error = new Error(); // Seemann is best
-    private missionFailedFlag: boolean = true;
-	
-    private isScriptSceneNeeded: boolean = false;
 
+    //private isScriptSceneNeeded: boolean = false;
+
+    private forceDontCreateStarter: boolean = false;
     private hasFailedMessageBig: boolean = true; // display big message or ignore
     private isFailedMessageAGxtKey: boolean = false; // use gxt key in message or formatted string
     private failedMessage: string = ""; // answer to why mission failed 
@@ -22,14 +22,10 @@ export abstract class BaseMission {
     private rewardMoney: int = 0;
     private rewardRespect: int = 0;
 
-
     
-    public IsFailed() : boolean { return this.missionFailedFlag; }
 
-
-    
 	constructor() {
-        while( true ) {
+        do {
             wait( 0 );
             if( isPlayerOffGame() )
                 this.missionState = 3;
@@ -56,11 +52,10 @@ export abstract class BaseMission {
                     this.processFailed();
                     continue;
                 case 4:
-                    this.setWorldComfortableToMission( false );
-                    this.missionState = 5;
-                    return;
+                    this.processEnd();
+                    continue;
             }
-        }
+        } while( this.missionState !== 5 );
     }
 
 
@@ -76,18 +71,18 @@ export abstract class BaseMission {
     protected setPassedMessageBig( state: boolean ) : void { this.hasPassedMessageBig = state; }
 	protected setMoneyReward( money: int ) : void { this.rewardMoney = money; }
 	protected setRespectReward( respect: int ) : void { this.rewardRespect = respect; }
-
+    protected dontCreateStarter() : void { this.forceDontCreateStarter = true; }
 
     
     protected complete( missionNameGxtKey: string = "" ) : void {
-		if( this.missionState === 1 && !this.isScriptSceneNeeded ) {
+		if( this.missionState === 1 ) { // && !this.isScriptSceneNeeded
             this.missionNameGxtKey = missionNameGxtKey;
 			this.missionState = 2;
 			throw this.missionAbortError;
 		}
 	}
     protected fail( failedMessage: string = "", failedMessageTime: int = 4000, asGxtKey: boolean = false ) : void {
-		if( this.missionState === 1 && !this.isScriptSceneNeeded ) {
+		if( this.missionState === 1 ) { //  && !this.isScriptSceneNeeded
 			this.missionState = 3;
 			if( failedMessage === "" || failedMessageTime === 0 )
 				throw this.missionAbortError;
@@ -98,6 +93,8 @@ export abstract class BaseMission {
 		}
     }
 	protected clearText() : void {
+        Text.ClearThisPrintBigNow( 1 );
+        Text.ClearThisPrintBigNow( 2 );
 		Text.ClearHelp();
 		Text.ClearPrints();
 		Text.ClearSmallPrints();
@@ -108,17 +105,20 @@ export abstract class BaseMission {
     private processStart() : void {
         Stat.RegisterMissionGiven();
         this.setWorldComfortableToMission( true );
-        this.missionState = 1;
+        this.clearText();
         this.onStart();
+        let nameLength = this.missionNameGxtKey.length;
+        if( nameLength > 0 && 8 > nameLength )
+            Text.PrintBig( this.missionNameGxtKey, 1000, 2 );
+        this.missionState = 1;
     }
 
 
     
     private processSuccess() : void {
-        this.missionState = 4;
         this.processClear();
         this.displaySuccessMessage();
-        this.missionFailedFlag = false;
+        this.missionState = 4;
         this.onSuccess();
     }
     private displaySuccessMessage() : void {
@@ -158,9 +158,9 @@ export abstract class BaseMission {
 
     
     private processFailed() : void {
-        this.missionState = 4;
         this.processClear();
         this.displayFailedMessage();
+        this.missionState = 4;
         this.onFailed();
     }
     private displayFailedMessage() : void {
@@ -182,6 +182,18 @@ export abstract class BaseMission {
         this.onClear();
     }
 
+
+    
+    private processEnd() : void {
+        this.setWorldComfortableToMission( false );
+        this.missionState = 5;
+        if( this.forceDontCreateStarter )
+            return;
+        CLEO.runScript( _starterFilePathInternal, { _missionFilePathInternal: _missionFilePathInternal, _starterFilePathInternal: _starterFilePathInternal } );
+    }
+
+
+    
     private setWorldComfortableToMission( isStartMissionFlag: boolean ) : void {
 		let invertIsStartMissionFlag = !isStartMissionFlag;
 		let offmissionMultipliers = isStartMissionFlag ? 0.0 : 1.0;
@@ -208,7 +220,7 @@ export abstract class BaseMission {
 		Weather.Release();
 		
         group.remove();
-        player.setGroupRecruitment( invertIsStartMissionFlag );
+        player.setGroupRecruitment( invertIsStartMissionFlag ).setControl( invertIsStartMissionFlag );
 		ONMISSION = isStartMissionFlag;
     }
 
@@ -254,11 +266,7 @@ export abstract class BaseMission {
         remove_text_box();
     }
 	
-	
-*/
 
-
-/*
 function start_scene_skip( sceneAction ) : void {
 	const _wait = wait;
 	const cancel = new Error( "ABORTED" );

@@ -18,8 +18,14 @@ do {
         fileCounter = 0;
         wait( 0 );
     }
-    if( fileName.startsWith( "Starter", 0 ) )
-        CLEO.runScript( dir + fileName + ".ts" );
+    let fileNameLength = fileName.length;
+    if( fileName.endsWith( "Starter" ) && fileNameLength > 7 && !fileName.match( "^[\d ]+" ) ) {
+        let missionName = fileName.substring( 0, fileNameLength - 7 );
+        let missionFilePath = dir + missionName + ".ts";
+        let starterFilePath = dir + fileName + ".ts";
+        if( Fs.DoesFileExist( missionFilePath ) ) 
+            CLEO.runScript( starterFilePath, { _missionFilePathInternal : missionFilePath, _starterFilePathInternal: starterFilePath } );
+    }
     fileName = findFileHandle.next();
 } while( fileName !== undefined );
 
