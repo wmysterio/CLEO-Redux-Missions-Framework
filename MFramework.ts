@@ -1,13 +1,26 @@
 /// <reference path="./.config/sa.d.ts" />
 
-// just test
+let dir = __dirname + "\\MFramework\\";
+if( !Fs.DoesDirectoryExist( dir ) )
+    exit( "'MFramework' directory not found" )
 
-import { BlackListMission } from "./MFramework/Missions/BlackList";
+Fs.SetCurrentDirectory( +dir );
+let findFile = FindFile.First( dir + "*.ts" );
+if( findFile === undefined )
+    exit( "Starters not found" );
 
-wait(2000);
-	
-var mission = new BlackListMission();
+let findFileHandle = findFile.handle;
+let fileName = findFile.fileName;
+let fileCounter = 0;
+do {
+    ++fileCounter;
+    if( fileCounter > 20 ) {
+        fileCounter = 0;
+        wait( 0 );
+    }
+    if( fileName.startsWith( "Starter", 0 ) )
+        CLEO.runScript( dir + fileName + ".ts" );
+    fileName = findFileHandle.next();
+} while( fileName !== undefined );
 
-
-wait(3000);
-Text.PrintFormattedNow( "end index", 4000 );
+findFileHandle.close();

@@ -1,32 +1,37 @@
 /// <reference path="../../.config/sa.d.ts" />
 
-export const player: Player = new Player( 0 );
-export const char: Char = player.getChar();
-export const group: Group = player.getGroup();
-export const car: Car = new Car( -1 );
+import { group, isPlayerOffGame, player } from "./Utils";
 
 export abstract class BaseMission {
 
     private missionState: int = 0;
-	private missionCancelError: Error = new Error( "STOPPED" ); // Seemann is best
+    private missionNameGxtKey: string = "";
+	private missionAbortError: Error = new Error(); // Seemann is best
+    private missionFailedFlag: boolean = true;
 	
+    private isScriptSceneNeeded: boolean = false;
+
     private hasFailedMessageBig: boolean = true; // display big message or ignore
     private isFailedMessageAGxtKey: boolean = false; // use gxt key in message or formatted string
-    private failedMessage: string = "";
-    private failedMessageTime: int = 0;
+    private failedMessage: string = ""; // answer to why mission failed 
+    private failedMessageTime: int = 5000;
 
-    private passedMessageFlag: boolean = true; // display big message if no rewards
+    private hasPassedMessageBig: boolean = true; // display big message or ignore
     private playTuneFlagOnPassed: boolean = true; // play tune or not
-    private passedMissionName: string = "";
+
     private rewardMoney: int = 0;
     private rewardRespect: int = 0;
+
+
+    
+    public IsFailed() : boolean { return this.missionFailedFlag; }
 
 
     
 	constructor() {
         while( true ) {
             wait( 0 );
-            if( this.isMissionReadyToForcedFailed() )
+            if( isPlayerOffGame() )
                 this.missionState = 3;
             switch( this.missionState ) {
                 case 0:
@@ -40,7 +45,7 @@ export abstract class BaseMission {
                     try {
                         this.onUpdate();
                     } catch( e ) {
-                        if( e !== this.missionCancelError )
+                        if( e !== this.missionAbortError )
                             throw e;
                     }
                     continue;
@@ -68,24 +73,28 @@ export abstract class BaseMission {
 
 
     
+    protected setPassedMessageBig( state: boolean ) : void { this.hasPassedMessageBig = state; }
 	protected setMoneyReward( money: int ) : void { this.rewardMoney = money; }
 	protected setRespectReward( respect: int ) : void { this.rewardRespect = respect; }
+
+
+    
     protected complete( missionNameGxtKey: string = "" ) : void {
-		if( this.missionState === 1 ) {
+		if( this.missionState === 1 && !this.isScriptSceneNeeded ) {
+            this.missionNameGxtKey = missionNameGxtKey;
 			this.missionState = 2;
-			this.passedMissionName = missionNameGxtKey;
-			throw this.missionCancelError;
+			throw this.missionAbortError;
 		}
 	}
-    protected fail( failedMessage: string = "", failedMessageTime: int = 0, asGxtKey: boolean = false ) : void {
-		if( this.missionState === 1 ) {
+    protected fail( failedMessage: string = "", failedMessageTime: int = 4000, asGxtKey: boolean = false ) : void {
+		if( this.missionState === 1 && !this.isScriptSceneNeeded ) {
 			this.missionState = 3;
 			if( failedMessage === "" || failedMessageTime === 0 )
-				throw this.missionCancelError;
+				throw this.missionAbortError;
 			this.failedMessage = failedMessage;
 			this.failedMessageTime = failedMessageTime;
 			this.isFailedMessageAGxtKey = asGxtKey;
-			throw this.missionCancelError;
+			throw this.missionAbortError;
 		}
     }
 	protected clearText() : void {
@@ -95,7 +104,7 @@ export abstract class BaseMission {
 	}
 
 
-
+    
     private processStart() : void {
         Stat.RegisterMissionGiven();
         this.setWorldComfortableToMission( true );
@@ -109,11 +118,12 @@ export abstract class BaseMission {
         this.missionState = 4;
         this.processClear();
         this.displaySuccessMessage();
+        this.missionFailedFlag = false;
         this.onSuccess();
     }
     private displaySuccessMessage() : void {
-		if( this.passedMissionName.length > 0 && 8 > this.passedMissionName.length )
-			Stat.RegisterMissionPassed( this.passedMissionName );
+		if( this.missionNameGxtKey.length > 0 && 8 > this.missionNameGxtKey.length )
+			Stat.RegisterMissionPassed( this.missionNameGxtKey );
         let flag = 0;
         // recalculate max progress. how get?
         //Stat.PlayerMadeProgress( 1 );
@@ -128,20 +138,21 @@ export abstract class BaseMission {
         }
         if( this.playTuneFlagOnPassed )
             Audio.PlayMissionPassedTune( 1 );
-        if( flag === 3 ) {
-            Text.PrintWithNumberBig( "M_PASSS", this.rewardMoney, 5000, 1 ); // Mission passed +$ +Respect
-            return;
+        switch( flag ) {
+            case 3:
+                Text.PrintWithNumberBig( "M_PASSS", this.rewardMoney, 5000, 1 ); // Mission passed +$ +Respect
+                return;
+            case 2:
+                Text.PrintWithNumberBig( "M_PASS", this.rewardMoney, 5000, 1 ); // Mission passed +$
+                return;
+            case 1:
+                Text.PrintBig( "M_PASSR", 5000, 1 ); // Mission passed +Respect
+                return;
+            default:
+                if( this.hasPassedMessageBig )
+                    Text.PrintBig( "M_PASSD", 5000, 1 ); // Mission passed
+                return;
         }
-        if( flag === 2 ) {
-            Text.PrintWithNumberBig( "M_PASS", this.rewardMoney, 5000, 1 ); // Mission passed +$
-            return;
-        }
-        if( flag === 1 ) {
-            Text.PrintBig( "M_PASSR", 5000, 1 ); // Mission passed +Respect
-            return;
-        }
-        if( this.passedMessageFlag )
-            Text.PrintBig( "M_PASSD", 5000, 1 ); // Mission passed
     }
 
 
@@ -170,12 +181,6 @@ export abstract class BaseMission {
 		this.clearText();
         this.onClear();
     }
-
-
-    
-	private isMissionReadyToForcedFailed() : boolean {
-        return !player.isPlaying() || !Char.DoesExist( +char ) || Char.IsDead( +char ) || char.hasBeenArrested();
-	}
 
     private setWorldComfortableToMission( isStartMissionFlag: boolean ) : void {
 		let invertIsStartMissionFlag = !isStartMissionFlag;
