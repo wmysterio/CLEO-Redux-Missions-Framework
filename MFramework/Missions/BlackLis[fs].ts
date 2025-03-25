@@ -15,8 +15,8 @@ new class BlackList extends BaseMission {
 
     protected onUpdate() : void {
 		if( Pad.IsKeyPressed( 50 ) ) // 2
-			this.fail( "Don't press the '2' key!", 4000 ); // or ONMISSION = false;
-		if( Pad.IsKeyPressed( 9 ) ) // tab    !this.sceneFlag
+			this.fail( "Don't press the '2' key!", 4000 );
+		if( Pad.IsKeyPressed( 9 ) ) // tab
 			this.complete();
 	}
 
