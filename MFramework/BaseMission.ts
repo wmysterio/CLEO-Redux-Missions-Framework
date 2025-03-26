@@ -7,6 +7,9 @@ import { group, isPlayerOffGame, player } from "./Utils";
 
 export abstract class BaseMission extends BaseSave {
 
+    private subMissionsAction: () => void = undefined;
+    private hasSubMissions: boolean = false;
+
     private missionState: int = 0;
     private missionNameGxtKey: string = "";
 	private missionAbortError: Error = new Error(); // Seemann is best
@@ -39,19 +42,10 @@ export abstract class BaseMission extends BaseSave {
                     this.processStart();
                     continue;
                 case 1:
-                    if( !ONMISSION ) {
-                        this.missionState = 3;
-                        continue;
-                    }
-                    try {
-                        this.onUpdate();
-                    } catch( e ) {
-                        if( e !== this.missionAbortError )
-                            throw e;
-                    }
+                    this.processUpdate();
                     continue;
                 case 2:
-                    this.processSuccess();
+                    this.processPassed();
                     continue;
                 case 3:
                     this.processFailed();
@@ -67,7 +61,7 @@ export abstract class BaseMission extends BaseSave {
     
     protected onStart() : void { }
     protected onUpdate() : void { }
-    protected onSuccess() : void { }
+    protected onPassed() : void { }
     protected onFailed() : void { }
     protected onClear() : void { }
 
@@ -77,8 +71,15 @@ export abstract class BaseMission extends BaseSave {
 	protected setMoneyReward( money: int ) : void { this.rewardMoney = money; }
 	protected setRespectReward( respect: int ) : void { this.rewardRespect = respect; }
     protected dontCreateLauncher() : void { this.forceDontCreateLauncher = true; }
+    protected setSubMissions( subMissionsAction: () => void ) : void {
+        if( this.missionState !== 0 && this.hasSubMissions )
+            return;
+        this.subMissionsAction = subMissionsAction;
+        this.hasSubMissions = true;
+    }
 
-    
+
+
     protected complete( missionNameGxtKey: string = "" ) : void {
 		if( this.missionState === 1 ) { // && !this.isScriptSceneNeeded
             this.missionNameGxtKey = missionNameGxtKey;
@@ -112,6 +113,11 @@ export abstract class BaseMission extends BaseSave {
         this.setWorldComfortableToMission( true );
         this.clearText();
         this.onStart();
+        if( this.hasSubMissions ) {
+            this.missionState = 5;
+            this.subMissionsAction();
+            return;
+        }
         let nameLength = this.missionNameGxtKey.length;
         if( nameLength > 0 && 8 > nameLength )
             Text.PrintBig( this.missionNameGxtKey, 1000, 2 );
@@ -119,12 +125,27 @@ export abstract class BaseMission extends BaseSave {
     }
 
 
-    
-    private processSuccess() : void {
+
+    private processUpdate() : void {
+        if( !ONMISSION ) {
+            this.missionState = 3;
+            return;
+        }
+        try {
+            this.onUpdate();
+        } catch( e ) {
+            if( e !== this.missionAbortError )
+                throw e;
+        }
+    }
+
+
+
+    private processPassed() : void {
         this.processClear();
         this.displaySuccessMessage();
         this.missionState = 4;
-        this.onSuccess();
+        this.onPassed();
     }
     private displaySuccessMessage() : void {
 		if( this.missionNameGxtKey.length > 0 && 8 > this.missionNameGxtKey.length )
