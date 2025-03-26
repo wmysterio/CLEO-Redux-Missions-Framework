@@ -8,7 +8,7 @@ import { group, isPlayerOffGame, player } from "./Utils";
 export abstract class BaseMission extends BaseSave {
 
     private subMissionsAction: () => void = undefined;
-    private hasSubMissions: boolean = false;
+    //private hasSubMissions: boolean = false;
 
     private missionState: int = 0;
     private missionNameGxtKey: string = "";
@@ -72,10 +72,8 @@ export abstract class BaseMission extends BaseSave {
 	protected setRespectReward( respect: int ) : void { this.rewardRespect = respect; }
     protected dontCreateLauncher() : void { this.forceDontCreateLauncher = true; }
     protected setSubMissions( subMissionsAction: () => void ) : void {
-        if( this.missionState !== 0 && this.hasSubMissions )
-            return;
-        this.subMissionsAction = subMissionsAction;
-        this.hasSubMissions = true;
+        if( this.missionState === 0 && subMissionsAction === undefined )
+            this.subMissionsAction = subMissionsAction;
     }
 
 
@@ -109,19 +107,19 @@ export abstract class BaseMission extends BaseSave {
 
     
     private processStart() : void {
-        Stat.RegisterMissionGiven();
-        this.setWorldComfortableToMission( true );
         this.clearText();
         this.onStart();
-        if( this.hasSubMissions ) {
-            this.missionState = 5;
-            this.subMissionsAction();
+        if( this.subMissionsAction === undefined ) {
+            Stat.RegisterMissionGiven();
+            this.setWorldComfortableToMission( true );
+            let nameLength = this.missionNameGxtKey.length;
+            if( nameLength > 0 && 8 > nameLength )
+                Text.PrintBig( this.missionNameGxtKey, 1000, 2 );
+            this.missionState = 1;
             return;
         }
-        let nameLength = this.missionNameGxtKey.length;
-        if( nameLength > 0 && 8 > nameLength )
-            Text.PrintBig( this.missionNameGxtKey, 1000, 2 );
-        this.missionState = 1;
+        this.missionState = 5;
+        this.subMissionsAction();
     }
 
 
