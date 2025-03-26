@@ -1,27 +1,26 @@
 /// <reference path="../../.config/sa.d.ts" />
 
 import { BaseMission } from "../BaseMission";
-import { char } from "../Utils";
+import { playerChar } from "../Utils";
 
+export class ExampleSubMission extends BaseMission {
 
-
-export class BlackListSubTestMission extends BaseMission {
-
-    protected onStart() : void {
-		this.setMoneyReward( 5000 );
-		char.setCoordinates( 2459.4629, -1660.1523, 13.3047 ).setHeading( 41.9871 );
-		Text.PrintHelpFormatted( "Start" );
+	protected onStartEvent(): void {
+		//this.setCashReward( 5000 );
+		World.ClearArea(2459.4629, -1660.1523, 13.3047, 300.0, true);
+		playerChar.setCoordinates(2459.4629, -1660.1523, 13.3047).setHeading(41.9871);
+		Text.PrintHelpFormatted("Start");
 	}
 
-    protected onUpdate() : void {
-		if( Pad.IsKeyPressed( 50 ) ) // 2
-			this.fail( "Don't press the '2' key!", 4000 ); // or ONMISSION = false;
-		if( Pad.IsKeyPressed( 9 ) ) // tab    !this.sceneFlag
+	protected onUpdateEvent(): void {
+		if (Pad.IsKeyPressed(50)) // 2
+			this.fail("Don't press the '2' key");
+		if (Pad.IsKeyPressed(9)) // tab
 			this.complete();
 	}
 
-	protected onPassed(): void {
-		this.incrementSavedIntValue( "TOTAL_MISSION_PASSED", 0, true );
+	protected onSuccessEvent(): void {
+		this.saveIntValueIncrease("TOTAL_MISSION_PASSED", 0, true);
 	}
 
 }

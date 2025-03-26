@@ -1,48 +1,58 @@
+/// Created by wmysterio, 26.03.2025
+/// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
 import { BaseSave } from "./BaseSave";
-import { char, isPlayerOffGame, player } from "./Utils";
+import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
-
-  
+/** Base class for starting missions (starter) */
 export abstract class BaseLauncher extends BaseSave {
 
-    protected onStart() : void { }
-    protected onCheckBlipCreation() : boolean { return true; }
-    protected onCheckMissionStart() : boolean { return true; }
+    /** Reaction to the launcher start event */
+    protected onStartEvent(): void { }
 
+    /**
+     * Reaction to the blip creation check event
+     * @returns Returns true if the blip can be created
+     */
+    protected onBlipCreationEvent(): boolean { return true; }
 
-    
-    private blip: Blip = undefined;
-    private starterState: int = 0;
-    private radarSprite: int = 15;
-    private positionX: float = 0.0;
-    private positionY: float = 0.0;
-    private positionZ: float = 0.0;
+    /**
+     * Reaction to the mission launch check event
+     * @returns Returns true if the mission can be started
+     */
+    protected onMissionLaunchEvent(): boolean { return true; }
 
-
-    
-    protected setPosition( x: float, y: float, z: float ) : void {
+    /**
+     * Sets a new mission launch position
+     * @param x Position on the x axis
+     * @param y Position on the y axis
+     * @param z Position on the z axis
+     */
+    protected setPosition(x: float, y: float, z: float): void {
         this.positionX = x;
         this.positionY = y;
         this.positionZ = z;
     }
-    protected setRadarSprite( radarSprite: int ) : void {
+
+    /**
+     * Sets a new radar icon for the mission
+     * @param radarSprite Radar icon ID
+     */
+    protected setRadarSprite(radarSprite: int): void {
         this.radarSprite = radarSprite;
     }
 
-
-    
     constructor() {
         ///@ts-ignore
-        super( __MissionMameInternal__ );
+        super(__MissionMameInternal__);
         do {
-            wait( 0 );
-            if( isPlayerOffGame() ) {
-                wait( 249 );
+            wait(0);
+            if (isPlayerNotPlaying()) {
+                wait(499);
                 continue;
             }
-            switch( this.starterState ) {
+            switch (this.launcherStatus) {
                 case 0:
                     this.processStart();
                     continue;
@@ -50,51 +60,56 @@ export abstract class BaseLauncher extends BaseSave {
                     this.processBlipCreation();
                     continue;
                 case 2:
-                    this.processLaunchMission();
+                    this.processMissionLaunch();
                     continue;
             }
-        } while( this.starterState !== 3 );
+        } while (this.launcherStatus !== 3);
     }
 
+    //----------------------------------------------------------------------------------------------------
 
+    private launcherStatus: int = 0;
+    private radarSprite: int = 15;
+    private positionX: float = 0.0;
+    private positionY: float = 0.0;
+    private positionZ: float = 0.0;
+    private blip: Blip = undefined;
 
-    private processStart() : void {
-        this.onStart();
-        this.starterState = 1;
+    //----------------------------------------------------------------------------------------------------
+
+    private processStart(): void {
+        this.onStartEvent();
+        this.launcherStatus = 1;
     }
 
-
-
-    private processBlipCreation() : void {
-        if( !this.onCheckBlipCreation() ) {
-            wait( 1499 );
+    private processBlipCreation(): void {
+        if (!this.onBlipCreationEvent()) {
+            wait(1499);
             return;
         }
-        this.blip = Blip.AddSpriteForCoord( this.positionX, this.positionY, this.positionZ, this.radarSprite );
-        this.blip.changeDisplay( 2 );
-        this.starterState = 2;
+        this.blip = Blip.AddSpriteForCoord(this.positionX, this.positionY, this.positionZ, this.radarSprite);
+        this.blip.changeDisplay(2);
+        this.launcherStatus = 2;
     }
 
-
-    
-    private processLaunchMission() : void {
-        if( !char.locateAnyMeans3D( this.positionX, this.positionY, this.positionZ, 40.0, 40.0, 40.0, false ) ) {
-            wait( 249 );
+    private processMissionLaunch(): void {
+        if (!playerChar.locateAnyMeans3D(this.positionX, this.positionY, this.positionZ, 40.0, 40.0, 40.0, false)) {
+            wait(249);
             return;
         }
-        if( Camera.GetFadingStatus() || ONMISSION || !player.isControlOn() ) {
-            wait( 249 );
-            return; 
+        if (Camera.GetFadingStatus() || ONMISSION || !player.isControlOn()) {
+            wait(249);
+            return;
         }
-        if( !char.locateAnyMeans3D( this.positionX, this.positionY, this.positionZ, 1.25, 1.25, 2.0, true ) || player.isUsingJetpack() )
+        if (!playerChar.locateAnyMeans3D(this.positionX, this.positionY, this.positionZ, 1.25, 1.25, 2.0, true) || player.isUsingJetpack())
             return;
-        if( !this.onCheckMissionStart() )
+        if (!this.onMissionLaunchEvent())
             return;
-        this.blip.remove();
-        this.blip = undefined
-        this.starterState = 3;
+        if (this.blip !== undefined)
+            this.blip.remove();
         ///@ts-ignore
-        CLEO.runScript( __MissionFilePathInternal__, { __MissionMameInternal__: __MissionMameInternal__, __MissionFilePathInternal__: __MissionFilePathInternal__, __LauncherFilePathInternal__: __LauncherFilePathInternal__ } );
+        CLEO.runScript(__MissionFilePathInternal__, { __MissionMameInternal__: __MissionMameInternal__, __MissionFilePathInternal__: __MissionFilePathInternal__, __LauncherFilePathInternal__: __LauncherFilePathInternal__ });
+        this.launcherStatus = 3;
     }
-    
+
 }
