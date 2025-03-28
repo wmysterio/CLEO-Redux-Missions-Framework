@@ -19,8 +19,4 @@ export class ExampleSubMission extends BaseMission {
 			this.complete();
 	}
 
-	protected onSuccessEvent(): void {
-		this.saveIntValueIncrease("TOTAL_MISSION_PASSED", 0, true);
-	}
-
 }

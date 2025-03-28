@@ -2,13 +2,8 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-const pathToIni: string = __dirname + "\\Game.sav";
-
 /** Base class for the save system */
 export abstract class BaseSave {
-
-    /** @param sectionName Section name in *.ini file */
-    constructor(sectionName: string) { this.sectionName = sectionName; }
 
     /**
      * Returns a int value from the *.ini file for the specified section
@@ -19,7 +14,7 @@ export abstract class BaseSave {
      * @returns Int value
      */
     protected loadIntValueFromSection(section: string, key: string, defaultValue: int = 0, saveDefaultValue: boolean = false): int {
-        let result = IniFile.ReadInt(pathToIni, section, key);
+        let result = IniFile.ReadInt(BaseSave.baseSavePathToIni, section, key);
         if (result === undefined) {
             result = defaultValue;
             if (saveDefaultValue)
@@ -37,7 +32,7 @@ export abstract class BaseSave {
      * @returns Float value
      */
     protected loadFloatValueFromSection(section: string, key: string, defaultValue: float = 0.0, saveDefaultValue: boolean = false): float {
-        let result = IniFile.ReadFloat(pathToIni, section, key);
+        let result = IniFile.ReadFloat(BaseSave.baseSavePathToIni, section, key);
         if (result === undefined) {
             result = defaultValue;
             if (saveDefaultValue)
@@ -55,7 +50,7 @@ export abstract class BaseSave {
      * @returns String value 
      */
     protected loadStringValueFromSection(section: string, key: string, defaultValue: string = "", saveDefaultValue: boolean = false): string {
-        let result = IniFile.ReadString(pathToIni, section, key);
+        let result = IniFile.ReadString(BaseSave.baseSavePathToIni, section, key);
         if (result === undefined) {
             result = defaultValue;
             if (saveDefaultValue)
@@ -72,7 +67,7 @@ export abstract class BaseSave {
      * @returns Int value
      */
     protected loadIntValue(key: string, defaultValue: int = 0, saveDefaultValue: boolean = false): int {
-        return this.loadIntValueFromSection(this.sectionName, key, defaultValue, saveDefaultValue);
+        return this.loadIntValueFromSection(this.baseSaveIniSectionName, key, defaultValue, saveDefaultValue);
     }
 
     /**
@@ -83,7 +78,7 @@ export abstract class BaseSave {
      * @returns Float value
      */
     protected loadFloatValue(key: string, defaultValue: float = 0.0, saveDefaultValue: boolean = false): float {
-        return this.loadFloatValueFromSection(this.sectionName, key, defaultValue, saveDefaultValue);
+        return this.loadFloatValueFromSection(this.baseSaveIniSectionName, key, defaultValue, saveDefaultValue);
     }
 
     /**
@@ -94,7 +89,7 @@ export abstract class BaseSave {
      * @returns String value
      */
     protected loadStringValue(key: string, defaultValue: string = "", saveDefaultValue: boolean = false): string {
-        return this.loadStringValueFromSection(this.sectionName, key, defaultValue, saveDefaultValue);
+        return this.loadStringValueFromSection(this.baseSaveIniSectionName, key, defaultValue, saveDefaultValue);
     }
 
     /**
@@ -102,21 +97,21 @@ export abstract class BaseSave {
      * @param key Key in the current section
      * @param value New value
      */
-    protected saveIntValue(key: string, value: int): void { IniFile.WriteInt(value, pathToIni, this.sectionName, key); }
+    protected saveIntValue(key: string, value: int): void { IniFile.WriteInt(value, BaseSave.baseSavePathToIni, this.baseSaveIniSectionName, key); }
 
     /**
      * Saves an float value to a *.ini file in the current section
      * @param key Key in the current section
      * @param value New value
      */
-    protected saveFloatValue(key: string, value: float): void { IniFile.WriteFloat(value, pathToIni, this.sectionName, key); }
+    protected saveFloatValue(key: string, value: float): void { IniFile.WriteFloat(value, BaseSave.baseSavePathToIni, this.baseSaveIniSectionName, key); }
 
     /**
      * Saves an string value to a *.ini file in the current section
      * @param key Key in the current section
      * @param value New value
      */
-    protected saveStringValue(key: string, value: string): void { IniFile.WriteString(value, pathToIni, this.sectionName, key); }
+    protected saveStringValue(key: string, value: string): void { IniFile.WriteString(value, BaseSave.baseSavePathToIni, this.baseSaveIniSectionName, key); }
 
     /**
      * Increases the value of a saved integer by 1 in the *.ini file in the current section
@@ -131,8 +126,14 @@ export abstract class BaseSave {
         return newValue;
     }
 
+
+
+    constructor(iniSectionName: string) { this.baseSaveIniSectionName = iniSectionName; }
+
     //----------------------------------------------------------------------------------------------------
 
-    private sectionName: string = "";
+    private static baseSavePathToIni: string = __dirname + "\\Game.sav";
+
+    private baseSaveIniSectionName: string = "";
 
 }

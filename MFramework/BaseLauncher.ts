@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
+import { BaseMission } from "./BaseMission";
 import { BaseSave } from "./BaseSave";
 import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
@@ -24,15 +25,22 @@ export abstract class BaseLauncher extends BaseSave {
     protected onMissionLaunchEvent(): boolean { return true; }
 
     /**
+     * Reaction to mission end event
+     * @param hasSuccess Completed mission status
+     * @returns Returns true if the launcher can be started again
+     */
+    protected onMissionDoneEvent(hasSuccess: boolean): boolean { return true; }
+
+    /**
      * Sets a new mission launch position
      * @param x Position on the x axis
      * @param y Position on the y axis
      * @param z Position on the z axis
      */
     protected setPosition(x: float, y: float, z: float): void {
-        this.positionX = x;
-        this.positionY = y;
-        this.positionZ = z;
+        this.baseLauncherPositionX = x;
+        this.baseLauncherPositionY = y;
+        this.baseLauncherPositionZ = z;
     }
 
     /**
@@ -40,60 +48,73 @@ export abstract class BaseLauncher extends BaseSave {
      * @param radarSprite Radar icon ID
      */
     protected setRadarSprite(radarSprite: int): void {
-        this.radarSprite = radarSprite;
+        this.baseLauncherRadarSprite = radarSprite;
     }
 
-    constructor() {
-        ///@ts-ignore
+
+
+    constructor(baseMissionType: new (string) => BaseMission) {
+        //@ts-ignore
         super(__MissionMameInternal__);
+        //@ts-ignore
+        this.baseLauncherIniSectionName = __MissionMameInternal__;
+        this.baseLauncherRunMissionFunction = () => {
+            return new baseMissionType(this.baseLauncherIniSectionName).HasSuccess();
+        };
         do {
             wait(0);
             if (isPlayerNotPlaying()) {
                 wait(499);
                 continue;
             }
-            switch (this.launcherStatus) {
+            switch (this.baseLauncherStatus) {
                 case 0:
-                    this.processStart();
+                    this.baseLauncherProcessStart();
                     continue;
                 case 1:
-                    this.processBlipCreation();
+                    this.baseLauncherProcessWaitBlip();
                     continue;
                 case 2:
-                    this.processMissionLaunch();
+                    this.baseLauncherProcessWaitMission();
+                    continue;
+                case 3:
+                    this.baseLauncherProcessMissionEnd();
                     continue;
             }
-        } while (this.launcherStatus !== 3);
+        } while (this.baseLauncherStatus !== 4);
     }
 
     //----------------------------------------------------------------------------------------------------
 
-    private launcherStatus: int = 0;
-    private radarSprite: int = 15;
-    private positionX: float = 0.0;
-    private positionY: float = 0.0;
-    private positionZ: float = 0.0;
-    private blip: Blip = undefined;
+    private baseLauncherStatus: int = 0;
+    private baseLauncherRadarSprite: int = 15;
+    private baseLauncherPositionX: float = 0.0;
+    private baseLauncherPositionY: float = 0.0;
+    private baseLauncherPositionZ: float = 0.0;
+    private baseLauncherBlip: Blip = undefined;
+    private baseLauncherIniSectionName: string = "";
+    private baseLauncherHasSuccessInMission: boolean = false;
+    private baseLauncherRunMissionFunction: () => boolean;
 
     //----------------------------------------------------------------------------------------------------
 
-    private processStart(): void {
+    private baseLauncherProcessStart(): void {
         this.onStartEvent();
-        this.launcherStatus = 1;
+        this.baseLauncherStatus = 1;
     }
 
-    private processBlipCreation(): void {
+    private baseLauncherProcessWaitBlip(): void {
         if (!this.onBlipCreationEvent()) {
             wait(1499);
             return;
         }
-        this.blip = Blip.AddSpriteForCoord(this.positionX, this.positionY, this.positionZ, this.radarSprite);
-        this.blip.changeDisplay(2);
-        this.launcherStatus = 2;
+        this.baseLauncherBlip = Blip.AddSpriteForCoord(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
+        this.baseLauncherBlip.changeDisplay(2);
+        this.baseLauncherStatus = 2;
     }
 
-    private processMissionLaunch(): void {
-        if (!playerChar.locateAnyMeans3D(this.positionX, this.positionY, this.positionZ, 40.0, 40.0, 40.0, false)) {
+    private baseLauncherProcessWaitMission(): void {
+        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, 40.0, 40.0, 40.0, false)) {
             wait(249);
             return;
         }
@@ -101,15 +122,19 @@ export abstract class BaseLauncher extends BaseSave {
             wait(249);
             return;
         }
-        if (!playerChar.locateAnyMeans3D(this.positionX, this.positionY, this.positionZ, 1.25, 1.25, 2.0, true) || player.isUsingJetpack())
+        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, 1.25, 1.25, 2.0, true) || player.isUsingJetpack())
             return;
         if (!this.onMissionLaunchEvent())
             return;
-        if (this.blip !== undefined)
-            this.blip.remove();
-        ///@ts-ignore
-        CLEO.runScript(__MissionFilePathInternal__, { __MissionMameInternal__: __MissionMameInternal__, __MissionFilePathInternal__: __MissionFilePathInternal__, __LauncherFilePathInternal__: __LauncherFilePathInternal__ });
-        this.launcherStatus = 3;
+        if (this.baseLauncherBlip !== undefined)
+            this.baseLauncherBlip.remove();
+        this.baseLauncherHasSuccessInMission = this.baseLauncherRunMissionFunction();
+        this.baseLauncherStatus = 3;
+    }
+
+    private baseLauncherProcessMissionEnd(): void {
+        this.baseLauncherStatus = this.onMissionDoneEvent(this.baseLauncherHasSuccessInMission) ? 0 : 4;
+        this.baseLauncherHasSuccessInMission = false;
     }
 
 }

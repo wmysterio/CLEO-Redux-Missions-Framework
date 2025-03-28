@@ -33,27 +33,28 @@ export abstract class BaseMission extends BaseSave {
     }
 
     /**
-     * Allows you to add sub-missions via a function
-     * @param subMissionsFunction Function for creating sub-missions
+     * The current mission will execute the code of the specified mission.
+     * Only one sub-mission can be assigned at a time.
+     * @param baseMissionType A data type extended from BaseMission.
      */
-    protected setSubMissions(subMissionsFunction: () => void): void {
-        if (this.hasSubMissionsFunction || this.missionState !== 0)
+    protected setSubMission<TMission extends BaseMission>(baseMissionType: new (string) => TMission): void {
+        if (this.baseMissionHasSubMissionsFunction || this.baseMissionState !== 0)
             return;
-        this.hasSubMissionsFunction = true;
-        this.subMissionsFunction = subMissionsFunction;
+        this.baseMissionHasSubMissionsFunction = true;
+        this.baseMissionSubMissionsFunction = () => { return new baseMissionType(this.baseMissionIniSectionName).HasSuccess(); };
     }
 
     /**
      * Sets a cash reward on success.
      * @param money Reward
      */
-    protected setCashReward(money: int): void { this.cashReward = money; }
+    protected setCashReward(money: int): void { this.baseMissionCashReward = money; }
 
     /**
      * Increases respect on success
      * @param money Reward
      */
-    protected setRespectReward(respect: int): void { this.respectReward = respect; }
+    protected setRespectReward(respect: int): void { this.baseMissionRespectReward = respect; }
 
     /**
      * Sets the mission title
@@ -61,12 +62,12 @@ export abstract class BaseMission extends BaseSave {
      * @param gxtKey Set true if the text is a GXT key
      */
     protected setTitle(title: string, gxtKey: boolean = false): void {
-        this.titleText = title;
-        this.isTitleTextAGxt = gxtKey;
+        this.baseMissionTitleText = title;
+        this.baseMissionIsTitleTextAGxt = gxtKey;
     }
 
     /** Disables text notification about mission failure */
-    protected disableFailureBigMessage(): void { this.enableMissionFailureBigMessage = false; }
+    protected disableFailureBigMessage(): void { this.baseMissionEnableMissionFailureBigMessage = false; }
 
     /**
      * Sets the default text notification for failure mission completion
@@ -76,15 +77,15 @@ export abstract class BaseMission extends BaseSave {
     protected setDefaultMissionFailureBigMessage(message: string, gxtKey: boolean = false): void {
         if (gxtKey && message.length > 7)
             return;
-        this.defaultMissionFailureBigMessage = message;
-        this.isDefaultMissionFailureBigMessageAGxt = gxtKey;
+        this.baseMissionDefaultMissionFailureBigMessage = message;
+        this.baseMissionIsDefaultMissionFailureBigMessageAGxt = gxtKey;
     }
 
     /** Turns off the sound notification about successful mission completion */
-    protected disableMissionSuccessTune(): void { this.enableMissionSuccessTune = false; }
+    protected disableMissionSuccessTune(): void { this.baseMissionEnableMissionSuccessTune = false; }
 
     /** Disables text notification about successful mission completion */
-    protected disableMissionSuccessBigMessage(): void { this.enableMissionSuccessBigMessage = false; }
+    protected disableMissionSuccessBigMessage(): void { this.baseMissionEnableMissionSuccessBigMessage = false; }
 
     /**
      * Sets the default text notification for successful mission completion
@@ -94,33 +95,30 @@ export abstract class BaseMission extends BaseSave {
     protected setDefaultMissionSuccessBigMessage(message: string, gxtKey: boolean = false): void {
         if (gxtKey && message.length > 7)
             return;
-        this.defaultMissionSuccessBigMessage = message;
-        this.isDefaultMissionSuccessBigMessageAGxt = gxtKey;
+        this.baseMissionDefaultMissionSuccessBigMessage = message;
+        this.baseMissionIsDefaultMissionSuccessBigMessageAGxt = gxtKey;
     }
 
     /** Aborts the mission with a success notification */
     protected complete(): void {
-        if (this.missionState === 1) {
-            this.missionState = 2;
-            throw this.controllableErrorToForceMissionTermination;
+        if (this.baseMissionState === 1) {
+            this.baseMissionState = 2;
+            throw this.baseMissionControllableErrorToForceMissionTermination;
         }
     }
 
     /** Aborts the mission with a failure notification */
     protected fail(reasonMessage: string = "", failedMessageTime: int = 5000, gxtKey: boolean = false): void {
-        if (this.missionState === 1) {
+        if (this.baseMissionState === 1) {
             if (gxtKey && reasonMessage.length > 7)
                 gxtKey = false;
-            this.isMissionFailureReasonMessageAGxt = gxtKey;
-            this.missionFailureReasonMessage = reasonMessage;
-            this.missionFailureTime = failedMessageTime;
-            this.missionState = 3;
-            throw this.controllableErrorToForceMissionTermination;
+            this.baseMissionIsMissionFailureReasonMessageAGxt = gxtKey;
+            this.baseMissionMissionFailureReasonMessage = reasonMessage;
+            this.baseMissionEnableMissionFailureTime = failedMessageTime;
+            this.baseMissionState = 3;
+            throw this.baseMissionControllableErrorToForceMissionTermination;
         }
     }
-
-    /** Prevents this mission's launcher from running */
-    protected disableMissionLauncher(): void { this.enableMissionLauncher = false; }
 
     /** Returns the camera behavior to default mode */
     protected makeCameraBehaviorDefault(): void {
@@ -147,180 +145,187 @@ export abstract class BaseMission extends BaseSave {
         Streaming.LoadScene(x, y, z);
     }
 
+    /**
+     * Checks whether the mission was successful.
+     * @returns Returns true if the mission was successful
+     */
+    public HasSuccess(): boolean { return this.baseMissionHasMissionSuccess; }
 
-    constructor() {
-        ///@ts-ignore
-        super(__MissionMameInternal__);
+
+
+    constructor(sectionName: string) {
+        super(sectionName);
+        this.baseMissionIniSectionName = sectionName;
         do {
             wait(0);
             if (isPlayerNotPlaying())
-                this.missionState = 3;
-            switch (this.missionState) {
+                this.baseMissionState = 3;
+            switch (this.baseMissionState) {
                 case 0:
-                    this.processStart();
+                    this.baseMissionProcessStart();
                     continue;
                 case 1:
-                    this.processUpdate();
+                    this.baseMissionProcessUpdate();
                     continue;
                 case 2:
-                    this.processSuccess();
+                    this.baseMissionProcessSuccess();
                     continue;
                 case 3:
-                    this.processFailure();
+                    this.baseMissionProcessFailure();
                     continue;
                 case 4:
-                    this.processEnd();
+                    this.baseMissionProcessEnd();
                     continue;
             }
-        } while (this.missionState !== 5);
+        } while (this.baseMissionState !== 5);
     }
 
     //----------------------------------------------------------------------------------------------------
 
-    private missionState: int = 0;
-    private controllableErrorToForceMissionTermination: Error = new Error(); // thanks Seemann!
-    private subMissionsFunction: Function = undefined;
-    private hasSubMissionsFunction: boolean = false;
-    private cashReward: int = 0;
-    private respectReward: int = 0;
-    private titleText: string = "DUMMY";
-    private isTitleTextAGxt: boolean = true;
-    private defaultMissionFailureBigMessage: string = "M_FAIL";
-    private isDefaultMissionFailureBigMessageAGxt: boolean = true;
-    private enableMissionFailureBigMessage: boolean = true;
-    private defaultMissionSuccessBigMessage: string = "M_PASSD";
-    private isDefaultMissionSuccessBigMessageAGxt: boolean = true;
-    private enableMissionSuccessBigMessage: boolean = true;
-    private missionFailureReasonMessage: string = "";
-    private enableMissionSuccessTune: boolean = true;
-    private missionFailureTime: int = 0;
-    private isMissionFailureReasonMessageAGxt: boolean = false;
-    private missionPassedGxtKey: string = "";
-    private enableMissionLauncher: boolean = true;
+    private baseMissionIniSectionName: string = "";
+    private baseMissionState: int = 0;
+    private baseMissionControllableErrorToForceMissionTermination: Error = new Error(); // thanks Seemann!
+    private baseMissionSubMissionsFunction: () => boolean;
+    private baseMissionHasSubMissionsFunction: boolean = false;
+    private baseMissionCashReward: int = 0;
+    private baseMissionRespectReward: int = 0;
+    private baseMissionTitleText: string = "DUMMY";
+    private baseMissionIsTitleTextAGxt: boolean = true;
+    private baseMissionDefaultMissionFailureBigMessage: string = "M_FAIL";
+    private baseMissionIsDefaultMissionFailureBigMessageAGxt: boolean = true;
+    private baseMissionEnableMissionFailureBigMessage: boolean = true;
+    private baseMissionDefaultMissionSuccessBigMessage: string = "M_PASSD";
+    private baseMissionIsDefaultMissionSuccessBigMessageAGxt: boolean = true;
+    private baseMissionEnableMissionSuccessBigMessage: boolean = true;
+    private baseMissionMissionFailureReasonMessage: string = "";
+    private baseMissionEnableMissionSuccessTune: boolean = true;
+    private baseMissionEnableMissionFailureTime: int = 0;
+    private baseMissionIsMissionFailureReasonMessageAGxt: boolean = false;
+    private baseMissionMissionPassedGxtKey: string = "";
+    private baseMissionHasMissionSuccess: boolean = false;
 
     //----------------------------------------------------------------------------------------------------
 
-    private processStart(): void {
+    private baseMissionProcessStart(): void {
         this.clearText();
         this.onStartEvent();
-        if (this.hasSubMissionsFunction) {
-            this.subMissionsFunction();
-            this.missionState = 5;
+        if (this.baseMissionHasSubMissionsFunction) {
+            this.baseMissionHasMissionSuccess = this.baseMissionSubMissionsFunction();
+            this.baseMissionState = 5;
             return;
         }
         Stat.RegisterMissionGiven();
-        this.setWorldComfortableForMission(true);
-        if (this.isTitleTextAGxt) {
-            Text.PrintBig(this.titleText, 1000, 2);
+        this.baseMissionSetWorldComfortableForMission(true);
+        if (this.baseMissionIsTitleTextAGxt) {
+            Text.PrintBig(this.baseMissionTitleText, 1000, 2);
         } else {
-            Text.PrintBigFormatted(this.titleText, 1000, 2);
+            Text.PrintBigFormatted(this.baseMissionTitleText, 1000, 2);
         }
-        this.missionState = 1;
+        this.baseMissionState = 1;
     }
 
-    private processUpdate(): void {
+    private baseMissionProcessUpdate(): void {
         if (!ONMISSION) {
-            this.missionState = 3;
+            this.baseMissionState = 3;
             return;
         }
         try {
             this.onUpdateEvent();
         } catch (e) {
-            if (e !== this.controllableErrorToForceMissionTermination)
-                throw e;
+            if (e === this.baseMissionControllableErrorToForceMissionTermination)
+                return;
+            log(e.toString());
+            this.baseMissionState = 3;
         }
     }
 
-    private processSuccess(): void {
-        this.processCleanup();
-        if (this.missionPassedGxtKey.length > 1)
-            Stat.RegisterMissionPassed(this.missionPassedGxtKey);
-        if (this.enableMissionSuccessTune)
+    private baseMissionProcessSuccess(): void {
+        this.baseMissionProcessCleanup();
+        if (this.baseMissionMissionPassedGxtKey.length > 1)
+            Stat.RegisterMissionPassed(this.baseMissionMissionPassedGxtKey);
+        if (this.baseMissionEnableMissionSuccessTune)
             Audio.PlayMissionPassedTune(1);
-        this.displaySuccessMessage();
-        this.missionState = 4;
+        this.baseMissionDisplaySuccessMessage();
+        this.baseMissionState = 4;
+        this.baseMissionHasMissionSuccess = true;
         this.onSuccessEvent();
     }
-    private displaySuccessMessage(): void {
+    private baseMissionDisplaySuccessMessage(): void {
         let flag = 0;
         //Stat.PlayerMadeProgress( 1 ); // recalculate max progress. how get? and why?
-        if (this.respectReward > 0) {
+        if (this.baseMissionRespectReward > 0) {
             flag += 1;
-            Stat.AwardPlayerMissionRespect(this.respectReward); // recalculate max respect. how get? and why?
+            Stat.AwardPlayerMissionRespect(this.baseMissionRespectReward); // recalculate max respect. how get? and why?
         }
-        if (this.cashReward > 0) {
+        if (this.baseMissionCashReward > 0) {
             flag += 2;
-            player.addScore(this.cashReward);
+            player.addScore(this.baseMissionCashReward);
         }
-        if (!this.enableMissionSuccessBigMessage)
+        if (!this.baseMissionEnableMissionSuccessBigMessage)
             return;
         switch (flag) {
             case 3:
-                Text.PrintWithNumberBig("M_PASSS", this.cashReward, 5000, 1); // Mission passed +$ +Respect
+                Text.PrintWithNumberBig("M_PASSS", this.baseMissionCashReward, 5000, 1); // Mission passed +$ +Respect
                 return;
             case 2:
-                Text.PrintWithNumberBig("M_PASS", this.cashReward, 5000, 1); // Mission passed +$
+                Text.PrintWithNumberBig("M_PASS", this.baseMissionCashReward, 5000, 1); // Mission passed +$
                 return;
             case 1:
                 Text.PrintBig("M_PASSR", 5000, 1); // Mission passed +Respect
                 return;
             default:
-                if (this.defaultMissionSuccessBigMessage.length == 0)
+                if (this.baseMissionDefaultMissionSuccessBigMessage.length === 0)
                     return;
-                if (this.isDefaultMissionSuccessBigMessageAGxt) {
-                    Text.PrintBig(this.defaultMissionSuccessBigMessage, 5000, 1);
+                if (this.baseMissionIsDefaultMissionSuccessBigMessageAGxt) {
+                    Text.PrintBig(this.baseMissionDefaultMissionSuccessBigMessage, 5000, 1);
                     return;
                 }
-                Text.PrintBigFormatted(this.defaultMissionSuccessBigMessage, 5000, 1);
+                Text.PrintBigFormatted(this.baseMissionDefaultMissionSuccessBigMessage, 5000, 1);
                 return;
         }
     }
 
-    private processFailure(): void {
-        this.processCleanup();
-        this.displayFailedMessage();
-        this.missionState = 4;
+    private baseMissionProcessFailure(): void {
+        this.baseMissionProcessCleanup();
+        this.baseMissionDisplayFailedMessage();
+        this.baseMissionState = 4;
         this.onFailureEvent();
     }
-    private displayFailedMessage(): void {
-        this.displayFailureBigMessage();
-        if (1 > this.missionFailureTime)
+    private baseMissionDisplayFailedMessage(): void {
+        this.baseMissionDisplayFailureBigMessage();
+        if (1 > this.baseMissionEnableMissionFailureTime)
             return;
-        if (this.isMissionFailureReasonMessageAGxt && this.missionFailureReasonMessage.length > 0) {
-            Text.PrintNow(this.missionFailureReasonMessage, this.missionFailureTime, 1);
+        if (this.baseMissionIsMissionFailureReasonMessageAGxt && this.baseMissionMissionFailureReasonMessage.length > 0) {
+            Text.PrintNow(this.baseMissionMissionFailureReasonMessage, this.baseMissionEnableMissionFailureTime, 1);
             return;
         }
-        Text.PrintFormattedNow(this.missionFailureReasonMessage, this.missionFailureTime);
+        Text.PrintFormattedNow(this.baseMissionMissionFailureReasonMessage, this.baseMissionEnableMissionFailureTime);
     }
-    private displayFailureBigMessage(): void {
-        if (this.defaultMissionFailureBigMessage.length === 0)
+    private baseMissionDisplayFailureBigMessage(): void {
+        if (this.baseMissionDefaultMissionFailureBigMessage.length === 0)
             return;
-        if (this.enableMissionFailureBigMessage) {
-            if (this.isDefaultMissionFailureBigMessageAGxt) {
-                Text.PrintBig(this.defaultMissionFailureBigMessage, 5000, 1);
+        if (this.baseMissionEnableMissionFailureBigMessage) {
+            if (this.baseMissionIsDefaultMissionFailureBigMessageAGxt) {
+                Text.PrintBig(this.baseMissionDefaultMissionFailureBigMessage, 5000, 1);
                 return;
             }
-            Text.PrintBigFormatted(this.defaultMissionFailureBigMessage, 5000, 1);
+            Text.PrintBigFormatted(this.baseMissionDefaultMissionFailureBigMessage, 5000, 1);
         }
     }
 
-    private processCleanup(): void {
+    private baseMissionProcessCleanup(): void {
         this.clearText();
-        this.makeCameraBehaviorDefault();
-        Mission.Finish();
         this.onCleanupEvent();
     }
 
-    private processEnd(): void {
-        this.setWorldComfortableForMission(false);
-        this.missionState = 5;
-        if (this.enableMissionLauncher) {
-            ///@ts-ignore
-            CLEO.runScript(__LauncherFilePathInternal__, { __MissionMameInternal__: __MissionMameInternal__, __MissionFilePathInternal__: __MissionFilePathInternal__, __LauncherFilePathInternal__: __LauncherFilePathInternal__ });
-        }
+    private baseMissionProcessEnd(): void {
+        this.baseMissionSetWorldComfortableForMission(false);
+        this.makeCameraBehaviorDefault();
+        Mission.Finish();
+        this.baseMissionState = 5;
     }
 
-    private setWorldComfortableForMission(isStartMissionFlag: boolean): void {
+    private baseMissionSetWorldComfortableForMission(isStartMissionFlag: boolean): void {
         let invertIsStartMissionFlag = !isStartMissionFlag;
         let offmissionMultipliers = isStartMissionFlag ? 0.0 : 1.0;
 
