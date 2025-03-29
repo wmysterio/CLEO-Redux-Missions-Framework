@@ -2,11 +2,10 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-import { BaseSave } from "./BaseSave";
 import { player, playerGroup, isPlayerNotPlaying } from "./Utils";
 
 /** Base class for missions and sub-missions */
-export abstract class BaseMission extends BaseSave {
+export abstract class BaseMission {
 
     /** Reaction to the mission start event */
     protected onStartEvent(): void { }
@@ -37,11 +36,11 @@ export abstract class BaseMission extends BaseSave {
      * Only one sub-mission can be assigned at a time.
      * @param baseMissionType A data type extended from BaseMission.
      */
-    protected setSubMission<TMission extends BaseMission>(baseMissionType: new (string) => TMission): void {
+    protected setSubMission<TMission extends BaseMission>(baseMissionType: new () => TMission): void {
         if (this.baseMissionHasSubMissionsFunction || this.baseMissionState !== 0)
             return;
         this.baseMissionHasSubMissionsFunction = true;
-        this.baseMissionSubMissionsFunction = () => { return new baseMissionType(this.baseMissionIniSectionName).HasSuccess(); };
+        this.baseMissionSubMissionsFunction = () => { return new baseMissionType().HasSuccess(); };
     }
 
     /**
@@ -153,9 +152,7 @@ export abstract class BaseMission extends BaseSave {
 
 
 
-    constructor(sectionName: string) {
-        super(sectionName);
-        this.baseMissionIniSectionName = sectionName;
+    constructor() {
         do {
             wait(0);
             if (isPlayerNotPlaying())
@@ -182,7 +179,6 @@ export abstract class BaseMission extends BaseSave {
 
     //----------------------------------------------------------------------------------------------------
 
-    private baseMissionIniSectionName: string = "";
     private baseMissionState: int = 0;
     private baseMissionControllableErrorToForceMissionTermination: Error = new Error(); // thanks Seemann!
     private baseMissionSubMissionsFunction: () => boolean;

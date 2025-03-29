@@ -3,11 +3,14 @@
 /// <reference path="../.config/sa.d.ts" />
 
 import { BaseMission } from "./BaseMission";
-import { BaseSave } from "./BaseSave";
+import { Save } from "./Save";
 import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
+//@ts-ignore
+Save.SetDefaultIniSectionName(__MissionMameInternal__);
+
 /** Base class for starting missions (starter) */
-export abstract class BaseLauncher extends BaseSave {
+export abstract class BaseLauncher {
 
     /** Reaction to the launcher start event */
     protected onStartEvent(): void { }
@@ -29,7 +32,7 @@ export abstract class BaseLauncher extends BaseSave {
      * @param hasSuccess Completed mission status
      * @returns Returns true if the launcher can be started again
      */
-    protected onMissionDoneEvent(hasSuccess: boolean): boolean { return true; }
+    protected onMissionEndEvent(hasSuccess: boolean): boolean { return true; }
 
     /**
      * Sets a new mission launch position
@@ -53,13 +56,9 @@ export abstract class BaseLauncher extends BaseSave {
 
 
 
-    constructor(baseMissionType: new (string) => BaseMission) {
-        //@ts-ignore
-        super(__MissionMameInternal__);
-        //@ts-ignore
-        this.baseLauncherIniSectionName = __MissionMameInternal__;
+    constructor(baseMissionType: new () => BaseMission) {
         this.baseLauncherRunMissionFunction = () => {
-            return new baseMissionType(this.baseLauncherIniSectionName).HasSuccess();
+            return new baseMissionType().HasSuccess();
         };
         do {
             wait(0);
@@ -92,7 +91,7 @@ export abstract class BaseLauncher extends BaseSave {
     private baseLauncherPositionY: float = 0.0;
     private baseLauncherPositionZ: float = 0.0;
     private baseLauncherBlip: Blip = undefined;
-    private baseLauncherIniSectionName: string = "";
+
     private baseLauncherHasSuccessInMission: boolean = false;
     private baseLauncherRunMissionFunction: () => boolean;
 
@@ -133,7 +132,7 @@ export abstract class BaseLauncher extends BaseSave {
     }
 
     private baseLauncherProcessMissionEnd(): void {
-        this.baseLauncherStatus = this.onMissionDoneEvent(this.baseLauncherHasSuccessInMission) ? 0 : 4;
+        this.baseLauncherStatus = this.onMissionEndEvent(this.baseLauncherHasSuccessInMission) ? 0 : 4;
         this.baseLauncherHasSuccessInMission = false;
     }
 
