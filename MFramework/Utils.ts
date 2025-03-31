@@ -2,16 +2,10 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-export const player: Player = new Player(0);
-export const playerChar: Char = player.getChar();
-export const playerGroup: Group = player.getGroup();
-/** Car with handle -1 by default */
-export let playerCar: Car = new Car(-1);
+export let player: Player = new Player(0);
+export let playerChar: Char = player.getChar();
 
-/**
- * Checks if the player is unable to play
- * @returns Returns true if the player is not found, not playing, dead, or arrested
- */
+/** Returns true if the player is not found, not playing, dead, or arrested */
 export function isPlayerNotPlaying(): boolean {
     return !player.isPlaying() || !Char.DoesExist(+playerChar) || Char.IsDead(+playerChar) || playerChar.hasBeenArrested();
 }

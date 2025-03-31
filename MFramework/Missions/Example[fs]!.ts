@@ -10,7 +10,7 @@ new class ExampleLauncher extends BaseLauncher {
     constructor() { super(ExampleMission); }
 
     protected onStartEvent(): void {
-        if (Save.GetInt("TOTAL_MISSION_PASSED", 0, true) > 4)
+        if (Save.GetInt("TOTAL_MISSION_PASSED", 0) > 4)
             exit();
         this.setPosition(2452.3093, -1649.698, 13.4468);
     }

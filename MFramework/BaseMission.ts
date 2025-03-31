@@ -2,10 +2,12 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-import { player, playerGroup, isPlayerNotPlaying } from "./Utils";
+import { BaseScript } from "./BaseScript";
+import { BaseScriptedScene } from "./BaseScriptedScene";
+import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
 /** Base class for missions and sub-missions */
-export abstract class BaseMission {
+export abstract class BaseMission extends BaseScript {
 
     /** Reaction to the mission start event */
     protected onStartEvent(): void { }
@@ -22,19 +24,23 @@ export abstract class BaseMission {
     /** Reaction to mission cleanup */
     protected onCleanupEvent(): void { }
 
-    /** Clear the screen of all text */
-    protected clearText(): void {
-        Text.ClearThisPrintBigNow(1);
-        Text.ClearThisPrintBigNow(2);
-        Text.ClearHelp();
-        Text.ClearPrints();
-        Text.ClearSmallPrints();
+    /**
+     * Begins a scripted scene
+     * @param baseScriptedSceneType A data type extended from BaseScriptedScene
+     * @param autoContol Use false to control the scene behavior manually, or true to do it automatically
+     */
+    protected playScriptedScene<TScriptedScene extends BaseScriptedScene>(baseScriptedSceneType: new (bool) => TScriptedScene, autoContol: boolean = true): void {
+        if (this.baseMissionIsScriptedSceneActive || this.baseMissionState !== 1)
+            return;
+        this.baseMissionIsScriptedSceneActive = true;
+        new baseScriptedSceneType(autoContol);
+        this.baseMissionIsScriptedSceneActive = false;
     }
 
     /**
-     * The current mission will execute the code of the specified mission.
-     * Only one sub-mission can be assigned at a time.
-     * @param baseMissionType A data type extended from BaseMission.
+     * The current mission will execute the code of the specified mission
+     * Only one sub-mission can be assigned at a time
+     * @param baseMissionType A data type extended from BaseMission
      */
     protected setSubMission<TMission extends BaseMission>(baseMissionType: new () => TMission): void {
         if (this.baseMissionHasSubMissionsFunction || this.baseMissionState !== 0)
@@ -44,7 +50,7 @@ export abstract class BaseMission {
     }
 
     /**
-     * Sets a cash reward on success.
+     * Sets a cash reward on success
      * @param money Reward
      */
     protected setCashReward(money: int): void { this.baseMissionCashReward = money; }
@@ -99,8 +105,10 @@ export abstract class BaseMission {
     }
 
     /** Aborts the mission with a success notification */
-    protected complete(): void {
+    protected complete(missionNameGxt: string = ""): void {
         if (this.baseMissionState === 1) {
+            if (8 > missionNameGxt.length)
+                this.baseMissionMissionPassedGxtKey = missionNameGxt;
             this.baseMissionState = 2;
             throw this.baseMissionControllableErrorToForceMissionTermination;
         }
@@ -119,40 +127,23 @@ export abstract class BaseMission {
         }
     }
 
-    /** Returns the camera behavior to default mode */
-    protected makeCameraBehaviorDefault(): void {
-        Camera.RestoreJumpcut();
-        Camera.SetBehindPlayer();
-    }
-
     /**
-     * Sets the camera fixed position
-     * @param x Position on the x axis
-     * @param y Position on the y axis
-     * @param z Position on the z axis
-     */
-    protected setCameraPosition(x: float, y: float, z: float): void { Camera.SetFixedPosition(x, y, z, 0.0, 0.0, 0.0); }
-
-    /**
-     * Loads a scene and requests a collision at point
-     * @param x Position on the x axis
-     * @param y Position on the y axis
-     * @param z Position on the z axis
-     */
-    protected refresh_area(x: float, y: float, z: float): void {
-        Streaming.RequestCollision(x, y);
-        Streaming.LoadScene(x, y, z);
-    }
-
-    /**
-     * Checks whether the mission was successful.
+     * Checks whether the mission was successful
      * @returns Returns true if the mission was successful
      */
     public HasSuccess(): boolean { return this.baseMissionHasMissionSuccess; }
 
+    /** Car with handle -1 by default */
+    protected playerCar: Car = new Car(-1);
+
+    /** The player group */
+    protected playerGroup: Group = new Group(-1);
+
 
 
     constructor() {
+        super();
+        ONMISSION = true;
         do {
             wait(0);
             if (isPlayerNotPlaying())
@@ -199,10 +190,12 @@ export abstract class BaseMission {
     private baseMissionIsMissionFailureReasonMessageAGxt: boolean = false;
     private baseMissionMissionPassedGxtKey: string = "";
     private baseMissionHasMissionSuccess: boolean = false;
+    private baseMissionIsScriptedSceneActive: boolean = false;
 
     //----------------------------------------------------------------------------------------------------
 
     private baseMissionProcessStart(): void {
+        this.playerGroup = player.getGroup();
         this.clearText();
         this.onStartEvent();
         if (this.baseMissionHasSubMissionsFunction) {
@@ -211,7 +204,7 @@ export abstract class BaseMission {
             return;
         }
         Stat.RegisterMissionGiven();
-        this.baseMissionSetWorldComfortableForMission(true);
+        this.baseMissionMakeWorldComfortable();
         if (this.baseMissionIsTitleTextAGxt) {
             Text.PrintBig(this.baseMissionTitleText, 1000, 2);
         } else {
@@ -237,8 +230,11 @@ export abstract class BaseMission {
 
     private baseMissionProcessSuccess(): void {
         this.baseMissionProcessCleanup();
-        if (this.baseMissionMissionPassedGxtKey.length > 1)
+        if (this.baseMissionMissionPassedGxtKey.length > 1) {
             Stat.RegisterMissionPassed(this.baseMissionMissionPassedGxtKey);
+        } else {
+            Stat.IncrementIntNoMessage(147, 1);
+        }
         if (this.baseMissionEnableMissionSuccessTune)
             Audio.PlayMissionPassedTune(1);
         this.baseMissionDisplaySuccessMessage();
@@ -315,125 +311,50 @@ export abstract class BaseMission {
     }
 
     private baseMissionProcessEnd(): void {
-        this.baseMissionSetWorldComfortableForMission(false);
-        this.makeCameraBehaviorDefault();
+        this.resetCamera();
         Mission.Finish();
+        /*
+                World.SetPedDensityMultiplier(1.0);
+                World.SetCarDensityMultiplier(1.0);
+                Game.SetWantedMultiplier(1.0);
+                Hud.DisplayZoneNames(true);
+                Hud.DisplayCarNames(true);
+                Game.SetPoliceIgnorePlayer(player, false);
+                Game.SetEveryoneIgnorePlayer(player, false);
+                Game.SetCreateRandomGangMembers(true);
+                Game.SetCreateRandomCops(true);
+                Game.EnableAmbientCrime(true);
+                Game.SwitchPoliceHelis(true);
+                Game.SwitchCopsOnBikes(true);
+                Game.SwitchRandomTrains(true);
+                Game.SwitchAmbientPlanes(true);
+                Game.SwitchEmergencyServices(true);
+                Weather.Release();
+        */
+        if (Car.DoesExist(+this.playerCar))
+            this.playerCar.setProofs(false, false, false, false, false).setCanBurstTires(true).markAsNoLongerNeeded();
+        player.setGroupRecruitment(true).setControl(true);
+        playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true);
+        this.playerGroup.remove();
+        if (!playerChar.isInCar(this.playerCar)) {
+            this.playerCar.delete();
+            this.playerCar = new Car(-1);
+        }
+        ONMISSION = false;
         this.baseMissionState = 5;
     }
 
-    private baseMissionSetWorldComfortableForMission(isStartMissionFlag: boolean): void {
-        let invertIsStartMissionFlag = !isStartMissionFlag;
-        let offmissionMultipliers = isStartMissionFlag ? 0.0 : 1.0;
-
-        World.SetPedDensityMultiplier(offmissionMultipliers);
-        World.SetCarDensityMultiplier(offmissionMultipliers);
-        Hud.DisplayZoneNames(invertIsStartMissionFlag);
-        Hud.DisplayCarNames(invertIsStartMissionFlag);
-        Game.SetPoliceIgnorePlayer(player, isStartMissionFlag);
-        Game.SetEveryoneIgnorePlayer(player, isStartMissionFlag);
-
-        Game.SetWantedMultiplier(offmissionMultipliers);
-        Game.SetCreateRandomGangMembers(invertIsStartMissionFlag);
-
-
-        Game.SetCreateRandomCops(invertIsStartMissionFlag);
-        Game.EnableAmbientCrime(invertIsStartMissionFlag);
-        Game.SwitchPoliceHelis(invertIsStartMissionFlag);
-        Game.SwitchCopsOnBikes(invertIsStartMissionFlag);
-        Game.SwitchRandomTrains(invertIsStartMissionFlag);
-        Game.SwitchAmbientPlanes(invertIsStartMissionFlag);
-        Game.SwitchEmergencyServices(invertIsStartMissionFlag);
-
-        Weather.Release();
-
-        playerGroup.remove();
-        player.setGroupRecruitment(invertIsStartMissionFlag).setControl(invertIsStartMissionFlag);
-        ONMISSION = isStartMissionFlag;
+    private baseMissionMakeWorldComfortable(): void {
+        Game.SetCreateRandomGangMembers(false);
+        Game.SetCreateRandomCops(false);
+        Game.EnableAmbientCrime(false);
+        Game.SwitchPoliceHelis(false);
+        Game.SwitchCopsOnBikes(false);
+        Game.SwitchRandomTrains(false);
+        Game.SwitchAmbientPlanes(false);
+        Game.SwitchEmergencyServices(false);
+        player.setGroupRecruitment(false);
+        this.playerGroup.remove();
     }
 
 }
-
-
-/*
-    static void __toggle_cinematic( bool enable ) {
-        PlayerActor.hide_weapons_in_scene( enable );
-        enable_radar( !enable );
-        enable_hud( !enable );
-        enable_widescreen( enable );
-        text_clear_all();
-        remove_text_box();
-    }    static void __renderer_at( Float x, Float y, Float z ) { refresh_game_renderer( x, y ); CAMERA.refresh( x, y, z ); }
-    static void __camera_default() { CAMERA.restore_with_jumpcut().set_behind_player(); }
-    static void __fade( Int type_bool, bool delay = false ) {
-        set_fade_color_rgb( 0, 0, 0 );
-        fade( type_bool, 500 );
-        if( delay )
-            wait( 500 );
-    }
-
-
-            a.set_muted( false ).set_can_be_knocked_off_bike( false );
-
-
-
-    static void __clear_text() {  }
-
-
-	
-	
-	
-    static void __toggle_cinematic( bool enable ) {
-        PlayerActor.hide_weapons_in_scene( enable );
-        enable_radar( !enable );
-        enable_hud( !enable );
-        enable_widescreen( enable );
-        text_clear_all();
-        remove_text_box();
-    }
-	
-
-function start_scene_skip( sceneAction ) : void {
-    const _wait = wait;
-    const cancel = new Error( "ABORTED" );
-    wait = ( delay ) => {
-        _wait( delay );
-        if( Pad.IsKeyPressed( 32 ) ) // KeyCode.Space
-            throw cancel;
-    };
-    try {
-        sceneAction();
-    } catch( e ) {
-        if( e !== cancel )
-            throw e;
-    }
-    wait = _wait;
-}
-
-// simulate mission
-
-wait(2000);
-
-start_scene_skip( () => {
-	
-    Text.PrintFormattedNow( "stage 1", 4000 );
-    wait( 4000 );
-	
-    Text.PrintFormattedNow( "stage 2", 4000 );
-    wait( 4000 );
-	
-    Text.PrintFormattedNow( "stage 3", 4000 );
-    wait( 4000 );
-
-    Text.PrintFormattedNow( "stage 4", 4000 );
-    wait( 4000 );
-	
-    Text.PrintFormattedNow( "stage 5", 4000 );
-    wait( 4000 );
-	
-    Text.PrintFormattedNow( "stage 6", 4000 );
-    wait( 4000 );
-} );
-
-
-Text.PrintFormattedNow( "skip or end", 4000 );
-*/
