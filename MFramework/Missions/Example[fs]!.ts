@@ -20,10 +20,8 @@ new class ExampleLauncher extends BaseLauncher {
     }
 
     protected onMissionEndEvent(hasSuccess: boolean): boolean {
-        if (hasSuccess) {
-            let totalMissionPassed = Save.IncreaseInt("TOTAL_MISSION_PASSED", 0, true);
-            return 5 > totalMissionPassed;
-        }
+        if (hasSuccess)
+            return 5 > Save.IncreaseInt("TOTAL_MISSION_PASSED", 0, true);
         return true;
     }
 

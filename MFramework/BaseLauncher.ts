@@ -7,7 +7,7 @@ import { Save } from "./Save";
 import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
 //@ts-ignore
-Save.SetDefaultIniSectionName(__MissionMameInternal__);
+Save.SetDefaultIniSectionName(__MissionNameInternal__);
 
 /** Base class for starting missions (starter) */
 export abstract class BaseLauncher {
@@ -54,8 +54,19 @@ export abstract class BaseLauncher {
         this.baseLauncherRadarSprite = radarSprite;
     }
 
+    /**
+     * Sets the radius of the cylinder along the X and Y axes.
+     * @param sphereRadius New radius
+     */
+    protected setSphereRadius(sphereRadius: float): void {
+        this.baseLauncherSphereRadius = sphereRadius;
+    }
 
 
+
+    /**
+     * @param baseMissionType Specify the name of the type that will be used as the default mission
+     */
     constructor(baseMissionType: new () => BaseMission) {
         this.baseLauncherRunMissionFunction = () => {
             return new baseMissionType().HasSuccess();
@@ -86,11 +97,12 @@ export abstract class BaseLauncher {
     //----------------------------------------------------------------------------------------------------
 
     private baseLauncherStatus: int = 0;
+    private baseLauncherSphereRadius: int = 1.25;
     private baseLauncherRadarSprite: int = 15;
     private baseLauncherPositionX: float = 0.0;
     private baseLauncherPositionY: float = 0.0;
     private baseLauncherPositionZ: float = 0.0;
-    private baseLauncherBlip: Blip = undefined;
+    private baseLauncherBlip: Blip = new Blip(-1);
 
     private baseLauncherHasSuccessInMission: boolean = false;
     private baseLauncherRunMissionFunction: () => boolean;
@@ -121,19 +133,27 @@ export abstract class BaseLauncher {
             wait(249);
             return;
         }
-        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, 1.25, 1.25, 2.0, true) || player.isUsingJetpack())
+        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherSphereRadius, this.baseLauncherSphereRadius, 2.0, true) || player.isUsingJetpack())
             return;
         if (!this.onMissionLaunchEvent())
             return;
-        if (this.baseLauncherBlip !== undefined)
+        if (this.baseLauncherBlip !== undefined && Blip.DoesExist(+this.baseLauncherBlip))
             this.baseLauncherBlip.remove();
+        this.baseLauncherSwitchFxtFile(true);
         this.baseLauncherHasSuccessInMission = this.baseLauncherRunMissionFunction();
         this.baseLauncherStatus = 3;
     }
 
     private baseLauncherProcessMissionEnd(): void {
         this.baseLauncherStatus = this.onMissionEndEvent(this.baseLauncherHasSuccessInMission) ? 0 : 4;
+        this.baseLauncherSwitchFxtFile(false);
         this.baseLauncherHasSuccessInMission = false;
+    }
+
+    private baseLauncherSwitchFxtFile(toLoading: boolean): void {
+        let fxtFilePath = __dirname + "\\Missions\\" + Save.GetCurrentIniSectionName() + ".fxt";
+        if (Fs.DoesFileExist(fxtFilePath))
+            (toLoading ? Text.LoadFxt : Text.UnloadFxt)(fxtFilePath);
     }
 
 }

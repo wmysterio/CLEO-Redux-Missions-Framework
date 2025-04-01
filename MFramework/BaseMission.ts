@@ -331,15 +331,19 @@ export abstract class BaseMission extends BaseScript {
                 Game.SwitchEmergencyServices(true);
                 Weather.Release();
         */
-        if (Car.DoesExist(+this.playerCar))
-            this.playerCar.setProofs(false, false, false, false, false).setCanBurstTires(true).markAsNoLongerNeeded();
-        player.setGroupRecruitment(true).setControl(true);
+
+
+
         playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true);
-        this.playerGroup.remove();
-        if (!playerChar.isInCar(this.playerCar)) {
-            this.playerCar.delete();
-            this.playerCar = new Car(-1);
+        if (Car.DoesExist(+this.playerCar)) {
+            this.playerCar.setProofs(false, false, false, false, false).setCanBurstTires(true).markAsNoLongerNeeded();
+            if (!playerChar.isInCar(this.playerCar)) {
+                this.playerCar.delete();
+                this.playerCar = new Car(-1);
+            }
         }
+        player.setGroupRecruitment(true).setControl(true);
+        this.playerGroup.remove();
         ONMISSION = false;
         this.baseMissionState = 5;
     }

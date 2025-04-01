@@ -8,10 +8,18 @@ import { player, playerChar } from "./Utils";
 /** Base class for scripted scenes */
 export abstract class BaseScriptedScene extends BaseScript {
 
+    /** Reaction to the loading event */
     protected onLoadEvent(): void { }
+
+    /** Reaction to the start of a script scene */
     protected onStartEvent(): void { }
+
+    /** Reaction to the unloading event */
     protected onUnloadEvent(): void { }
 
+    /**
+     * @param autoContol Use true if you want automatic control over script scene events, or false for manual control
+     */
     constructor(autoContol: boolean = true) {
         super();
         if (autoContol) {

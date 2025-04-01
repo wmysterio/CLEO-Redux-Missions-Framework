@@ -145,11 +145,15 @@ export class Save {
     private static saveDefaultSectionName: string = "";
     private static saveIsSectionDisabled: boolean = false;
 
+    /** The method should not do anything! Used for internal work of the framework */
     public static SetDefaultIniSectionName(iniSectionName: string): void {
         if (Save.saveIsSectionDisabled)
             return;
         Save.saveDefaultSectionName = iniSectionName;
         Save.saveIsSectionDisabled = true;
     }
+
+    /** Returns the current section name in the *.ini file */
+    public static GetCurrentIniSectionName(): string { return Save.saveDefaultSectionName; }
 
 }
