@@ -127,17 +127,13 @@ export abstract class BaseMission extends BaseScript {
         }
     }
 
+    //----------------------------------------------------------------------------------------------------
+
     /**
      * Checks whether the mission was successful
      * @returns Returns true if the mission was successful
      */
     public HasSuccess(): boolean { return this.baseMissionHasMissionSuccess; }
-
-    /** Car with handle -1 by default */
-    protected playerCar: Car = new Car(-1);
-
-    /** The player group */
-    protected playerGroup: Group = new Group(-1);
 
 
 
@@ -167,6 +163,14 @@ export abstract class BaseMission extends BaseScript {
             }
         } while (this.baseMissionState !== 5);
     }
+
+    //----------------------------------------------------------------------------------------------------
+
+    /** Car with handle -1 by default */
+    protected playerCar: Car = new Car(-1);
+
+    /** The player group */
+    protected playerGroup: Group = new Group(-1);
 
     //----------------------------------------------------------------------------------------------------
 

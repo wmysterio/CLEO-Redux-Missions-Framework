@@ -2,27 +2,30 @@
 
 import { BaseMission } from "../BaseMission";
 import { ExampleScriptedScene } from "./ExampleScriptedScene";
+import { ExampleScriptedScene2 } from "./ExampleScriptedScene2";
 
 export class ExampleSubMission extends BaseMission {
 
-	private stage: int = 0; // By default not equal 0. Set in 'onStartEvent' method. Nice...
+	private stage: int = 0; // default is not 0. must be set in "onStartEvent" method
 
 	protected onStartEvent(): void {
 		//this.setCashReward( 5000 );
 		this.setTitle("@CRS@00", true);
-		this.stage = 0; // WTF?
+		this.stage = 0; // force set value
 	}
 
 	protected onUpdateEvent(): void {
 		switch (this.stage) {
 			case 0:
 				this.playScriptedScene(ExampleScriptedScene);
-				Text.PrintFormattedNow("Press 'Tab' key to complete or '2' key to fail.", 6000);
+				Camera.DoFade(0, 0);
+				this.playScriptedScene(ExampleScriptedScene2);
+				Text.PrintFormattedNow("~s~Press ~g~Tab~s~ to succeed or ~r~2~s~ to fail.", 6000);
 				this.stage = 1;
 				return;
 			case 1:
 				if (Pad.IsKeyPressed(50)) // 2
-					this.fail("Don't press the '2' key");
+					this.fail("~r~Don't press the '2' key!");
 				if (Pad.IsKeyPressed(9)) // tab
 					this.complete();
 				return;

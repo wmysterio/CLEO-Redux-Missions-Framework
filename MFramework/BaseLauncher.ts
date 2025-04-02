@@ -55,7 +55,7 @@ export abstract class BaseLauncher {
     }
 
     /**
-     * Sets the radius of the cylinder along the X and Y axes.
+     * Sets the radius of the cylinder along the X and Y axes
      * @param sphereRadius New radius
      */
     protected setSphereRadius(sphereRadius: float): void {
