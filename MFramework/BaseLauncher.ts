@@ -12,62 +12,28 @@ Save.SetDefaultIniSectionName(__MissionNameInternal__);
 /** Base class for starting missions (starter) */
 export abstract class BaseLauncher {
 
-    /** Reaction to the launcher start event */
-    protected onStartEvent(): void { }
-
-    /**
-     * Reaction to the blip creation check event
-     * @returns Returns true if the blip can be created
-     */
-    protected onBlipCreationEvent(): boolean { return true; }
-
-    /**
-     * Reaction to the mission launch check event
-     * @returns Returns true if the mission can be started
-     */
-    protected onMissionLaunchEvent(): boolean { return true; }
-
-    /**
-     * Reaction to mission end event
-     * @param hasSuccess Completed mission status
-     * @returns Returns true if the launcher can be started again
-     */
-    protected onMissionEndEvent(hasSuccess: boolean): boolean { return true; }
-
-    /**
-     * Sets a new mission launch position
-     * @param x Position on the x axis
-     * @param y Position on the y axis
-     * @param z Position on the z axis
-     */
-    protected setPosition(x: float, y: float, z: float): void {
-        this.baseLauncherPositionX = x;
-        this.baseLauncherPositionY = y;
-        this.baseLauncherPositionZ = z;
-    }
-
-    /**
-     * Sets a new radar icon for the mission
-     * @param radarSprite Radar icon ID
-     */
-    protected setRadarSprite(radarSprite: int): void {
-        this.baseLauncherRadarSprite = radarSprite;
-    }
-
-    /**
-     * Sets the radius of the cylinder along the X and Y axes
-     * @param sphereRadius New radius
-     */
-    protected setSphereRadius(sphereRadius: float): void {
-        this.baseLauncherSphereRadius = sphereRadius;
-    }
-
-
+    private baseLauncherStatus: int;
+    private baseLauncherSphereRadius: int;
+    private baseLauncherRadarSprite: int;
+    private baseLauncherPositionX: float;
+    private baseLauncherPositionY: float;
+    private baseLauncherPositionZ: float;
+    private baseLauncherBlip: Blip;
+    private baseLauncherHasSuccessInMission: boolean;
+    private baseLauncherRunMissionFunction: Function;
 
     /**
      * @param baseMissionType Specify the name of the type that will be used as the default mission
      */
     constructor(baseMissionType: new () => BaseMission) {
+        this.baseLauncherStatus = 0;
+        this.baseLauncherSphereRadius = 1.25;
+        this.baseLauncherRadarSprite = 15;
+        this.baseLauncherPositionX = 0.0;
+        this.baseLauncherPositionY = 0.0;
+        this.baseLauncherPositionZ = 0.0;
+        this.baseLauncherBlip = new Blip(-1);
+        this.baseLauncherHasSuccessInMission = false;
         this.baseLauncherRunMissionFunction = () => {
             return new baseMissionType().HasSuccess();
         };
@@ -94,20 +60,54 @@ export abstract class BaseLauncher {
         } while (this.baseLauncherStatus !== 4);
     }
 
-    //----------------------------------------------------------------------------------------------------
+    /** Reaction to the launcher start event */
+    protected onStartEvent(): void { }
 
-    private baseLauncherStatus: int = 0;
-    private baseLauncherSphereRadius: int = 1.25;
-    private baseLauncherRadarSprite: int = 15;
-    private baseLauncherPositionX: float = 0.0;
-    private baseLauncherPositionY: float = 0.0;
-    private baseLauncherPositionZ: float = 0.0;
-    private baseLauncherBlip: Blip = new Blip(-1);
+    /**
+     * Reaction to the blip creation check event
+     * @returns Returns true if the blip can be created
+     */
+    protected onBlipCreationEvent(): boolean {
+        return true;
+    }
 
-    private baseLauncherHasSuccessInMission: boolean = false;
-    private baseLauncherRunMissionFunction: () => boolean;
+    /**
+     * Reaction to the mission launch check event
+     * @returns Returns true if the mission can be started
+     */
+    protected onMissionLaunchEvent(): boolean {
+        return true;
+    }
 
-    //----------------------------------------------------------------------------------------------------
+    /**
+     * Reaction to mission end event
+     * @param hasSuccess Completed mission status
+     * @returns Returns true if the launcher can be started again
+     */
+    protected onMissionEndEvent(hasSuccess: boolean): boolean {
+        return !hasSuccess;
+    }
+
+
+
+    /** Sets a new mission launch position */
+    protected setPosition(x: float, y: float, z: float): void {
+        this.baseLauncherPositionX = x;
+        this.baseLauncherPositionY = y;
+        this.baseLauncherPositionZ = z;
+    }
+
+    /** Sets a new radar icon for the mission */
+    protected setRadarSprite(radarSpriteId: int): void {
+        this.baseLauncherRadarSprite = radarSpriteId;
+    }
+
+    /** Sets the radius of the cylinder along the X and Y axes */
+    protected setSphereRadius(sphereRadius: float): void {
+        this.baseLauncherSphereRadius = sphereRadius;
+    }
+
+
 
     private baseLauncherProcessStart(): void {
         this.onStartEvent();
@@ -119,7 +119,8 @@ export abstract class BaseLauncher {
             wait(1499);
             return;
         }
-        this.baseLauncherBlip = Blip.AddSpriteForCoord(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
+        // AddSpriteForCoord
+        this.baseLauncherBlip = Blip.AddSpriteForContactPoint(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
         this.baseLauncherBlip.changeDisplay(2);
         this.baseLauncherStatus = 2;
     }

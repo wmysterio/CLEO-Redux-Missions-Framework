@@ -13,28 +13,33 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 		this.refreshArea(2452.3093, -1649.698, 13.4468);
 		playerChar.warpFromCarToCoord(2462.7354, -1633.2842, 13.4049);
 		this.setCameraPosition(2463.5056, -1659.7773, 16.2698);
-		Camera.PointAtPoint(2452.2646, -1649.2939, 13.6653, 2);
+		this.setCameraPoint(2452.2646, -1649.2939, 13.6653);
 		this.loadModelsNow(101, 3065); // WMYST BALL
-		this.addCutsceneScriptObject(3065, 2448.4094, -1652.7698, 12.3482);
-		this.actorA = this.addCutsceneChar(101, 2450.2615, -1650.9594, 12.4039, 272.5792);
-		this.actorB = this.addCutsceneCharInFrontOfChar(0, this.actorA);
+		this.addScriptObject(3065, 2448.4094, -1652.7698, 12.3482);
+		this.actorA = this.addChar(101, 2450.2615, -1650.9594, 12.4039, 272.5792);
+		this.actorB = this.addCharInFrontOfChar(0, this.actorA);
 		Task.ChatWithChar(this.actorA, this.actorB, true, 1);
 		Task.ChatWithChar(this.actorB, this.actorA, false, 1);
-	}
 
-	protected onStartEvent(): void {
-		wait(1000);
-		Text.PrintNow("@CRS@01", 2000, 1);
-		wait(2000);
-		Camera.SetVectorMove(2463.5056, -1659.7773, 16.2698, 2441.9321, -1665.7759, 14.4861, 4001, false);
-		Camera.SetVectorTrack(2452.2646, -1649.2939, 13.6653, 2452.2646, -1649.2939, 13.6653, 4001, false);
-		Text.PrintNow("@CRS@02", 4000, 1)
-		wait(4000);
-		Camera.ResetNewScriptables();
-		this.setCameraPosition(2441.9321, -1665.7759, 14.4861);
-		Camera.PointAtPoint(2452.2646, -1649.2939, 13.6653, 2);
-		Text.PrintNow("@CRS@03", 2000, 1);
-		wait(2000);
+		this.clips
+			.wait(1000)
+			.action(() => {
+				Text.PrintNow("@CRS@01", 2000, 1);
+			})
+			.wait(2000)
+			.action(() => {
+				Camera.SetVectorMove(2463.5056, -1659.7773, 16.2698, 2441.9321, -1665.7759, 14.4861, 4000, false);
+				Camera.SetVectorTrack(2452.2646, -1649.2939, 13.6653, 2452.2646, -1649.2939, 13.6653, 4000, false);
+				Text.PrintNow("@CRS@02", 4000, 1);
+			})
+			.waitCondition(this.isCameraVectorsMoveOrTrackRunning)
+			.waitWithAction(2000, () => {
+				Camera.ResetNewScriptables();
+				this.setCameraPosition(2441.9321, -1665.7759, 14.4861);
+				this.setCameraPoint(2452.2646, -1649.2939, 13.6653);
+				Text.PrintNow("@CRS@03", 2000, 1);
+			})
+			.wait(2000);
 	}
 
 	protected onUnloadEvent(): void {

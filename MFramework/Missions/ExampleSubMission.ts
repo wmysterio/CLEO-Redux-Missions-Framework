@@ -6,12 +6,12 @@ import { ExampleScriptedScene2 } from "./ExampleScriptedScene2";
 
 export class ExampleSubMission extends BaseMission {
 
-	private stage: int = 0; // default is not 0. must be set in "onStartEvent" method
+	private stage: int;
 
 	protected onStartEvent(): void {
 		//this.setCashReward( 5000 );
 		this.setTitle("@CRS@00", true);
-		this.stage = 0; // force set value
+		this.stage = 0;
 	}
 
 	protected onUpdateEvent(): void {

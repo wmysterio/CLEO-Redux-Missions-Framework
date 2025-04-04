@@ -2,11 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path=".././.config/sa.d.ts" />
 
-/*
-In "FindFile.First" the variable 'fileName' has a string value of 'undefined',
-empty, or contains garbage (e.g. 'p{]\u{16}', ' ؎z\u{15}'...). WTF?
-Workaround: Add an empty file named "!.ts" to the "Missions" directory.
-*/
+/* Note: Add an empty file named "!.ts" to the "Missions" directory */
 
 wait(500);
 let missionsDir = __dirname + "\\Missions\\";
