@@ -4,7 +4,6 @@
 
 import { BaseScript } from "./BaseScript";
 import { ScriptedClips } from "./ScriptedClips";
-import { player, playerChar } from "./Utils";
 
 /** Base class for scripted scenes */
 export abstract class BaseScriptedScene extends BaseScript {
@@ -13,7 +12,6 @@ export abstract class BaseScriptedScene extends BaseScript {
     private baseScriptedSceneCharsArray: Char[];
     private baseScriptedSceneCarsArray: Car[];
     private baseScriptedSceneScriptObjectsArray: ScriptObject[];
-    private baseScriptedSceneScriptedClips: ScriptedClips;
 
     /** @param debugMode Use true for manual control (e.g. for debugging) */
     constructor(debugMode: boolean = false) {
@@ -21,11 +19,13 @@ export abstract class BaseScriptedScene extends BaseScript {
         this.baseScriptedSceneCharsArray = new Array<Char>();
         this.baseScriptedSceneCarsArray = new Array<Car>();
         this.baseScriptedSceneScriptObjectsArray = new Array<ScriptObject>();
-        this.baseScriptedSceneScriptedClips = new ScriptedClips();
         this.baseScriptedSceneDecisionMakerChar = DecisionMakerChar.Load(0);
+        let clips = new ScriptedClips();
         if (debugMode) {
             this.onLoadEvent();
-            ScriptedClips.Play(this.clips);
+            this.onSetClipsEvent(clips);
+            if (clips !== undefined)
+                ScriptedClips.Play(clips);
             this.baseScriptedSceneDeleteEntities();
             this.onUnloadEvent();
             return;
@@ -33,15 +33,15 @@ export abstract class BaseScriptedScene extends BaseScript {
         World.SetPedDensityMultiplier(0.0);
         World.SetCarDensityMultiplier(0.0);
         Game.SetWantedMultiplier(0.0);
-        Game.SetPoliceIgnorePlayer(player, true);
-        Game.SetEveryoneIgnorePlayer(player, true);
+        Game.SetPoliceIgnorePlayer(this.player, true);
+        Game.SetEveryoneIgnorePlayer(this.player, true);
         Hud.DisplayZoneNames(false);
         Hud.DisplayCarNames(false);
-        player.setControl(false);
+        this.player.setControl(false);
         Camera.DoFade(800, 0);
         while (Camera.GetFadingStatus())
             wait(199);
-        playerChar.shutUp(true).hideWeaponForScriptedCutscene(true);
+        this.playerChar.shutUp(true).hideWeaponForScriptedCutscene(true);
         this.onLoadEvent();
         Hud.DisplayRadar(false);
         Hud.Display(false);
@@ -50,7 +50,9 @@ export abstract class BaseScriptedScene extends BaseScript {
         this.clearText();
         Camera.DoFade(800, 1);
         Game.AllowPauseInWidescreen(true);
-        ScriptedClips.Play(this.clips);
+        this.onSetClipsEvent(clips);
+        if (clips !== undefined)
+            ScriptedClips.Play(clips);
         Game.AllowPauseInWidescreen(false);
         this.clearText();
         Camera.DoFade(800, 0);
@@ -62,10 +64,10 @@ export abstract class BaseScriptedScene extends BaseScript {
         World.SetPedDensityMultiplier(1.0);
         World.SetCarDensityMultiplier(1.0);
         Game.SetWantedMultiplier(1.0);
-        Game.SetPoliceIgnorePlayer(player, false);
-        Game.SetEveryoneIgnorePlayer(player, false);
-        player.setControl(true);
-        playerChar.shutUp(false).hideWeaponForScriptedCutscene(false);
+        Game.SetPoliceIgnorePlayer(this.player, false);
+        Game.SetEveryoneIgnorePlayer(this.player, false);
+        this.player.setControl(true);
+        this.playerChar.shutUp(false).hideWeaponForScriptedCutscene(false);
         this.resetHud();
         this.resetCamera();
         this.clearText();
@@ -77,6 +79,12 @@ export abstract class BaseScriptedScene extends BaseScript {
 
     /** Reaction to the unloading event */
     protected onUnloadEvent(): void { }
+
+    /**
+     * Reaction to the creation of scripted clips
+     * @param clips Playlist for adding clips
+     */
+    protected onSetClipsEvent(clips: ScriptedClips): void { }
 
 
 
@@ -107,9 +115,6 @@ export abstract class BaseScriptedScene extends BaseScript {
         let position = target.getOffsetInWorldCoords(0.0, relativeDistance, 0.0);
         return this.addChar(charModelId, position.x, position.y, position.z, target.getHeading() + 180.0);
     }
-
-    /** Returns scripted clips playlist */
-    protected get clips(): ScriptedClips { return this.baseScriptedSceneScriptedClips; }
 
 
 

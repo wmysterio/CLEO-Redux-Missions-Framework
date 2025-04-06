@@ -1,7 +1,7 @@
 /// <reference path="../../.config/sa.d.ts" />
 
 import { BaseScriptedScene } from "../BaseScriptedScene";
-import { playerChar } from "../Utils";
+import { ScriptedClips } from "../ScriptedClips";
 
 export class ExampleScriptedScene extends BaseScriptedScene {
 
@@ -11,7 +11,7 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 	protected onLoadEvent(): void {
 		World.ClearArea(2452.3093, -1649.698, 13.4468, 100.0, true);
 		this.refreshArea(2452.3093, -1649.698, 13.4468);
-		playerChar.warpFromCarToCoord(2462.7354, -1633.2842, 13.4049);
+		this.playerChar.warpFromCarToCoord(2462.7354, -1633.2842, 13.4049);
 		this.setCameraPosition(2463.5056, -1659.7773, 16.2698);
 		this.setCameraPoint(2452.2646, -1649.2939, 13.6653);
 		this.loadModelsNow(101, 3065); // WMYST BALL
@@ -20,10 +20,12 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 		this.actorB = this.addCharInFrontOfChar(0, this.actorA);
 		Task.ChatWithChar(this.actorA, this.actorB, true, 1);
 		Task.ChatWithChar(this.actorB, this.actorA, false, 1);
+	}
 
-		this.clips
+	protected onSetClipsEvent(clips: ScriptedClips): void {
+		clips
 			.wait(1000)
-			.action(() => {
+			.action(function () {
 				Text.PrintNow("@CRS@01", 2000, 1);
 			})
 			.wait(2000)
@@ -32,7 +34,7 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 				Camera.SetVectorTrack(2452.2646, -1649.2939, 13.6653, 2452.2646, -1649.2939, 13.6653, 4000, false);
 				Text.PrintNow("@CRS@02", 4000, 1);
 			})
-			.waitCondition(this.isCameraVectorsMoveOrTrackRunning)
+			.waitCondition(this.isCameraVectorMoveOrVectorTrackRunning)
 			.waitWithAction(2000, () => {
 				Camera.ResetNewScriptables();
 				this.setCameraPosition(2441.9321, -1665.7759, 14.4861);

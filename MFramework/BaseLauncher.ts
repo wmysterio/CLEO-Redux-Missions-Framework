@@ -3,14 +3,14 @@
 /// <reference path="../.config/sa.d.ts" />
 
 import { BaseMission } from "./BaseMission";
+import { BaseScript } from "./BaseScript";
 import { Save } from "./Save";
-import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
 //@ts-ignore
 Save.SetDefaultIniSectionName(__MissionNameInternal__);
 
 /** Base class for starting missions (starter) */
-export abstract class BaseLauncher {
+export abstract class BaseLauncher extends BaseScript {
 
     private baseLauncherStatus: int;
     private baseLauncherSphereRadius: int;
@@ -21,17 +21,16 @@ export abstract class BaseLauncher {
     private baseLauncherBlip: Blip;
     private baseLauncherHasSuccessInMission: boolean;
     private baseLauncherRunMissionFunction: Function;
+    private baseLauncherLeftHour: int;
+    private baseLauncherRightHour: int;
+    private baseLauncherUseTimeRange: boolean;
 
     /**
      * @param baseMissionType Specify the name of the type that will be used as the default mission
      */
     constructor(baseMissionType: new () => BaseMission) {
-        this.baseLauncherStatus = 0;
-        this.baseLauncherSphereRadius = 1.25;
-        this.baseLauncherRadarSprite = 15;
-        this.baseLauncherPositionX = 0.0;
-        this.baseLauncherPositionY = 0.0;
-        this.baseLauncherPositionZ = 0.0;
+        super();
+        this.baseLauncherReset();
         this.baseLauncherBlip = new Blip(-1);
         this.baseLauncherHasSuccessInMission = false;
         this.baseLauncherRunMissionFunction = () => {
@@ -39,7 +38,7 @@ export abstract class BaseLauncher {
         };
         do {
             wait(0);
-            if (isPlayerNotPlaying()) {
+            if (this.isPlayerNotPlaying()) {
                 wait(499);
                 continue;
             }
@@ -107,6 +106,13 @@ export abstract class BaseLauncher {
         this.baseLauncherSphereRadius = sphereRadius;
     }
 
+    /** Sets the clock hour range when the mission can start */
+    protected setClockHourRange(left: int, right: int): void {
+        this.baseLauncherUseTimeRange = true;
+        this.baseLauncherLeftHour = left;
+        this.baseLauncherRightHour = right;
+    }
+
 
 
     private baseLauncherProcessStart(): void {
@@ -126,16 +132,21 @@ export abstract class BaseLauncher {
     }
 
     private baseLauncherProcessWaitMission(): void {
-        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, 40.0, 40.0, 40.0, false)) {
+        if (!this.playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, 40.0, 40.0, 40.0, false)) {
             wait(249);
             return;
         }
-        if (Camera.GetFadingStatus() || ONMISSION || !player.isControlOn()) {
+        if (Camera.GetFadingStatus() || ONMISSION || !this.player.isControlOn()) {
             wait(249);
             return;
         }
-        if (!playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherSphereRadius, this.baseLauncherSphereRadius, 2.0, true) || player.isUsingJetpack())
+        if (!this.playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherSphereRadius, this.baseLauncherSphereRadius, 2.0, true) || this.player.isUsingJetpack())
             return;
+        if (this.baseLauncherUseTimeRange && !this.isClockHourInRange(this.baseLauncherLeftHour, this.baseLauncherRightHour)) {
+            if (!Text.IsMessageBeingDisplayed())
+                Text.PrintFormattedNow("You can start this mission between %.2d:00 and %.2d:00.", 5000, this.baseLauncherLeftHour, this.baseLauncherRightHour);
+            return;
+        }
         if (!this.onMissionLaunchEvent())
             return;
         if (this.baseLauncherBlip !== undefined && Blip.DoesExist(+this.baseLauncherBlip))
@@ -149,12 +160,25 @@ export abstract class BaseLauncher {
         this.baseLauncherStatus = this.onMissionEndEvent(this.baseLauncherHasSuccessInMission) ? 0 : 4;
         this.baseLauncherSwitchFxtFile(false);
         this.baseLauncherHasSuccessInMission = false;
+        this.baseLauncherReset();
     }
 
     private baseLauncherSwitchFxtFile(toLoading: boolean): void {
         let fxtFilePath = __dirname + "\\Missions\\" + Save.GetCurrentIniSectionName() + ".fxt";
         if (Fs.DoesFileExist(fxtFilePath))
             (toLoading ? Text.LoadFxt : Text.UnloadFxt)(fxtFilePath);
+    }
+
+    private baseLauncherReset(): void {
+        this.baseLauncherStatus = 0;
+        this.baseLauncherSphereRadius = 1.25;
+        this.baseLauncherRadarSprite = 15;
+        this.baseLauncherPositionX = 0.0;
+        this.baseLauncherPositionY = 0.0;
+        this.baseLauncherPositionZ = 0.0;
+        this.baseLauncherLeftHour = 0;
+        this.baseLauncherRightHour = 0;
+        this.baseLauncherUseTimeRange = false;
     }
 
 }

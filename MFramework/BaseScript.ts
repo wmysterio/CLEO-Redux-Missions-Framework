@@ -2,10 +2,33 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-import { playerChar } from "./Utils";
-
 /** A base script class with commonly used commands */
 export abstract class BaseScript {
+
+    private baseScriptPlayer: Player;
+    private baseScriptPlayerChar: Char;
+
+    /** The player */
+    protected get player(): Player {
+        return this.baseScriptPlayer;
+    }
+
+    /** The player character */
+    protected get playerChar(): Char {
+        return this.baseScriptPlayerChar;
+    }
+
+    constructor() {
+        this.baseScriptPlayer = new Player(0);
+        this.baseScriptPlayerChar = this.baseScriptPlayer.getChar();
+    }
+
+
+
+    /** Returns true if the player is not found, not playing, dead, or arrested */
+    protected isPlayerNotPlaying(): boolean {
+        return !this.baseScriptPlayer.isPlaying() || !Char.DoesExist(+this.baseScriptPlayerChar) || Char.IsDead(+this.baseScriptPlayerChar) || this.baseScriptPlayerChar.hasBeenArrested();
+    }
 
     /** Clear the screen of all text */
     protected clearText(): void {
@@ -34,7 +57,7 @@ export abstract class BaseScript {
     }
 
     /** Returns true if the camera is moving in position or if the camera is moving in angle */
-    protected isCameraVectorsMoveOrTrackRunning(): boolean {
+    protected isCameraVectorMoveOrVectorTrackRunning(): boolean {
         return Camera.IsVectorMoveRunning() || Camera.IsVectorTrackRunning();
     }
 
@@ -76,6 +99,20 @@ export abstract class BaseScript {
     /** Releases the specified models, freeing game memory */
     protected unloadModels(...models: int[]): void {
         models.forEach(modelId => { Streaming.MarkModelAsNoLongerNeeded(modelId); });
+    }
+
+    /** Places a character facing another character */
+    protected placeCharFacingAnotherChar(char: Char, target: Char, relativeDistance: float = 1.0): void {
+        let position = target.getOffsetInWorldCoords(0.0, relativeDistance, 0.0);
+        char.setCoordinates(position.x, position.y, position.z).setHeading(target.getHeading() + 180.0);
+    }
+
+    /** Returns true if the current hour of the game clock is within the specified range */
+    protected isClockHourInRange(left: int, right: int): boolean {
+        let hour = Clock.GetTimeOfDay().hours;
+        if (right > left)
+            return hour >= left && right > hour;
+        return hour >= left || right > hour;
     }
 
 }

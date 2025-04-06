@@ -4,7 +4,6 @@
 
 import { BaseScript } from "./BaseScript";
 import { BaseScriptedScene } from "./BaseScriptedScene";
-import { player, playerChar, isPlayerNotPlaying } from "./Utils";
 
 /** Base class for missions and sub-missions */
 export abstract class BaseMission extends BaseScript {
@@ -60,12 +59,12 @@ export abstract class BaseMission extends BaseScript {
         this.baseMissionMissionPassedGxtKey = "";
         this.baseMissionHasMissionSuccess = false;
         this.baseMissionIsScriptedSceneActive = false;
-        this.playerGroup = player.getGroup();
+        this.playerGroup = this.player.getGroup();
         this.playerCar = new Car(-1);
         ONMISSION = true;
         do {
             wait(0);
-            if (isPlayerNotPlaying())
+            if (this.isPlayerNotPlaying())
                 this.baseMissionState = 3;
             switch (this.baseMissionState) {
                 case 0:
@@ -250,11 +249,11 @@ export abstract class BaseMission extends BaseScript {
         //Stat.PlayerMadeProgress( 1 );
         if (this.baseMissionRespectReward > 0) {
             flag += 1;
-            Stat.AwardPlayerMissionRespect(this.baseMissionRespectReward); 
+            Stat.AwardPlayerMissionRespect(this.baseMissionRespectReward);
         }
         if (this.baseMissionCashReward > 0) {
             flag += 2;
-            player.addScore(this.baseMissionCashReward);
+            this.player.addScore(this.baseMissionCashReward);
         }
         if (!this.baseMissionEnableMissionSuccessBigMessage)
             return;
@@ -337,15 +336,15 @@ export abstract class BaseMission extends BaseScript {
 
 
 
-        playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true);
+        this.playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true);
         if (Car.DoesExist(+this.playerCar)) {
             this.playerCar.setProofs(false, false, false, false, false).setCanBurstTires(true).markAsNoLongerNeeded();
-            if (!playerChar.isInCar(this.playerCar)) {
+            if (!this.playerChar.isInCar(this.playerCar)) {
                 this.playerCar.delete();
                 this.playerCar = new Car(-1);
             }
         }
-        player.setGroupRecruitment(true).setControl(true);
+        this.player.setGroupRecruitment(true).setControl(true);
         this.playerGroup.remove();
         ONMISSION = false;
         this.baseMissionState = 5;
@@ -360,7 +359,7 @@ export abstract class BaseMission extends BaseScript {
         Game.SwitchRandomTrains(false);
         Game.SwitchAmbientPlanes(false);
         Game.SwitchEmergencyServices(false);
-        player.setGroupRecruitment(false);
+        this.player.setGroupRecruitment(false);
         this.playerGroup.remove();
     }
 
