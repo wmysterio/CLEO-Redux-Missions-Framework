@@ -9,7 +9,7 @@ import { Save } from "./Save";
 //@ts-ignore
 Save.SetDefaultIniSectionName(__LauncherNameInternal__);
 
-/** Base class for starting missions (starter) */
+/** Base class for the mission launcher (starter) */
 export abstract class BaseLauncher extends BaseScript {
 
     private baseLauncherStatus: int;
@@ -24,6 +24,7 @@ export abstract class BaseLauncher extends BaseScript {
     private baseLauncherLeftHour: int;
     private baseLauncherRightHour: int;
     private baseLauncherUseTimeRange: boolean;
+    private baseLauncherHasLongRange: boolean;
 
     /**
      * @param baseMissionType Specify the name of the type that will be used as the default mission
@@ -113,6 +114,11 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherRightHour = right;
     }
 
+    /** Makes the blip range short */
+    protected disableBlipLongRange(): void {
+        this.baseLauncherHasLongRange = false;
+    }
+
 
 
     private baseLauncherProcessStart(): void {
@@ -125,8 +131,11 @@ export abstract class BaseLauncher extends BaseScript {
             wait(1499);
             return;
         }
-        // AddSpriteForCoord
-        this.baseLauncherBlip = Blip.AddSpriteForContactPoint(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
+        if (this.baseLauncherHasLongRange) {
+            this.baseLauncherBlip = Blip.AddSpriteForContactPoint(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
+        } else {
+            this.baseLauncherBlip = Blip.AddShortRangeSpriteForContactPoint(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherRadarSprite);
+        }
         this.baseLauncherBlip.changeDisplay(2);
         this.baseLauncherStatus = 2;
     }
@@ -179,6 +188,7 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherLeftHour = 0;
         this.baseLauncherRightHour = 0;
         this.baseLauncherUseTimeRange = false;
+        this.baseLauncherHasLongRange = true;
     }
 
 }

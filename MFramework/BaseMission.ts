@@ -170,6 +170,7 @@ export abstract class BaseMission extends BaseScript {
     /** Aborts the mission with a success notification */
     protected complete(missionNameGxt: string = ""): void {
         if (this.baseMissionState === 1) {
+            Restart.CancelOverride();
             if (8 > missionNameGxt.length)
                 this.baseMissionMissionPassedGxtKey = missionNameGxt;
             this.baseMissionState = 2;
@@ -180,6 +181,7 @@ export abstract class BaseMission extends BaseScript {
     /** Aborts the mission with a failure notification */
     protected fail(reasonMessage: string = "", failedMessageTime: int = 5000, gxtKey: boolean = false): void {
         if (this.baseMissionState === 1) {
+            Restart.CancelOverride();
             if (gxtKey && reasonMessage.length > 7)
                 gxtKey = false;
             this.baseMissionIsMissionFailureReasonMessageAGxt = gxtKey;
@@ -187,6 +189,13 @@ export abstract class BaseMission extends BaseScript {
             this.baseMissionEnableMissionFailureTime = failedMessageTime;
             this.baseMissionState = 3;
             throw this.baseMissionControllableErrorToForceMissionTermination;
+        }
+    }
+
+    /** Sets the restart position in case of player death or arrest */
+    protected setRestartPosition(x: float, y: float, z: float, heading: float = 0.0): void {
+        if (this.baseMissionState === 0) {
+            Restart.OverrideNext(x, y, z, heading);
         }
     }
 

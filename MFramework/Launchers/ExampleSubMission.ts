@@ -11,6 +11,7 @@ export class ExampleSubMission extends BaseMission {
 	protected onStartEvent(): void {
 		//this.setCashReward( 5000 );
 		this.setTitle("@CRS@00", true);
+		this.setRestartPosition(2443.4963, -1651.0734, 12.402, 186.0984);
 		this.stage = 0;
 	}
 
