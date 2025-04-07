@@ -7,7 +7,7 @@ import { BaseScript } from "./BaseScript";
 import { Save } from "./Save";
 
 //@ts-ignore
-Save.SetDefaultIniSectionName(__MissionNameInternal__);
+Save.SetDefaultIniSectionName(__LauncherNameInternal__);
 
 /** Base class for starting missions (starter) */
 export abstract class BaseLauncher extends BaseScript {
@@ -164,7 +164,7 @@ export abstract class BaseLauncher extends BaseScript {
     }
 
     private baseLauncherSwitchFxtFile(toLoading: boolean): void {
-        let fxtFilePath = __dirname + "\\Missions\\" + Save.GetCurrentIniSectionName() + ".fxt";
+        let fxtFilePath = __dirname + "\\Launchers\\" + Save.GetCurrentIniSectionName() + ".fxt";
         if (Fs.DoesFileExist(fxtFilePath))
             (toLoading ? Text.LoadFxt : Text.UnloadFxt)(fxtFilePath);
     }
