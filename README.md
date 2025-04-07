@@ -1,7 +1,8 @@
 Deep alpha version.
 
 ### Latest
-- [ ] Custom cleanup list for missions and sub-missions
+- [ ] Custom cleanup list for pickups on missions and sub-missions
+- [x] Custom cleanup list for missions and sub-missions
 - [x] Skipping scripted scenes
 
 ### Promlems
