@@ -29,15 +29,23 @@ export abstract class BaseMission extends BaseScript {
     private baseMissionMissionPassedGxtKey: string;
     private baseMissionHasMissionSuccess: boolean;
     private baseMissionIsScriptedSceneActive: boolean;
-
-    /** Car with handle -1 by default */
-    protected playerCar: Car;
+    private baseMissionDecisionsMakersChar: DecisionMakerChar[];
+    private baseMissionCharsArray: Char[];
+    private baseMissionCarsArray: Car[];
+    private baseMissionScriptObjectsArray: ScriptObject[];
+    private baseMissionBlipsArray: Blip[];
 
     /** The player group */
     protected playerGroup: Group;
 
     constructor() {
         super();
+        this.baseMissionDecisionsMakersChar = new Array<DecisionMakerChar>();
+        this.baseMissionCharsArray = new Array<Char>();
+        this.baseMissionCarsArray = new Array<Car>();
+        this.baseMissionScriptObjectsArray = new Array<ScriptObject>();
+        this.baseMissionBlipsArray = new Array<Blip>();
+        this.baseMissionSetupDecisionMakers();
         this.baseMissionState = 0;
         this.baseMissionControllableErrorToForceMissionTermination = new Error(); // thanks Seemann!
         this.baseMissionSubMissionsFunction = () => { };
@@ -60,7 +68,6 @@ export abstract class BaseMission extends BaseScript {
         this.baseMissionHasMissionSuccess = false;
         this.baseMissionIsScriptedSceneActive = false;
         this.playerGroup = this.player.getGroup();
-        this.playerCar = new Car(-1);
         ONMISSION = true;
         do {
             wait(0);
@@ -102,6 +109,45 @@ export abstract class BaseMission extends BaseScript {
     protected onCleanupEvent(): void { }
 
 
+
+    /** Creates a new blip above the char and adds it to the auto-delete list. The car must exist */
+    protected addBlipForChar(char: Char, asFriendly: boolean = false, blipDisplay: int = 3): Blip {
+        return this.baseMissionPrepareBlip(Blip.AddForChar(char), asFriendly, blipDisplay);
+    }
+
+    /** Creates a new blip above the car and adds it to the auto-delete list. The car must exist */
+    protected addBlipForCar(car: Car, asFriendly: boolean = false, blipDisplay: int = 3): Blip {
+        return this.baseMissionPrepareBlip(Blip.AddForCar(car), asFriendly, blipDisplay);
+    }
+
+    /** Creates a new blip above the script object and adds it to the auto-delete list. The car must exist */
+    protected addBlipForScriptObject(scriptObject: ScriptObject, asFriendly: boolean = false, blipDisplay: int = 3): Blip {
+        return this.baseMissionPrepareBlip(Blip.AddForObject(scriptObject), asFriendly, blipDisplay);
+    }
+
+    /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
+    protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = 0, color2: int = 0): Car {
+        let car = Car.Create(carModelId, x, y, z).setHeading(heading).changeColor(color1, color2).lockDoors(1);
+        this.baseMissionCarsArray.push(car);
+        return car;
+    }
+
+    /** Creates a new script object and adds it to the auto-delete list. You must load the model before creating */
+    protected addScriptObject(scriptObjectModelId: int, x: float, y: float, z: float): ScriptObject {
+        let object = ScriptObject.Create(scriptObjectModelId, x, y, z);
+        this.baseMissionScriptObjectsArray.push(object);
+        return object;
+    }
+
+    /** Creates a new character with friendly AI and adds it to the auto-delete list. You must load the model before creating */
+    protected addFriend(modelId, x: float, y: float, z: float, heading: float): Char {
+        return this.baseMissionPrepareChar(Char.Create(24, modelId, x, y, z).setHeading(heading), 24, 25);
+    }
+
+    /** Creates a new character with enemy AI and adds it to the auto-delete list. You must load the model before creating */
+    protected addEnemy(modelId, x: float, y: float, z: float, heading: float): Char {
+        return this.baseMissionPrepareChar(Char.Create(25, modelId, x, y, z).setHeading(heading), 25, 24);
+    }
 
     /** Begins a scripted scene */
     protected playScriptedScene<TScriptedScene extends BaseScriptedScene>(baseScriptedSceneType: new (bool) => TScriptedScene, debugMode: boolean = false): void {
@@ -193,7 +239,7 @@ export abstract class BaseMission extends BaseScript {
     }
 
     /** Sets the restart position in case of player death or arrest */
-    protected setRestartPosition(x: float, y: float, z: float, heading: float = 0.0): void {
+    protected setNextRestartPosition(x: float, y: float, z: float, heading: float = 0.0): void {
         if (this.baseMissionState === 0) {
             Restart.OverrideNext(x, y, z, heading);
         }
@@ -343,16 +389,25 @@ export abstract class BaseMission extends BaseScript {
         Weather.Release();
         */
 
-
-
-        this.playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true);
-        if (Car.DoesExist(+this.playerCar)) {
-            this.playerCar.setProofs(false, false, false, false, false).setCanBurstTires(true).markAsNoLongerNeeded();
-            if (!this.playerChar.isInCar(this.playerCar)) {
-                this.playerCar.delete();
-                this.playerCar = new Car(-1);
-            }
-        }
+        this.baseMissionBlipsArray.forEach(blip => {
+            blip.remove();
+        });
+        this.baseMissionScriptObjectsArray.forEach(obj => {
+            obj.markAsNoLongerNeeded().delete();
+        });
+        this.baseMissionCharsArray.forEach(char => {
+            char.markAsNoLongerNeeded()
+            if (char.isOnScreen())
+                return;
+            char.delete();
+        });
+        this.baseMissionCarsArray.forEach(car => {
+            this.baseMissionDeleteCarWithoutPlayer(car);
+        });
+        this.baseMissionDecisionsMakersChar.forEach(dm => {
+            dm.remove();
+        });
+        this.restorePlayerAfterScriptedScene();
         this.player.setGroupRecruitment(true).setControl(true);
         this.playerGroup.remove();
         ONMISSION = false;
@@ -370,6 +425,39 @@ export abstract class BaseMission extends BaseScript {
         Game.SwitchEmergencyServices(false);
         this.player.setGroupRecruitment(false);
         this.playerGroup.remove();
+    }
+
+    private baseMissionPrepareChar(char: Char, respectType: int, hateType: int): Char {
+        this.baseMissionCharsArray.push(char);
+        char.setDrownsInWater(false).setRelationship(0, respectType).setRelationship(4, hateType)
+            .setMoney(0).setDropsWeaponsWhenDead(false);
+        if (respectType === 24) {
+            return char.setRelationship(0, 0).setNeverTargeted(true).setNeverLeavesGroup(true)
+                .setDecisionMaker(+this.baseMissionDecisionsMakersChar[1]);
+        }
+        return char.setRelationship(4, 0).setDecisionMaker(+this.baseMissionDecisionsMakersChar[0]);
+    }
+
+    private baseMissionPrepareBlip(blip: Blip, asFriendly: boolean = false, blipDisplay: int): Blip {
+        this.baseMissionBlipsArray.push(blip);
+        return blip.setAsFriendly(asFriendly).changeDisplay(blipDisplay);
+    }
+
+    private baseMissionDeleteCarWithoutPlayer(car: Car): void {
+        if (!Car.DoesExist(+car))
+            return;
+        car.markAsNoLongerNeeded();
+        if (this.playerChar.isInCar(car) || car.isOnScreen()) {
+            car.setProofs(false, false, false, false, false).setCanBurstTires(true)
+            return;
+        }
+        car.delete();
+    }
+
+    private baseMissionSetupDecisionMakers(): void {
+        this.baseMissionDecisionsMakersChar.push(this.createEmptyDecisionMakerChar()); // enemy
+        this.baseMissionDecisionsMakersChar.push(this.createEmptyDecisionMakerChar()); // friend
+        // ...
     }
 
 }

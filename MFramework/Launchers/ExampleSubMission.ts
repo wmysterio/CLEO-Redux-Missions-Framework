@@ -11,9 +11,12 @@ export class ExampleSubMission extends BaseMission {
 	protected onStartEvent(): void {
 		//this.setCashReward( 5000 );
 		this.setTitle("@CRS@00", true);
-		this.setRestartPosition(2443.4963, -1651.0734, 12.402, 186.0984);
+		this.setNextRestartPosition(2443.4963, -1651.0734, 12.402, 186.0984);
 		this.stage = 0;
 	}
+
+	private target: Char;
+	private friend: Char;
 
 	protected onUpdateEvent(): void {
 		switch (this.stage) {
@@ -21,13 +24,25 @@ export class ExampleSubMission extends BaseMission {
 				this.playScriptedScene(ExampleScriptedScene);
 				Camera.DoFade(0, 0);
 				this.playScriptedScene(ExampleScriptedScene2);
-				Text.PrintFormattedNow("~s~Press ~g~Tab~s~ to succeed or ~r~2~s~ to fail.", 6000);
+				Text.PrintFormattedNow("~s~Kill the ~r~target~s~!", 6000);
+
+				this.loadModelsNow(400); // LANDSTAL
+				this.addCar(400, 2443.9675, -1668.3519, 13.0863, 65.4277);
+				this.unloadModels(400); // LANDSTAL
+
+				World.ClearArea(2435.2422, -1674.4182, 13.6572, 1.0, true);
+				this.friend = this.addFriend(0, 2435.635, -1650.3596, 12.5469, 190.1485);
+				this.target = this.addEnemy(0, 2435.2422, -1674.4182, 12.6572, 359.8532);
+				this.addBlipForChar(this.target, false);
+				this.addBlipForChar(this.friend, true).changeDisplay(1);
+				this.playerGroup.setMember(this.friend);
+
 				this.stage = 1;
 				return;
 			case 1:
-				if (Pad.IsKeyPressed(50)) // 2
-					this.fail("~r~Don't press the '2' key!");
-				if (Pad.IsKeyPressed(9)) // tab
+				if (Char.IsDead(+this.friend))
+					this.fail("~r~Friend is dead!");
+				if (Char.IsDead(+this.target))
 					this.complete();
 				return;
 		}

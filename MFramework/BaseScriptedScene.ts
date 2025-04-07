@@ -19,13 +19,16 @@ export abstract class BaseScriptedScene extends BaseScript {
         this.baseScriptedSceneCharsArray = new Array<Char>();
         this.baseScriptedSceneCarsArray = new Array<Car>();
         this.baseScriptedSceneScriptObjectsArray = new Array<ScriptObject>();
-        this.baseScriptedSceneDecisionMakerChar = DecisionMakerChar.Load(0);
+        this.baseScriptedSceneDecisionMakerChar = this.createEmptyDecisionMakerChar();
         let clips = new ScriptedClips();
         if (debugMode) {
             this.onLoadEvent();
             this.onSetClipsEvent(clips);
-            if (clips !== undefined)
+            if (clips !== undefined) {
+                Game.AllowPauseInWidescreen(true);
                 ScriptedClips.Play(clips);
+                Game.AllowPauseInWidescreen(false);
+            }
             this.baseScriptedSceneDeleteEntities();
             this.onUnloadEvent();
             return;
@@ -41,7 +44,8 @@ export abstract class BaseScriptedScene extends BaseScript {
         Camera.DoFade(800, 0);
         while (Camera.GetFadingStatus())
             wait(199);
-        this.playerChar.shutUp(true).hideWeaponForScriptedCutscene(true);
+        this.playerChar.shutUp(true).hideWeaponForScriptedCutscene(true).stopFacialTalk()
+            .clearTasksImmediately().clearLookAt();
         this.onLoadEvent();
         Hud.DisplayRadar(false);
         Hud.Display(false);
@@ -49,11 +53,12 @@ export abstract class BaseScriptedScene extends BaseScript {
         wait(800);
         this.clearText();
         Camera.DoFade(800, 1);
-        Game.AllowPauseInWidescreen(true);
         this.onSetClipsEvent(clips);
-        if (clips !== undefined)
+        if (clips !== undefined) {
+            Game.AllowPauseInWidescreen(true);
             ScriptedClips.Play(clips);
-        Game.AllowPauseInWidescreen(false);
+            Game.AllowPauseInWidescreen(false);
+        }
         this.clearText();
         Camera.DoFade(800, 0);
         while (Camera.GetFadingStatus())
@@ -67,7 +72,8 @@ export abstract class BaseScriptedScene extends BaseScript {
         Game.SetPoliceIgnorePlayer(this.player, false);
         Game.SetEveryoneIgnorePlayer(this.player, false);
         this.player.setControl(true);
-        this.playerChar.shutUp(false).hideWeaponForScriptedCutscene(false);
+        this.restorePlayerAfterScriptedScene();
+        this.playerChar.clearTasksImmediately();
         this.resetHud();
         this.resetCamera();
         this.clearText();
@@ -90,12 +96,12 @@ export abstract class BaseScriptedScene extends BaseScript {
 
     /** Creates a new script object and adds it to the auto-delete list. You must load the model before creating */
     protected addScriptObject(scriptObjectModelId: int, x: float, y: float, z: float): ScriptObject {
-        return this.baseScriptedScenePrepareScriptObject(ScriptObject.Create(scriptObjectModelId, x, y, z,));
+        return this.baseScriptedScenePrepareScriptObject(ScriptObject.Create(scriptObjectModelId, x, y, z));
     }
 
     /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
     protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = 0, color2: int = 0): Car {
-        return this.baseScriptedScenePrepareCar(Car.Create(carModelId, x, y, z,).setHeading(heading).changeColor(color1, color2));
+        return this.baseScriptedScenePrepareCar(Car.Create(carModelId, x, y, z).setHeading(heading).changeColor(color1, color2));
     }
 
     /** Creates a new character and adds it to the auto-delete list. You must load the model before creating */
@@ -121,7 +127,7 @@ export abstract class BaseScriptedScene extends BaseScript {
     private baseScriptedScenePrepareChar(char: Char): Char {
         this.baseScriptedSceneCharsArray.push(char);
         return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, 31)
-            .setProofs(true, true, true, true, true)
+            .setProofs(true, true, true, true, true).setMoney(0).setDropsWeaponsWhenDead(false)
             .setDecisionMaker(+this.baseScriptedSceneDecisionMakerChar);
     }
 

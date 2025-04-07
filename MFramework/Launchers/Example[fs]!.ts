@@ -12,7 +12,7 @@ new class ExampleLauncher extends BaseLauncher {
         if (Save.GetInt("TOTAL_MISSION_PASSED", 0) > 4)
             exit();
         this.setPosition(2452.3093, -1649.698, 13.4468);
-        this.setClockHourRange(22, 2);
+        //this.setClockHourRange(22, 2);
     }
 
     protected onMissionLaunchEvent(): boolean {

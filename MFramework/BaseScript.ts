@@ -25,6 +25,20 @@ export abstract class BaseScript {
 
 
 
+    /** Restores some player parameters after a scripted scene */
+    protected restorePlayerAfterScriptedScene(): void {
+        this.playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true)
+            .clearTasks().clearLookAt().stopFacialTalk();
+    }
+
+    /** Returns an empty decision maker with no event responses (for chars) */
+    protected createEmptyDecisionMakerChar(): DecisionMakerChar {
+        let dm = DecisionMakerChar.Load(0);
+        for (let i = 0; i < 95; ++i)
+            dm.clearEventResponse(i);
+        return dm;
+    }
+
     /** Returns true if the player is not found, not playing, dead, or arrested */
     protected isPlayerNotPlaying(): boolean {
         return !this.baseScriptPlayer.isPlaying() || !Char.DoesExist(+this.baseScriptPlayerChar) || Char.IsDead(+this.baseScriptPlayerChar) || this.baseScriptPlayerChar.hasBeenArrested();

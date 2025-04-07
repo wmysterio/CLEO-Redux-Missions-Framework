@@ -180,7 +180,7 @@ export abstract class BaseLauncher extends BaseScript {
 
     private baseLauncherReset(): void {
         this.baseLauncherStatus = 0;
-        this.baseLauncherSphereRadius = 1.25;
+        this.baseLauncherSphereRadius = 1.6;
         this.baseLauncherRadarSprite = 15;
         this.baseLauncherPositionX = 0.0;
         this.baseLauncherPositionY = 0.0;
