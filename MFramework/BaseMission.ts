@@ -34,6 +34,7 @@ export abstract class BaseMission extends BaseScript {
     private baseMissionCarsArray: Car[];
     private baseMissionScriptObjectsArray: ScriptObject[];
     private baseMissionBlipsArray: Blip[];
+    private baseMissionPickupsArray: Pickup[];
 
     /** The player group */
     protected playerGroup: Group;
@@ -45,6 +46,7 @@ export abstract class BaseMission extends BaseScript {
         this.baseMissionCarsArray = new Array<Car>();
         this.baseMissionScriptObjectsArray = new Array<ScriptObject>();
         this.baseMissionBlipsArray = new Array<Blip>();
+        this.baseMissionPickupsArray = new Array<Pickup>();
         this.baseMissionSetupDecisionMakers();
         this.baseMissionState = 0;
         this.baseMissionControllableErrorToForceMissionTermination = new Error(); // thanks Seemann!
@@ -109,6 +111,10 @@ export abstract class BaseMission extends BaseScript {
     protected onCleanupEvent(): void { }
 
 
+    /** Creates a new blip above the pickup and adds it to the auto-delete list. The car must exist */
+    protected addBlipForPickup(pickup: Pickup, asFriendly: boolean = true, blipDisplay: int = 3): Blip {
+        return this.baseMissionPrepareBlip(Blip.AddForPickup(pickup), asFriendly, blipDisplay);
+    }
 
     /** Creates a new blip above the char and adds it to the auto-delete list. The car must exist */
     protected addBlipForChar(char: Char, asFriendly: boolean = false, blipDisplay: int = 3): Blip {
@@ -123,6 +129,31 @@ export abstract class BaseMission extends BaseScript {
     /** Creates a new blip above the script object and adds it to the auto-delete list. The car must exist */
     protected addBlipForScriptObject(scriptObject: ScriptObject, asFriendly: boolean = false, blipDisplay: int = 3): Blip {
         return this.baseMissionPrepareBlip(Blip.AddForObject(scriptObject), asFriendly, blipDisplay);
+    }
+
+    /** Creates a new pickup and adds it to the auto-delete list. You must load the model before creating */
+    protected addPickup(modelId: int, x: float, y: float, z: float): Pickup {
+        let pickup = Pickup.Create(modelId, 3, x, y, z);
+        this.baseMissionPickupsArray.push(pickup);
+        return pickup;
+    }
+
+    /**
+     * Creates a new weapon pickup and adds it to the auto-delete list. You must load the model before creating
+     * @param playerAmmoLimit The player's total ammo will not exceed the specified value after pickup. If the player has more ammo, the pickup will be created in an inaccessible location
+     */
+    protected addPickupWithAmmo(weaponType: int, ammo: int, x: float, y: float, z: float, playerAmmoLimit: boolean = false): Pickup {
+        if (playerAmmoLimit && this.playerChar.hasGotWeapon(weaponType)) {
+            let weaponAmmo = this.playerChar.getAmmoInWeapon(weaponType);
+            if (ammo > weaponAmmo) {
+                ammo -= weaponAmmo;
+            } else {
+                z = -1000.0;
+            }
+        }
+        let pickup = Pickup.CreateWithAmmo(Weapon.GetModel(weaponType), 3, ammo, x, y, z);
+        this.baseMissionPickupsArray.push(pickup);
+        return pickup;
     }
 
     /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
@@ -390,16 +421,20 @@ export abstract class BaseMission extends BaseScript {
         */
 
         this.baseMissionBlipsArray.forEach(blip => {
-            blip.remove();
+            if (Blip.DoesExist(+blip))
+                blip.remove();
+        });
+        this.baseMissionPickupsArray.forEach(pickup => {
+            if (Pickup.DoesExist(+pickup))
+                pickup.remove();
         });
         this.baseMissionScriptObjectsArray.forEach(obj => {
-            obj.markAsNoLongerNeeded().delete();
+            if (ScriptObject.DoesExist(+obj))
+                obj.markAsNoLongerNeeded().removeElegantly();
         });
         this.baseMissionCharsArray.forEach(char => {
-            char.markAsNoLongerNeeded()
-            if (char.isOnScreen())
-                return;
-            char.delete();
+            if (Char.DoesExist(+char))
+                char.markAsNoLongerNeeded().removeElegantly();
         });
         this.baseMissionCarsArray.forEach(car => {
             this.baseMissionDeleteCarWithoutPlayer(car);

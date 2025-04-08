@@ -90,6 +90,23 @@ export abstract class BaseScript {
         Hud.SwitchWidescreen(false);
     }
 
+
+
+    /** Synchronously loads weapon models by weapon type */
+    protected loadWeaponModelsNow(...weaponTypes: int[]): void {
+        weaponTypes.forEach(weaponType => {
+            Streaming.RequestModel(Weapon.GetModel(weaponType));
+        });
+        Streaming.LoadAllModelsNow();
+    }
+
+    /** Releases the specified weapon models by weapon type, freeing game memory */
+    protected unloadWeaponModels(...weaponTypes: int[]): void {
+        weaponTypes.forEach(weaponType => {
+            Streaming.MarkModelAsNoLongerNeeded(Weapon.GetModel(weaponType));
+        });
+    }
+
     /** Requests loading of new models. Continues if all requested models are available for creation */
     protected loadModels(...models: int[]): void {
         models.forEach(modelId => { Streaming.RequestModel(modelId); });
