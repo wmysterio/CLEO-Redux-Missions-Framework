@@ -5,6 +5,7 @@
 /* Note: Add an empty file named "!.ts" to the "Launchers" directory */
 
 wait(500);
+
 let launchersDir = __dirname + "\\Launchers\\";
 if (!Fs.DoesDirectoryExist(launchersDir))
     exit("Directory 'Launchers' not found!")

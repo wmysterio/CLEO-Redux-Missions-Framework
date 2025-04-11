@@ -2,11 +2,11 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-import { BaseScript } from "./BaseScript";
 import { BaseScriptedScene } from "./BaseScriptedScene";
+import { BaseScriptExtended } from "./BaseScriptExtended";
 
 /** Base class for missions and sub-missions */
-export abstract class BaseMission extends BaseScript {
+export abstract class BaseMission extends BaseScriptExtended {
 
     private baseMissionState: int;
     private baseMissionControllableErrorToForceMissionTermination: Error;
@@ -29,6 +29,7 @@ export abstract class BaseMission extends BaseScript {
     private baseMissionMissionPassedGxtKey: string;
     private baseMissionHasMissionSuccess: boolean;
     private baseMissionIsScriptedSceneActive: boolean;
+    private baseMissionPlayerGroup: Group;
     private baseMissionDecisionsMakersChar: DecisionMakerChar[];
     private baseMissionCharsArray: Char[];
     private baseMissionCarsArray: Car[];
@@ -37,7 +38,9 @@ export abstract class BaseMission extends BaseScript {
     private baseMissionPickupsArray: Pickup[];
 
     /** The player group */
-    protected playerGroup: Group;
+    protected get playerGroup(): Group {
+        return this.baseMissionPlayerGroup;
+    }
 
     constructor() {
         super();
@@ -69,7 +72,7 @@ export abstract class BaseMission extends BaseScript {
         this.baseMissionMissionPassedGxtKey = "";
         this.baseMissionHasMissionSuccess = false;
         this.baseMissionIsScriptedSceneActive = false;
-        this.playerGroup = this.player.getGroup();
+        this.baseMissionPlayerGroup = this.player.getGroup();
         ONMISSION = true;
         do {
             wait(0);
@@ -180,6 +183,53 @@ export abstract class BaseMission extends BaseScript {
         return this.baseMissionPrepareChar(Char.Create(25, modelId, x, y, z).setHeading(heading), 25, 24);
     }
 
+    /** Removes all entities from the auto-delete list. If necessary, you can put the player in a safe place so that the player's potential car does not delete along with the player */
+    protected deleteAllAddedEntities(elegantly: boolean = true, warpPlayerToSavePlace: boolean = false, xSavePlace: float = 0.0, ySavePlace: float = 0.0, zSavePlace: float = 0.0): void {
+        if (warpPlayerToSavePlace)
+            this.playerChar.warpFromCarToCoord(xSavePlace, ySavePlace, zSavePlace);
+        this.baseMissionBlipsArray.forEach(blip => {
+            if (Blip.DoesExist(+blip))
+                blip.remove();
+        });
+        this.baseMissionPickupsArray.forEach(pickup => {
+            if (Pickup.DoesExist(+pickup))
+                pickup.remove();
+        });
+        if (elegantly) {
+            this.baseMissionScriptObjectsArray.forEach(obj => {
+                if (ScriptObject.DoesExist(+obj))
+                    obj.markAsNoLongerNeeded().removeElegantly();
+            });
+            this.baseMissionCharsArray.forEach(char => {
+                if (Char.DoesExist(+char))
+                    char.markAsNoLongerNeeded().removeElegantly();
+            });
+        } else {
+            this.baseMissionScriptObjectsArray.forEach(obj => {
+                if (ScriptObject.DoesExist(+obj))
+                    obj.markAsNoLongerNeeded().delete();
+            });
+            this.baseMissionCharsArray.forEach(char => {
+                if (Char.DoesExist(+char))
+                    char.markAsNoLongerNeeded().delete();
+            });
+        }
+        if (warpPlayerToSavePlace) {
+            this.baseMissionCarsArray.forEach(car => {
+                car.markAsNoLongerNeeded().delete();
+            });
+        } else {
+            this.baseMissionCarsArray.forEach(car => {
+                this.baseMissionDeleteTheCarCarefully(car);
+            });
+        }
+        this.baseMissionCharsArray = new Array<Char>();
+        this.baseMissionCarsArray = new Array<Car>();
+        this.baseMissionScriptObjectsArray = new Array<ScriptObject>();
+        this.baseMissionBlipsArray = new Array<Blip>();
+        this.baseMissionPickupsArray = new Array<Pickup>();
+    }
+
     /** Begins a scripted scene */
     protected playScriptedScene<TScriptedScene extends BaseScriptedScene>(baseScriptedSceneType: new (bool) => TScriptedScene, debugMode: boolean = false): void {
         if (this.baseMissionIsScriptedSceneActive || this.baseMissionState !== 1)
@@ -271,9 +321,8 @@ export abstract class BaseMission extends BaseScript {
 
     /** Sets the restart position in case of player death or arrest */
     protected setNextRestartPosition(x: float, y: float, z: float, heading: float = 0.0): void {
-        if (this.baseMissionState === 0) {
+        if (this.baseMissionState === 0)
             Restart.OverrideNext(x, y, z, heading);
-        }
     }
 
     /** Checks whether the mission was successful */
@@ -292,6 +341,9 @@ export abstract class BaseMission extends BaseScript {
             return;
         }
         Stat.RegisterMissionGiven();
+        this.player.setGroupRecruitment(false);
+        Stat.ShowUpdateStats(false);
+        this.baseMissionPlayerGroup.remove();
         this.baseMissionMakeWorldComfortable();
         if (this.baseMissionIsTitleTextAGxt) {
             Text.PrintBig(this.baseMissionTitleText, 1000, 2);
@@ -395,59 +447,33 @@ export abstract class BaseMission extends BaseScript {
 
     private baseMissionProcessCleanup(): void {
         this.clearText();
+        this.deleteAllAddedEntities();
+        this.baseMissionDecisionsMakersChar.forEach(dm => {
+            dm.remove();
+        });
         this.onCleanupEvent();
     }
 
     private baseMissionProcessEnd(): void {
-        this.resetCamera();
-        Mission.Finish();
-        /*
+        //this.resetCamera();
+        this.restorePlayerAfterScriptedScene();
+        this.baseMissionRestoreWorld();
         World.SetPedDensityMultiplier(1.0);
         World.SetCarDensityMultiplier(1.0);
         Game.SetWantedMultiplier(1.0);
         Hud.DisplayZoneNames(true);
         Hud.DisplayCarNames(true);
-        Game.SetPoliceIgnorePlayer(player, false);
-        Game.SetEveryoneIgnorePlayer(player, false);
-        Game.SetCreateRandomGangMembers(true);
-        Game.SetCreateRandomCops(true);
-        Game.EnableAmbientCrime(true);
-        Game.SwitchPoliceHelis(true);
-        Game.SwitchCopsOnBikes(true);
-        Game.SwitchRandomTrains(true);
-        Game.SwitchAmbientPlanes(true);
-        Game.SwitchEmergencyServices(true);
+        Game.SetPoliceIgnorePlayer(this.player, false);
+        Game.SetEveryoneIgnorePlayer(this.player, false);
         Weather.Release();
-        */
-
-        this.baseMissionBlipsArray.forEach(blip => {
-            if (Blip.DoesExist(+blip))
-                blip.remove();
-        });
-        this.baseMissionPickupsArray.forEach(pickup => {
-            if (Pickup.DoesExist(+pickup))
-                pickup.remove();
-        });
-        this.baseMissionScriptObjectsArray.forEach(obj => {
-            if (ScriptObject.DoesExist(+obj))
-                obj.markAsNoLongerNeeded().removeElegantly();
-        });
-        this.baseMissionCharsArray.forEach(char => {
-            if (Char.DoesExist(+char))
-                char.markAsNoLongerNeeded().removeElegantly();
-        });
-        this.baseMissionCarsArray.forEach(car => {
-            this.baseMissionDeleteCarWithoutPlayer(car);
-        });
-        this.baseMissionDecisionsMakersChar.forEach(dm => {
-            dm.remove();
-        });
-        this.restorePlayerAfterScriptedScene();
         this.player.setGroupRecruitment(true).setControl(true);
-        this.playerGroup.remove();
+        this.baseMissionPlayerGroup.remove();
+        Stat.ShowUpdateStats(true);
+        Mission.Finish();
         ONMISSION = false;
         this.baseMissionState = 5;
     }
+
 
     private baseMissionMakeWorldComfortable(): void {
         Game.SetCreateRandomGangMembers(false);
@@ -458,8 +484,17 @@ export abstract class BaseMission extends BaseScript {
         Game.SwitchRandomTrains(false);
         Game.SwitchAmbientPlanes(false);
         Game.SwitchEmergencyServices(false);
-        this.player.setGroupRecruitment(false);
-        this.playerGroup.remove();
+    }
+
+    private baseMissionRestoreWorld(): void {
+        Game.SetCreateRandomGangMembers(true);
+        Game.SetCreateRandomCops(true);
+        Game.EnableAmbientCrime(true);
+        Game.SwitchPoliceHelis(true);
+        Game.SwitchCopsOnBikes(true);
+        Game.SwitchRandomTrains(true);
+        Game.SwitchAmbientPlanes(true);
+        Game.SwitchEmergencyServices(true);
     }
 
     private baseMissionPrepareChar(char: Char, respectType: int, hateType: int): Char {
@@ -478,7 +513,7 @@ export abstract class BaseMission extends BaseScript {
         return blip.setAsFriendly(asFriendly).changeDisplay(blipDisplay);
     }
 
-    private baseMissionDeleteCarWithoutPlayer(car: Car): void {
+    private baseMissionDeleteTheCarCarefully(car: Car): void {
         if (!Car.DoesExist(+car))
             return;
         car.markAsNoLongerNeeded();

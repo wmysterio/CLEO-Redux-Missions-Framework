@@ -34,8 +34,8 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 				Camera.SetVectorTrack(2452.2646, -1649.2939, 13.6653, 2452.2646, -1649.2939, 13.6653, 4000, false);
 				Text.PrintNow("@CRS@02", 4000, 1);
 			})
-			.waitCondition(this.isCameraVectorMoveOrVectorTrackRunning)
-			.waitWithAction(2000, () => {
+			.waitUntil(this.isCameraVectorMoveOrVectorTrackRunning)
+			.action(() => {
 				Camera.ResetNewScriptables();
 				this.setCameraPosition(2441.9321, -1665.7759, 14.4861);
 				this.setCameraPoint(2452.2646, -1649.2939, 13.6653);

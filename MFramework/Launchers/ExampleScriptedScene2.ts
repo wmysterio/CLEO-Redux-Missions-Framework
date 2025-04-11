@@ -23,9 +23,10 @@ export class ExampleScriptedScene2 extends BaseScriptedScene {
 				Task.CarDriveToCoord(sceneChar, sceneCar, 2471.1074, -1662.801, 12.3246, 5.0, 0, 0, 0);
 			})
 			.wait(100)
-			.waitWithAction(6000, () => {
+			.action(() => {
 				this.setCameraPoint(2433.967, -1657.6388, 13.3828, 1);
-			});
+			})
+			.wait(6000);
 	}
 
 	protected onUnloadEvent(): void {

@@ -11,6 +11,16 @@ export class Save {
 
     private constructor() { }
 
+    /** Returns the game's difficulty level. The complexity of the game is only formal. You can use it for different purposes */
+    public static GetDifficultyGameLevel(): int {
+        return Save.GetIntFromSection("!GAME_CONFIG", "Difficulty", 0);
+    }
+
+    /** Sets the difficulty level of the game. The complexity of the game is only formal. You can use it for different purposes */
+    public static SetDifficultyGameLevel(difficulty: int): void {
+        IniFile.WriteInt(difficulty, Save.savePathToIni, "!GAME_CONFIG", "Difficulty");
+    }
+
     /** Returns a int value from the *.ini file for the specified section */
     public static GetIntFromSection(section: string, key: string, defaultValue: int = 0): int {
         let result = IniFile.ReadInt(Save.savePathToIni, section, key);

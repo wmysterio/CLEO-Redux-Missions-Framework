@@ -2,11 +2,11 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
-import { BaseScript } from "./BaseScript";
+import { BaseScriptExtended } from "./BaseScriptExtended";
 import { ScriptedClips } from "./ScriptedClips";
 
 /** Base class for scripted scenes */
-export abstract class BaseScriptedScene extends BaseScript {
+export abstract class BaseScriptedScene extends BaseScriptExtended {
 
     private baseScriptedSceneDecisionMakerChar: DecisionMakerChar;
     private baseScriptedSceneCharsArray: Char[];

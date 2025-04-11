@@ -19,8 +19,15 @@ export class ScriptedClips {
     public static Play(clips: ScriptedClips): void {
         const contollableSkipScriptSceneError = new Error();
         const _wait = wait;
+        const _fade = Camera.DoFade;
+        Camera.DoFade = (time, direction) => {
+            log("Don't use the 'Camera.DoFade' method during a scripted scene. There may be bugs!")
+        };
         //@ts-ignore
         wait = (time) => {
+            log("Don't use the 'wait' function during a scripted scene. There may be bugs!")
+        };
+        const scriptedWait = (time) => {
             _wait(time);
             if (Pad.IsSkipCutsceneButtonPressed())
                 throw contollableSkipScriptSceneError;
@@ -37,12 +44,12 @@ export class ScriptedClips {
                     if (clipCondition === undefined)
                         continue;
                     while (clipCondition())
-                        wait(0);
+                        scriptedWait(0);
                     continue;
                 }
                 TIMERA = 0;
                 while (duration > TIMERA)
-                    wait(0);
+                    scriptedWait(0);
             }
         } catch (e) {
             if (e !== contollableSkipScriptSceneError)
@@ -50,6 +57,7 @@ export class ScriptedClips {
         }
         //@ts-ignore
         wait = _wait;
+        Camera.DoFade = _fade;
     }
 
     /** Tells the scripted clip to perform the specified action without waiting or conditions */
@@ -69,14 +77,14 @@ export class ScriptedClips {
     }
 
     /** Tells the scripted clip to wait until a condition is met */
-    public waitCondition(condition: () => boolean): ScriptedClips {
+    public waitUntil(condition: () => boolean): ScriptedClips {
         this.scriptedClipsDurations.push(-1);
         this.scriptedClipsConditions.push(condition);
         this.scriptedClipsActions.push(undefined);
         return this;
     }
-
-    /** Tells the scripted clip to wait for the specified time in milliseconds and perform the specified action */
+    /*
+    /** Tells the scripted clip to wait for the specified time in milliseconds and perform the specified action * /
     public waitWithAction(duration: int, action: () => void): ScriptedClips {
         this.scriptedClipsDurations.push(0 > duration ? 0 : duration);
         this.scriptedClipsConditions.push(undefined);
@@ -84,12 +92,13 @@ export class ScriptedClips {
         return this;
     }
 
-    /** Tells the scripted clip to wait until the condition is met and perform the specified action */
-    public waitConditionWithAction(condition: () => boolean, action: () => void): ScriptedClips {
+    /** Tells the scripted clip to wait until the condition is met and perform the specified action * /
+    public actionWithCondition(condition: () => boolean, action: () => void): ScriptedClips {
         this.scriptedClipsDurations.push(-1);
         this.scriptedClipsConditions.push(condition);
         this.scriptedClipsActions.push(action);
         return this;
     }
+    */
 
 }
