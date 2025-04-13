@@ -519,6 +519,9 @@ export abstract class BaseMission extends BaseScriptExtended {
         car.markAsNoLongerNeeded();
         if (this.playerChar.isInCar(car) || car.isOnScreen()) {
             car.setProofs(false, false, false, false, false).setCanBurstTires(true)
+                .setUpsidedownNotDamaged(false).setCanBeVisiblyDamaged(true);
+            if (car.isHealthGreater(1000))
+                car.setHealth(1000);
             return;
         }
         car.delete();

@@ -68,7 +68,6 @@ export abstract class BaseScriptExtended extends BaseScript {
         Streaming.LoadScene(x, y, z);
     }
 
-
     /** Synchronously loads weapon models by weapon type */
     protected loadWeaponModelsNow(...weaponTypes: int[]): void {
         weaponTypes.forEach(weaponType => {
