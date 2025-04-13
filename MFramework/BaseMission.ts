@@ -183,6 +183,20 @@ export abstract class BaseMission extends BaseScriptExtended {
         return this.baseMissionPrepareChar(Char.Create(25, modelId, x, y, z).setHeading(heading), 25, 24);
     }
 
+    /** Creates a new character with friendly AI inside the vehicle and adds it to the auto-delete list. You must load the model before creating. The Vehicle must exist */
+    protected addFriendInsideCar(modelId: int, car: Car, seat: int = -1): Char {
+        if (seat === -1)
+            return this.baseMissionPrepareChar(Char.CreateInsideCar(car, 24, modelId), 24, 25)
+        return this.baseMissionPrepareChar(Char.CreateAsPassenger(car, 24, modelId, seat), 24, 25);
+    }
+
+    /** Creates a new character with enemy AI inside the vehicle and adds it to the auto-delete list. You must load the model before creating. The Vehicle must exist */
+    protected addEnemyInsideCar(modelId: int, car: Car, seat: int = -1): Char {
+        if (seat === -1)
+            return this.baseMissionPrepareChar(Char.CreateInsideCar(car, 25, modelId), 25, 24)
+        return this.baseMissionPrepareChar(Char.CreateAsPassenger(car, 25, modelId, seat), 25, 24);
+    }
+
     /** Removes all entities from the auto-delete list. If necessary, you can put the player in a safe place so that the player's potential car does not delete along with the player */
     protected deleteAllAddedEntities(elegantly: boolean = true, warpPlayerToSavePlace: boolean = false, xSavePlace: float = 0.0, ySavePlace: float = 0.0, zSavePlace: float = 0.0): void {
         if (warpPlayerToSavePlace)
@@ -466,6 +480,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         Game.SetPoliceIgnorePlayer(this.player, false);
         Game.SetEveryoneIgnorePlayer(this.player, false);
         Weather.Release();
+        this.player.alterWantedLevelNoDrop(0);
         this.player.setGroupRecruitment(true).setControl(true);
         this.baseMissionPlayerGroup.remove();
         Stat.ShowUpdateStats(true);
