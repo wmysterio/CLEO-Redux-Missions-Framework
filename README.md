@@ -1,7 +1,7 @@
 Deep alpha version.
 
 ### Next
-- [ ] Rases missions templates
+- [ ] Races missions templates
 - - [ ] Boss race mode
 - - [ ] Checkpoint mode
 - - [ ] Cops mode
