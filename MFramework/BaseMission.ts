@@ -44,6 +44,35 @@ export abstract class BaseMission extends BaseScriptExtended {
 
     constructor() {
         super();
+        this.baseMissionPlayerGroup = this.player.getGroup();
+        this.onInitEvent();
+        ONMISSION = true;
+        do {
+            wait(0);
+            if (this.isPlayerNotPlaying())
+                this.baseMissionState = 3;
+            switch (this.baseMissionState) {
+                case 0:
+                    this.baseMissionProcessStart();
+                    continue;
+                case 1:
+                    this.baseMissionProcessUpdate();
+                    continue;
+                case 2:
+                    this.baseMissionProcessSuccess();
+                    continue;
+                case 3:
+                    this.baseMissionProcessFailure();
+                    continue;
+                case 4:
+                    this.baseMissionProcessEnd();
+                    continue;
+            }
+        } while (this.baseMissionState !== 5);
+    }
+
+    /** Reaction to the initialization event. Used for internal work of the framework  */
+    protected onInitEvent(): void {
         this.baseMissionDecisionsMakersChar = new Array<DecisionMakerChar>();
         this.baseMissionCharsArray = new Array<Char>();
         this.baseMissionCarsArray = new Array<Car>();
@@ -72,30 +101,6 @@ export abstract class BaseMission extends BaseScriptExtended {
         this.baseMissionMissionPassedGxtKey = "";
         this.baseMissionHasMissionSuccess = false;
         this.baseMissionIsScriptedSceneActive = false;
-        this.baseMissionPlayerGroup = this.player.getGroup();
-        ONMISSION = true;
-        do {
-            wait(0);
-            if (this.isPlayerNotPlaying())
-                this.baseMissionState = 3;
-            switch (this.baseMissionState) {
-                case 0:
-                    this.baseMissionProcessStart();
-                    continue;
-                case 1:
-                    this.baseMissionProcessUpdate();
-                    continue;
-                case 2:
-                    this.baseMissionProcessSuccess();
-                    continue;
-                case 3:
-                    this.baseMissionProcessFailure();
-                    continue;
-                case 4:
-                    this.baseMissionProcessEnd();
-                    continue;
-            }
-        } while (this.baseMissionState !== 5);
     }
 
     /** Reaction to the mission start event */
@@ -160,7 +165,7 @@ export abstract class BaseMission extends BaseScriptExtended {
     }
 
     /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
-    protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = 0, color2: int = 0): Car {
+    protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = -1, color2: int = -1): Car {
         let car = Car.Create(carModelId, x, y, z).setHeading(heading).changeColor(color1, color2).lockDoors(1);
         this.baseMissionCarsArray.push(car);
         return car;
@@ -215,8 +220,13 @@ export abstract class BaseMission extends BaseScriptExtended {
                     obj.markAsNoLongerNeeded().removeElegantly();
             });
             this.baseMissionCharsArray.forEach(char => {
-                if (Char.DoesExist(+char))
-                    char.markAsNoLongerNeeded().removeElegantly();
+                if (Char.DoesExist(+char)) {
+                    if (char.isHealthGreater(100))
+                        char.setHealth(100);
+                    char.setProofs(false, false, false, false, false).setCanBeKnockedOffBike(false)
+                        .setCantBeDraggedOut(false).setGetOutUpsideDownCar(true).setSuffersCriticalHits(false)
+                        .setCanBeShotInVehicle(true).markAsNoLongerNeeded().removeElegantly();
+                }
             });
         } else {
             this.baseMissionScriptObjectsArray.forEach(obj => {
@@ -437,6 +447,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         this.baseMissionState = 4;
         this.onFailureEvent();
     }
+
     private baseMissionDisplayFailedMessage(): void {
         this.baseMissionDisplayFailureBigMessage();
         if (1 > this.baseMissionEnableMissionFailureTime)
@@ -447,6 +458,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         }
         Text.PrintFormattedNow(this.baseMissionMissionFailureReasonMessage, this.baseMissionEnableMissionFailureTime);
     }
+
     private baseMissionDisplayFailureBigMessage(): void {
         if (this.baseMissionDefaultMissionFailureBigMessage.length === 0)
             return;
@@ -488,7 +500,6 @@ export abstract class BaseMission extends BaseScriptExtended {
         ONMISSION = false;
         this.baseMissionState = 5;
     }
-
 
     private baseMissionMakeWorldComfortable(): void {
         Game.SetCreateRandomGangMembers(false);

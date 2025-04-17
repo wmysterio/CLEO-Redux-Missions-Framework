@@ -12,11 +12,17 @@ new class ExampleLauncher extends BaseLauncher {
         if (Save.GetInt("TOTAL_MISSION_PASSED", 0) > 4)
             exit();
         this.setPosition(2452.3093, -1649.698, 13.4468);
-        //this.setClockHourRange(22, 2);
     }
 
     protected onMissionLaunchEvent(): boolean {
-        return this.playerChar.isStopped() && this.playerChar.isOnFoot();
+        if (this.playerChar.isStopped() && this.playerChar.isOnFoot())
+            return false;
+        //if (!this.isClockHourInRange(22, 2)) {
+        //    if (!Text.IsMessageBeingDisplayed())
+        //        Text.PrintFormattedNow("You can start this mission between %.2d:00 and %.2d:00.", 5000, 22, 2);
+        //    return false;;
+        //}
+        return true;
     }
 
     protected onMissionEndEvent(hasSuccess: boolean): boolean {

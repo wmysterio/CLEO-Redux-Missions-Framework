@@ -43,7 +43,7 @@ export abstract class BaseScriptExtended extends BaseScript {
 
     /** Restores some player parameters after a scripted scene */
     protected restorePlayerAfterScriptedScene(): void {
-        this.playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(true)
+        this.playerChar.hideWeaponForScriptedCutscene(false).shutUp(false).setCanBeKnockedOffBike(false)
             .clearTasks().clearLookAt().stopFacialTalk();
     }
 

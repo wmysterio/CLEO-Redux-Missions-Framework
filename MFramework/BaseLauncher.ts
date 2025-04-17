@@ -21,9 +21,6 @@ export abstract class BaseLauncher extends BaseScript {
     private baseLauncherBlip: Blip;
     private baseLauncherHasSuccessInMission: boolean;
     private baseLauncherRunMissionFunction: Function;
-    private baseLauncherLeftHour: int;
-    private baseLauncherRightHour: int;
-    private baseLauncherUseTimeRange: boolean;
     private baseLauncherHasLongRange: boolean;
 
     /**
@@ -107,13 +104,6 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherSphereRadius = sphereRadius;
     }
 
-    /** Sets the clock hour range when the mission can start */
-    protected setClockHourRange(left: int, right: int): void {
-        this.baseLauncherUseTimeRange = true;
-        this.baseLauncherLeftHour = left;
-        this.baseLauncherRightHour = right;
-    }
-
     /** Makes the blip range short */
     protected disableBlipLongRange(): void {
         this.baseLauncherHasLongRange = false;
@@ -151,11 +141,6 @@ export abstract class BaseLauncher extends BaseScript {
         }
         if (!this.playerChar.locateAnyMeans3D(this.baseLauncherPositionX, this.baseLauncherPositionY, this.baseLauncherPositionZ, this.baseLauncherSphereRadius, this.baseLauncherSphereRadius, 2.0, true) || this.player.isUsingJetpack())
             return;
-        if (this.baseLauncherUseTimeRange && !this.isClockHourInRange(this.baseLauncherLeftHour, this.baseLauncherRightHour)) {
-            if (!Text.IsMessageBeingDisplayed())
-                Text.PrintFormattedNow("You can start this mission between %.2d:00 and %.2d:00.", 5000, this.baseLauncherLeftHour, this.baseLauncherRightHour);
-            return;
-        }
         if (!this.onMissionLaunchEvent())
             return;
         if (this.baseLauncherBlip !== undefined && Blip.DoesExist(+this.baseLauncherBlip))
@@ -185,9 +170,6 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherPositionX = 0.0;
         this.baseLauncherPositionY = 0.0;
         this.baseLauncherPositionZ = 0.0;
-        this.baseLauncherLeftHour = 0;
-        this.baseLauncherRightHour = 0;
-        this.baseLauncherUseTimeRange = false;
         this.baseLauncherHasLongRange = true;
     }
 
