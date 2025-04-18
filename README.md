@@ -3,7 +3,7 @@ Deep alpha version.
 ### Next
 - [ ] Races missions templates
 - - [ ] Boss race mode
-- - [ ] Cops mode
+- - [x] Cops mode
 - - [x] Radars mode
 - - [x] Checkpoint mode
 - - [x] Sprint mode
