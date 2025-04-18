@@ -4,7 +4,7 @@ Deep alpha version.
 - [ ] Races missions templates
 - - [ ] Boss race mode
 - - [ ] Cops mode
-- - [ ] Radars mode
+- - [x] Radars mode
 - - [x] Checkpoint mode
 - - [x] Sprint mode
 - - [x] Speed trap mode
