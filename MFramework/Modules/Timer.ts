@@ -2,16 +2,20 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.././.config/sa.d.ts" />
 
-/** Class for working with a custom timer */
+/** Class for working with custom timers */
 export class Timer {
 
-    /** Just draws minutes and seconds. Turn on "Text.UseCommands" before using */
-    public static JustDisplayTime(offsetLeft: float, offsetTop: float, minutes: int, seconds: int): void {
+    /** Draws the specified minutes and seconds. Enable "Text.UseCommands" before using */
+    public static Display(minutes: int, seconds: int, line: int = 0, gxtKey: string = "BB_19"): void {
+        let timerPositionY = 128.0 + 22.0 * line;
+        Timer.timerSetTextForDrawing();
+        Text.Display(548.0, timerPositionY, gxtKey);
+        Timer.timerSetTextForDrawing();
         if (10 > seconds) {
-            Text.DisplayWith2Numbers(offsetLeft, offsetTop, "TIME_0", minutes, seconds);
+            Text.DisplayWith2Numbers(608.0, timerPositionY, "TIME_0", minutes, seconds);
             return;
         }
-        Text.DisplayWith2Numbers(offsetLeft, offsetTop, "TIME", minutes, seconds);
+        Text.DisplayWith2Numbers(608.0, timerPositionY, "TIME", minutes, seconds);
     }
 
     private milliseconds: int;
@@ -85,15 +89,16 @@ export class Timer {
         return this;
     }
 
-    /** Draws the remaining minutes and seconds of the timer. Enable "Text.UseCommands" before using */
-    public displayTimeLeft(offsetLeft: float, offsetTop: float): void {
-        let minutes = this.getMinutesLeft();
-        let seconds = this.getSecondsLeft();
-        if (10 > seconds) {
-            Text.DisplayWith2Numbers(offsetLeft, offsetTop, "TIME_0", minutes, seconds);
-            return;
-        }
-        Text.DisplayWith2Numbers(offsetLeft, offsetTop, "TIME", minutes, seconds);
+
+
+    private static timerSetTextForDrawing(): void {
+        Text.SetFont(2);
+        Text.SetScale(0.5, 2.0);
+        Text.SetRightJustify(true);
+        Text.SetWrapX(640.0);
+        Text.SetDropshadow(0, 0, 0, 0, 0);
+        Text.SetEdge(1, 0, 0, 0, 255);
+        Text.SetColor(172, 203, 241, 255);
     }
 
 }

@@ -2,6 +2,8 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
+import { Bar } from "../Bar";
+import { Counter } from "../Counter";
 import { Timer } from "../Timer";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RouteNode } from "./Core/RouteNode";
@@ -34,6 +36,7 @@ export abstract class BaseCheckpointRace extends BaseRaceMission {
             let nextCheckpointId = this.findNextCheckpointId(lastNode.checkpointId);
             let nextRouteNode = this.getRouteNode(nextCheckpointId);
             this.baseCheckpointTimer.add(nextRouteNode.timeLimitInMilliseconds);
+            Text.PrintWithNumberNow("A_TIME", Math.floor((nextRouteNode.timeLimitInMilliseconds / 1000) % 60), 5000, 1);
         }
         if (!streetRacer.isPlayer || this.baseCheckpointRaceNumLaps > (streetRacer.currentLap + 1))
             return;
@@ -64,27 +67,15 @@ export abstract class BaseCheckpointRace extends BaseRaceMission {
                 }
             }
         }
-        Hud.DrawRect(550.0, 356.2812, 118.2072, 74.2072, 0, 0, 0, 255);
-        Hud.DrawRect(550.0, 356.2812, 116.2072, 72.2072, 134, 155, 184, 255);
-        Hud.DrawRect(550.0, 356.2812, 112.2072, 70.2072, 0, 0, 0, 255);
-        Text.SetScale(0.7, 2.0);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWith2Numbers(600.0, 326.0, "RACES32", this.baseCheckpointRacePlayerStreetRacer.currentLap + 1, this.baseCheckpointRaceNumLaps);
+        if (this.baseCheckpointRaceNumLaps > 1)
+            Counter.DisplayWith2Numbers(this.baseCheckpointRacePlayerStreetRacer.currentLap + 1, this.baseCheckpointRaceNumLaps, "RACES32");
         let minutes = this.baseCheckpointTimer.getMinutesLeft();
         let seconds = this.baseCheckpointTimer.getSecondsLeft();
         if (0 >= this.baseCheckpointTimer.getMillisecondsLeft()) {
             this.fail("BB_17", 5000, true);
             return;
         }
-        Text.SetFont(3);
-        Text.SetScale(1.0, 3.6);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetDropshadow(2, 0, 0, 0, 180);
-        Text.SetColor(134, 155, 184, 255);
-        Timer.JustDisplayTime(600.0, 357.0, minutes, seconds);
+        Timer.Display(minutes, seconds);
     }
 
 }

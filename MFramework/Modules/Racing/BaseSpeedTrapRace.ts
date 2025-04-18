@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
+import { Counter } from "../Counter";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RouteNode } from "./Core/RouteNode";
 import { StreetRacer } from "./Core/StreetRacer";
@@ -57,26 +58,9 @@ export abstract class BaseSpeedTrapRace extends BaseRaceMission {
                 }
             }
         }
-        Hud.DrawRect(540.0, 346.2812, 138.2072, 94.2072, 0, 0, 0, 255);
-        Hud.DrawRect(540.0, 346.2812, 136.2072, 92.2072, 134, 155, 184, 255);
-        Hud.DrawRect(540.0, 346.2812, 132.2072, 90.2072, 0, 0, 0, 255);
-        Text.SetFont(3);
-        Text.SetScale(1.0, 3.6);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetDropshadow(2, 0, 0, 0, 180);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWithNumber(600.0, 357.0, "RACES44", this.baseSpeedTrapRaceGetPlayerPosition());
-        Text.SetScale(0.7, 2.0);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWith2Numbers(600.0, 326.0, "RACES32", this.baseSpeedTrapRacePlayerStreetRacer.currentLap + 1, this.baseSpeedTrapRaceNumLaps);
-        Text.SetScale(0.7, 2.0);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWithNumber(600.0, 306.0, "KICK1_9", this.baseSpeedTrapRacePlayerStreetRacer.summOfSpeed);
+        Counter.Display(this.baseSpeedTrapRaceGetPlayerPosition(), 1, "RACES44");
+        Counter.DisplayWith2Numbers(this.baseSpeedTrapRacePlayerStreetRacer.currentLap + 1, this.baseSpeedTrapRaceNumLaps, "RACES32", 2);
+        Counter.Display(this.baseSpeedTrapRacePlayerStreetRacer.summOfSpeed, 3, "KICK1_9");
     }
 
 

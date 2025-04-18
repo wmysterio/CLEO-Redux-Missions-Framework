@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
+import { Counter } from "../Counter";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RouteNode } from "./Core/RouteNode";
 import { StreetRacer } from "./Core/StreetRacer";
@@ -106,21 +107,9 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
                 }
             }
         }
-        Hud.DrawRect(550.0, 356.2812, 118.2072, 74.2072, 0, 0, 0, 255);
-        Hud.DrawRect(550.0, 356.2812, 116.2072, 72.2072, 134, 155, 184, 255);
-        Hud.DrawRect(550.0, 356.2812, 112.2072, 70.2072, 0, 0, 0, 255);
-        Text.SetFont(3);
-        Text.SetScale(1.0, 3.6);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetDropshadow(2, 0, 0, 0, 180);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWithNumber(600.0, 357.0, "RACES44", this.baseLapKnockoutRaceGetPlayerPosition());
-        Text.SetScale(0.7, 2.0);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetColor(134, 155, 184, 255);
-        Text.DisplayWith2Numbers(600.0, 326.0, "RACES32", this.baseLapKnockoutRacePlayerStreetRacer.currentLap + 1, this.baseLapKnockoutRaceNumLaps);
+        Counter.Display(this.baseLapKnockoutRaceGetPlayerPosition(), 1, "RACES44");
+        if (this.baseLapKnockoutRaceNumLaps > 1)
+            Counter.DisplayWith2Numbers(this.baseLapKnockoutRacePlayerStreetRacer.currentLap + 1, this.baseLapKnockoutRaceNumLaps, "RACES32", 2);
     }
 
 

@@ -241,8 +241,6 @@ export abstract class BaseRaceMission extends BaseMission {
             } else {
                 racerChar = this.addFriendInsideCar(racerInfo.charModelId, racerCar);
             }
-            racerCar.setUpsidedownNotDamaged(true).setCanBurstTires(false).setCanBeVisiblyDamaged(false)
-                .setProofs(false, false, false, true, false);
             this.baseRaceMissionBlips.push(
                 this.addBlipForCar(racerCar).setAsFriendly(true).changeScale(2).changeColor(0)
             );
@@ -250,6 +248,8 @@ export abstract class BaseRaceMission extends BaseMission {
                 this.playerChar.warpIntoCar(racerCar.setHealth(2000));
                 this.hideStreetRacerBlip(i);
             } else {
+                racerCar.setUpsidedownNotDamaged(true).setCanBurstTires(false).setCanBeVisiblyDamaged(false)
+                    .setProofs(false, false, false, true, false);
                 StuckCarCheck.Add(racerCar.setHealth(20000), 2.0, 3000);
                 racerChar.setCanBeKnockedOffBike(true).setCantBeDraggedOut(true).setGetOutUpsideDownCar(false)
                     .setMaxHealth(2000).setHealth(2000).setCanBeShotInVehicle(false);

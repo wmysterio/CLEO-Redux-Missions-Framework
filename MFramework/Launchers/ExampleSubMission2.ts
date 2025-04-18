@@ -9,12 +9,7 @@ import { BaseCheckpointRace } from "../Modules/Racing/BaseCheckpointRace";
 
 export class ExampleSubMission2 extends BaseCheckpointRace {
 
-	constructor() {
-		super();
-	}
-
 	protected onRaceBeforeStartEvent(): void {
-		//this.setCashReward(5000);
 		this.setTitle("@CRS@00", true);
 
 		this.setNextRestartPosition(2443.4963, -1651.0734, 12.402, 186.0984);

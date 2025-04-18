@@ -15,14 +15,15 @@ new class ExampleLauncher extends BaseLauncher {
     }
 
     protected onMissionLaunchEvent(): boolean {
-        if (this.playerChar.isStopped() && this.playerChar.isOnFoot())
-            return false;
-        //if (!this.isClockHourInRange(22, 2)) {
-        //    if (!Text.IsMessageBeingDisplayed())
-        //        Text.PrintFormattedNow("You can start this mission between %.2d:00 and %.2d:00.", 5000, 22, 2);
-        //    return false;;
-        //}
-        return true;
+        if (this.playerChar.isStopped() && this.playerChar.isOnFoot()) {
+            //if (!this.isClockHourInRange(22, 2)) {
+            //    if (!Text.IsMessageBeingDisplayed())
+            //        Text.PrintFormattedNow("You can start this mission between %.2d:00 and %.2d:00.", 5000, 22, 2);
+            //    return false;
+            //}
+            return true;
+        }
+        return false;
     }
 
     protected onMissionEndEvent(hasSuccess: boolean): boolean {
