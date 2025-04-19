@@ -36,6 +36,8 @@ export abstract class BaseMission extends BaseScriptExtended {
     private baseMissionScriptObjectsArray: ScriptObject[];
     private baseMissionBlipsArray: Blip[];
     private baseMissionPickupsArray: Pickup[];
+    private baseMissionIsSavedPlayerWeapon: boolean;
+    private baseMissionPlayerAmmo: int[];
 
     /** The player group */
     protected get playerGroup(): Group {
@@ -71,8 +73,21 @@ export abstract class BaseMission extends BaseScriptExtended {
         } while (this.baseMissionState !== 5);
     }
 
+
+    /** Saves the player's weapons and restores them after the mission is completed. After saving the weapons, all weapons are removed */
+    protected savePlayerWeapon(): void {
+        if (this.baseMissionIsSavedPlayerWeapon)
+            return;
+        this.baseMissionIsSavedPlayerWeapon = true;
+        for (let i = 0; i < 47; ++i)
+            this.baseMissionPlayerAmmo.push(this.playerChar.hasGotWeapon(i) ? this.playerChar.getAmmoInWeapon(i) : 0);
+        this.playerChar.removeAllWeapons();
+    }
+
     /** Reaction to the initialization event. Used for internal work of the framework  */
     protected onInitEvent(): void {
+        this.baseMissionPlayerAmmo = new Array<int>();
+        this.baseMissionIsSavedPlayerWeapon = false;
         this.baseMissionDecisionsMakersChar = new Array<DecisionMakerChar>();
         this.baseMissionCharsArray = new Array<Char>();
         this.baseMissionCarsArray = new Array<Car>();
@@ -482,6 +497,7 @@ export abstract class BaseMission extends BaseScriptExtended {
 
     private baseMissionProcessEnd(): void {
         //this.resetCamera();
+        this.restorePlayerWeapon();
         this.restorePlayerAfterScriptedScene();
         this.baseMissionRestoreWorld();
         World.SetPedDensityMultiplier(1.0);
@@ -544,13 +560,26 @@ export abstract class BaseMission extends BaseScriptExtended {
             return;
         car.markAsNoLongerNeeded();
         if (this.playerChar.isInCar(car) || car.isOnScreen()) {
-            car.setProofs(false, false, false, false, false).setCanBurstTires(true)
-                .setUpsidedownNotDamaged(false).setCanBeVisiblyDamaged(true);
+            car.changePlaybackToUseAi().setProofs(false, false, false, false, false).setCanBurstTires(true)
+                .setUpsidedownNotDamaged(false).setCanBeVisiblyDamaged(true).setCollision(true);
             if (car.isHealthGreater(1000))
                 car.setHealth(1000);
             return;
         }
         car.delete();
+    }
+
+    private restorePlayerWeapon(): void {
+        if (this.baseMissionIsSavedPlayerWeapon) {
+            this.playerChar.removeAllWeapons();
+            for (let i = 1; i < 47; ++i) {
+                if (this.baseMissionPlayerAmmo[i] > 0) {
+                    this.loadWeaponModelsNow(i);
+                    this.playerChar.giveWeapon(i, this.baseMissionPlayerAmmo[i]);
+                    this.unloadWeaponModels(i);
+                }
+            }
+        }
     }
 
     private baseMissionSetupDecisionMakers(): void {

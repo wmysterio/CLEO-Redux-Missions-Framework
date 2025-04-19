@@ -30,6 +30,9 @@ export abstract class BaseRaceMission extends BaseMission {
     private baseRaceMissionLastCheckpointForPlayer: boolean;
     private baseRaceMissionLastCheckpointId: int;
     private baseRaceMissionOnCheckpointTune: int;
+    private baseRaceDisablePlayerCheckpointsChek: boolean;
+    private baseRaceMissionBossPath: int;
+    private baseRaceMissionBossPathSpeed: float;
 
     protected onInitEvent(): void {
         super.onInitEvent();
@@ -42,14 +45,20 @@ export abstract class BaseRaceMission extends BaseMission {
         this.baseRaceMissionNumStreetRacers = 0;
         this.baseRaceMissionNumRouteNodes = 0;
         this.baseRaceMissionLastCheckpointId = 0;
+        this.baseRaceDisablePlayerCheckpointsChek = false;
         this.baseRaceMissionCheckpoint = new Checkpoint(-1);
         this.baseRaceMissionBlip = new Blip(-1);
         this.baseRaceMissionLastCheckpointForPlayer = false;
         this.baseRaceMissionOnCheckpointTune = 1058;
+        this.baseRaceMissionBossPath = -1;
+        this.baseRaceMissionBossPathSpeed = 0.0;
     }
 
     /** Reaction to an event before the start of the race */
     protected onRaceBeforeStartEvent(): void { }
+
+    /** Reaction to an event before  */
+    protected onRaceBefore321GOEvent(): void { }
 
     /** Reaction to the race completion event */
     protected onRaceEndEvent(isFailed: boolean): void { }
@@ -138,6 +147,10 @@ export abstract class BaseRaceMission extends BaseMission {
         this.baseRaceMissionLastCheckpointForPlayer = true;
     }
 
+    protected disablePlayerCheckpointsChek(): void {
+        this.baseRaceDisablePlayerCheckpointsChek = true;
+    }
+
     /** Hides the street racer blip */
     protected hideStreetRacerBlip(streetRacerId: int): void {
         this.baseRaceMissionBlips[streetRacerId].changeDisplay(0);
@@ -160,6 +173,12 @@ export abstract class BaseRaceMission extends BaseMission {
                 return i;
         }
         throw new Error("Route not have a checkpoints!");
+    }
+
+    /** Specifies the path of the boss's vehicle and the speed of this path */
+    protected setBossPath(path: int, speed: float = 1.0): void {
+        this.baseRaceMissionBossPath = path;
+        this.baseRaceMissionBossPathSpeed = speed;
     }
 
 
@@ -203,6 +222,8 @@ export abstract class BaseRaceMission extends BaseMission {
         super.onCleanupEvent();
         this.baseRaceMissionBlip.remove();
         this.baseRaceMissionCheckpoint.delete();
+        if (this.baseRaceMissionBossPath > -1)
+            Streaming.RemoveCarRecording(this.baseRaceMissionBossPath);
         Text.UseCommands(false);
     }
 
@@ -276,6 +297,20 @@ export abstract class BaseRaceMission extends BaseMission {
         }
         Audio.SetRadioChannel(12);
         this.resetCamera();
+        let bossCar = new Car(-1);
+        if (this.baseRaceMissionBossPath > -1) {
+            Streaming.RequestCarRecording(this.baseRaceMissionBossPath);
+            while (!Streaming.HasCarRecordingBeenLoaded(this.baseRaceMissionBossPath))
+                wait(0);
+            for (let i = 0; i < this.baseRaceMissionNumStreetRacers; ++i) {
+                let streetRacer = this.baseRaceMissionStreetRacers[i];
+                if (streetRacer.isPlayer)
+                    continue;
+                bossCar = streetRacer.car;
+                break;
+            }
+        }
+        this.onRaceBefore321GOEvent();
         wait(1000);
         Text.PrintBig("RACES_4", 1100, 4); // 3
         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
@@ -292,6 +327,8 @@ export abstract class BaseRaceMission extends BaseMission {
         this.player.alterWantedLevelNoDrop(this.baseRaceMissionMinWantedLevel).setControl(true);
         if (this.canMarkCheckpointsAsFinish())
             this.markAllCheckpointsAsFinish();
+        if (Car.DoesExist(+bossCar) && this.baseRaceMissionBossPath > -1)
+            bossCar.startPlayback(this.baseRaceMissionBossPath).setPlaybackSpeed(this.baseRaceMissionBossPathSpeed);
         this.baseRaceMissionStage = 2;
     }
 
@@ -308,6 +345,8 @@ export abstract class BaseRaceMission extends BaseMission {
                     this.fail("RACES20", 6000, true);
                     return;
                 }
+                if (this.baseRaceDisablePlayerCheckpointsChek)
+                    continue;
                 this.baseRaceMissionUpdatePlayerRoute(streetRacer);
                 continue;
             }
@@ -320,7 +359,7 @@ export abstract class BaseRaceMission extends BaseMission {
             if (streetRacer.isKnockedOut)
                 continue;
             let currentNode = this.baseRaceMissionRoute.getNode(streetRacer.nextNodeId);
-            if (StuckCarCheck.IsCarStuck(streetRacer.car) && !streetRacer.car.isOnScreen())
+            if (StuckCarCheck.IsCarStuck(streetRacer.car) && !streetRacer.car.isOnScreen() && !streetRacer.car.isPlaybackGoingOn())
                 this.baseRaceMissionTryRestoreRacerCar(streetRacer, currentNode);
             if (streetRacer.car.locate3D(currentNode.x, currentNode.y, currentNode.z, 12.0, 12.0, 12.0, false)) {
                 if (currentNode.isCheckpoint) {
@@ -338,6 +377,8 @@ export abstract class BaseRaceMission extends BaseMission {
                 currentNode = this.baseRaceMissionRoute.getNode(nextNodeId);
                 streetRacer.char.clearTasks();
             }
+            if (streetRacer.car.isPlaybackGoingOn())
+                continue;
             let taskStatus = streetRacer.char.getScriptTaskStatus(0x05D1);
             if (taskStatus === 7)
                 Task.CarDriveToCoord(streetRacer.char, streetRacer.car, currentNode.x, currentNode.y, currentNode.z, currentNode.speed, 0, 0, 2);
