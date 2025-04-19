@@ -11,9 +11,9 @@ Deep alpha version.
 - - [x] Lap knockout mode
 
 ### Next
-- [ ] Cellphone template
-- [ ] Dialog template
-- [ ] AudioPlayer template
+- [ ] Cellphone module
+- [x] Dialog module
+- [x] AudioPlayer module
 - [x] Timer module
 - [x] Counter module
 - [x] Bar module
