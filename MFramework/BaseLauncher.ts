@@ -4,6 +4,8 @@
 
 import { BaseMission } from "./BaseMission";
 import { BaseScript } from "./BaseScript";
+import { Cellphone } from "./Modules/Cellphone";
+import { Dialog } from "./Modules/Dialog";
 import { Save } from "./Save";
 
 //@ts-ignore
@@ -22,6 +24,7 @@ export abstract class BaseLauncher extends BaseScript {
     private baseLauncherHasSuccessInMission: boolean;
     private baseLauncherRunMissionFunction: Function;
     private baseLauncherHasLongRange: boolean;
+    private baseLauncherCellphone: Cellphone;
 
     /**
      * @param baseMissionType Specify the name of the type that will be used as the default mission
@@ -31,6 +34,7 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherReset();
         this.baseLauncherBlip = new Blip(-1);
         this.baseLauncherHasSuccessInMission = false;
+        this.baseLauncherCellphone = new Cellphone();
         this.baseLauncherRunMissionFunction = () => {
             return new baseMissionType().HasSuccess();
         };
@@ -55,6 +59,19 @@ export abstract class BaseLauncher extends BaseScript {
                     continue;
             }
         } while (this.baseLauncherStatus !== 4);
+    }
+
+    /** makes a call to the player */
+    protected callThePlayersPhone(callback: (dialog: Dialog) => void, subfolder: string = ""): void {
+        if (this.baseLauncherStatus === 0) {
+            let dialog = new Dialog();
+            callback(dialog);
+            this.baseLauncherCellphone.call(dialog, subfolder);
+            do {
+                wait(0);
+                this.baseLauncherCellphone.update(this.player, this.playerChar, this.timer);
+            } while (this.baseLauncherCellphone.isOn());
+        }
     }
 
     /** Reaction to the launcher start event */

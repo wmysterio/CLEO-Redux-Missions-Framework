@@ -4,6 +4,7 @@
 
 import { BaseScriptedScene } from "./BaseScriptedScene";
 import { BaseScriptExtended } from "./BaseScriptExtended";
+import { AudioPlayer } from "./Modules/AudioPlayer";
 
 /** Base class for missions and sub-missions */
 export abstract class BaseMission extends BaseScriptExtended {
@@ -38,11 +39,18 @@ export abstract class BaseMission extends BaseScriptExtended {
     private baseMissionPickupsArray: Pickup[];
     private baseMissionIsSavedPlayerWeapon: boolean;
     private baseMissionPlayerAmmo: int[];
+    private baseMissionAudioBackground: AudioPlayer;
 
     /** The player group */
     protected get playerGroup(): Group {
         return this.baseMissionPlayerGroup;
     }
+    /** The audio player for background music */
+    protected get audioBackground(): AudioPlayer {
+        return this.baseMissionAudioBackground;
+    }
+
+
 
     constructor() {
         super();
@@ -116,6 +124,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         this.baseMissionMissionPassedGxtKey = "";
         this.baseMissionHasMissionSuccess = false;
         this.baseMissionIsScriptedSceneActive = false;
+        this.baseMissionAudioBackground = new AudioPlayer();
     }
 
     /** Reaction to the mission start event */
@@ -384,6 +393,8 @@ export abstract class BaseMission extends BaseScriptExtended {
         Stat.ShowUpdateStats(false);
         this.baseMissionPlayerGroup.remove();
         this.baseMissionMakeWorldComfortable();
+        this.baseMissionAudioBackground.setVolume(0.1);
+        this.baseMissionAudioBackground.play(0, true);
         if (this.baseMissionIsTitleTextAGxt) {
             Text.PrintBig(this.baseMissionTitleText, 1000, 2);
         } else {
@@ -489,6 +500,8 @@ export abstract class BaseMission extends BaseScriptExtended {
     private baseMissionProcessCleanup(): void {
         this.clearText();
         this.deleteAllAddedEntities();
+        this.baseMissionAudioBackground.unload();
+        this.dialog.unload();
         this.baseMissionDecisionsMakersChar.forEach(dm => {
             dm.remove();
         });

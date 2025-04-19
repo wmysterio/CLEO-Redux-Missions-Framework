@@ -16,6 +16,11 @@ export class Save {
         IniFile.WriteInt(difficulty, Save.savePathToIni, "<GAME_CONFIG>", "Difficulty");
     }
 
+    /**  */
+    public static SetCellphoneCallPlayer(state: boolean): void {
+        IniFile.WriteInt(state ? 1 : 0, Save.savePathToIni, "<CELLPHONE>", "Calling");
+    }
+
     /** Returns a int value from the *.ini file for the specified section */
     public static GetIntFromSection(section: string, key: string, defaultValue: int = 0): int {
         let result = IniFile.ReadInt(Save.savePathToIni, section, key);
@@ -109,3 +114,5 @@ export class Save {
     }
 
 }
+
+Save.SetCellphoneCallPlayer(false);

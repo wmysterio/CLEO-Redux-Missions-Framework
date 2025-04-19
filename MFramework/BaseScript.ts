@@ -2,23 +2,22 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.config/sa.d.ts" />
 
+import { Timer } from "./Modules/Timer";
 import { Save } from "./Save";
 
 /** A base script class with commonly used commands */
 export abstract class BaseScript {
 
-    /** Returns the game's difficulty level. The complexity of the game is only formal. You can use it for different purposes */
-    protected getDifficultyGameLevel(): int {
-        return Save.GetIntFromSection("<GAME_CONFIG>", "Difficulty", 0);
-    }
-
     private baseScriptPlayer: Player;
     private baseScriptPlayerChar: Char;
+    private baseScriptTimer: Timer;
 
     constructor() {
         this.baseScriptPlayer = new Player(0);
         this.baseScriptPlayerChar = this.baseScriptPlayer.getChar();
+        this.baseScriptTimer = new Timer();
     }
+
 
     /** The player character */
     protected get player(): Player {
@@ -28,6 +27,16 @@ export abstract class BaseScript {
     /** The player character */
     protected get playerChar(): Char {
         return this.baseScriptPlayerChar;
+    }
+
+    /** Returns a custom timer from the "Timer" module */
+    protected get timer(): Timer {
+        return this.baseScriptTimer;
+    }
+
+    /** Returns the game's difficulty level. The complexity of the game is only formal. You can use it for different purposes */
+    protected getDifficultyGameLevel(): int {
+        return Save.GetIntFromSection("<GAME_CONFIG>", "Difficulty", 0);
     }
 
     /** Returns true if the player is not found, not playing, dead, or arrested */

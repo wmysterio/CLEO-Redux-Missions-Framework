@@ -9,9 +9,23 @@ new class ExampleLauncher extends BaseLauncher {
     constructor() { super(ExampleMission); }
 
     protected onStartEvent(): void {
-        if (Save.GetInt("TOTAL_MISSION_PASSED", 0) > 4)
+        let totalMissionPassed = Save.GetInt("TOTAL_MISSION_PASSED", 0);
+        if (totalMissionPassed > 4)
             exit();
+        if (totalMissionPassed === 0) {
+
+            this.callThePlayersPhone((dialog) => {
+                dialog.addAReplica(true, "Hi 1", 2000)
+                    .addAReplica(false, "Hi 2", 2000)
+                    .addAReplica(true, "Hi 3", 2000)
+                    .addAReplica(false, "Hi 4", 2000);
+            });
+            totalMissionPassed = Save.IncreaseInt("TOTAL_MISSION_PASSED");
+        }
+
         this.setPosition(2452.3093, -1649.698, 13.4468);
+
+
     }
 
     protected onMissionLaunchEvent(): boolean {

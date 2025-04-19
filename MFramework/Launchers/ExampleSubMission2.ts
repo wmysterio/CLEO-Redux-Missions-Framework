@@ -13,10 +13,21 @@ export class ExampleSubMission2 extends BaseSprintRace {
 
 	protected onStartEvent(): void {
 		this.setTitle("@CRS@00", true);
+		this.audioBackground.load(1);
+		this.dialog
+			.addAReplica(false, "BURG_04", 4000, true)
+			.addAReplica(false, "BURG_05", 4000, true)
+			.addAReplica(false, "BURG_07", 4000, true)
+			.addAReplica(false, "BURG_08", 4000, true)
+			.addAReplica(false, "BURG_09", 4000, true)
+			.load();
 		super.onStartEvent();
 	}
 
 	protected onRaceBeforeStartEvent(): void {
+
+		while (this.dialog.perform(this.playerChar))
+			wait(0);
 
 		Camera.DoFade(1000, 0);
 		wait(1000);
@@ -30,7 +41,7 @@ export class ExampleSubMission2 extends BaseSprintRace {
 		this.addStreetRacer(400, 12.1201, -2675.7891, 40.2367, 3.774);
 
 		this.addRouteNodeAsCheckpoint(-14.9842, -2567.2539, 38.0168, 22.1499, 10.0, 6000);
-		this.addRouteNodeAsCheckpoint(-54.9172, -2497.5383, 34.6945, 40.6622, 10.0, 6000);
+		this.addRouteNodeAsCheckpoint(-54.9172, -2497.5383, 34.6945, 40.6622, 15.0, 6000);
 
 	}
 
@@ -44,6 +55,7 @@ export class ExampleSubMission2 extends BaseSprintRace {
 		wait(750);
 		this.refreshArea(2443.4963, -1651.0734, 12.402);
 		this.playerChar.warpFromCarToCoord(2443.4963, -1651.0734, 12.402).setHeading(186.0984);
+		this.resetCamera();
 		Camera.DoFade(1000, 0);
 		wait(750);
 	}

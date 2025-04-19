@@ -3,9 +3,22 @@
 /// <reference path="../.config/sa.d.ts" />
 
 import { BaseScript } from "./BaseScript";
+import { Dialog } from "./Modules/Dialog";
 
-/** A base script class with commonly used commands */
+/** A base script class with extended used commands */
 export abstract class BaseScriptExtended extends BaseScript {
+
+    private baseScriptExtendedDialog: Dialog;
+
+    constructor() {
+        super();
+        this.baseScriptExtendedDialog = new Dialog();
+    }
+
+    /** Returns a dynamic dialog from the "Dialog" module */
+    protected get dialog(): Dialog {
+        return this.baseScriptExtendedDialog;
+    }
 
     /** Returns an empty decision maker with no event responses (for chars) */
     protected createEmptyDecisionMakerChar(): DecisionMakerChar {

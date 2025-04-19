@@ -186,7 +186,7 @@ export abstract class BaseRaceMission extends BaseMission {
     /** For this type of missions use the "onRaceBeforeStartEvent" method! */
     protected onStartEvent(): void {
         Text.LoadMissionText("RACETOR");
-        this.setDefaultMissionSuccessBigMessage("RACES18", true); // Winner!
+        this.setDefaultMissionSuccessBigMessage("RACES18", true);
         this.setRaceTraffic(0.0, 0.0, false, 0.0);
         this.baseRaceMissionMakeTraffic();
         this.player.clearWantedLevel().setControl(false);
