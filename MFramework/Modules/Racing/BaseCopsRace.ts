@@ -22,7 +22,7 @@ export abstract class BaseCopsRace extends BaseRaceMission {
         this.baseCopsRaceTimer = new Timer(10000);
         this.baseCopsRaceStage = 0;
         this.baseCopsRaceFailedWantedLevel = 1;
-        this.disablePlayerCheckpointsChek();
+        this.disablePlayerCheckpointsCheck();
         this.baseCopsRaceMandatoryToAvoidPolice = false;
         this.savePlayerWeapon();
         this.loadWeaponModelsNow(29);

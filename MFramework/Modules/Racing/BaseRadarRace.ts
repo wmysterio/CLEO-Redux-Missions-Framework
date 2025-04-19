@@ -31,9 +31,10 @@ export abstract class BaseRadarRace extends BaseRaceMission {
         this.baseRadarRaceRadarNodes = new Array<RadarNode>();
         this.baseRadarRaceNumRadars = 0;
         this.baseRadarRaceNumPassedRadars = 0;
-        this.disablePlayerCheckpointsChek();
+        this.disablePlayerCheckpointsCheck();
     }
 
+    /** Sets the time limit for the player to search for radars */
     protected setTimeLimit(timeInMilliseconds: int): void {
         this.baseRadarRaceTimer.set(timeInMilliseconds);
         this.baseRadarRaceUseTimer = true;

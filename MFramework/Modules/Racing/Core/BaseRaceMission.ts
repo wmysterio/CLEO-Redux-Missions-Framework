@@ -30,7 +30,7 @@ export abstract class BaseRaceMission extends BaseMission {
     private baseRaceMissionLastCheckpointForPlayer: boolean;
     private baseRaceMissionLastCheckpointId: int;
     private baseRaceMissionOnCheckpointTune: int;
-    private baseRaceDisablePlayerCheckpointsChek: boolean;
+    private baseRaceDisablePlayerCheckpointsCheck: boolean;
     private baseRaceMissionBossPath: int;
     private baseRaceMissionBossPathSpeed: float;
 
@@ -45,7 +45,7 @@ export abstract class BaseRaceMission extends BaseMission {
         this.baseRaceMissionNumStreetRacers = 0;
         this.baseRaceMissionNumRouteNodes = 0;
         this.baseRaceMissionLastCheckpointId = 0;
-        this.baseRaceDisablePlayerCheckpointsChek = false;
+        this.baseRaceDisablePlayerCheckpointsCheck = false;
         this.baseRaceMissionCheckpoint = new Checkpoint(-1);
         this.baseRaceMissionBlip = new Blip(-1);
         this.baseRaceMissionLastCheckpointForPlayer = false;
@@ -57,7 +57,7 @@ export abstract class BaseRaceMission extends BaseMission {
     /** Reaction to an event before the start of the race */
     protected onRaceBeforeStartEvent(): void { }
 
-    /** Reaction to an event before  */
+    /** Reaction to an event before the countdown to the start of the racee  */
     protected onRaceBefore321GOEvent(): void { }
 
     /** Reaction to the race completion event */
@@ -147,8 +147,9 @@ export abstract class BaseRaceMission extends BaseMission {
         this.baseRaceMissionLastCheckpointForPlayer = true;
     }
 
-    protected disablePlayerCheckpointsChek(): void {
-        this.baseRaceDisablePlayerCheckpointsChek = true;
+    /** Disables checking if the player is near checkpoints */
+    protected disablePlayerCheckpointsCheck(): void {
+        this.baseRaceDisablePlayerCheckpointsCheck = true;
     }
 
     /** Hides the street racer blip */
@@ -345,7 +346,7 @@ export abstract class BaseRaceMission extends BaseMission {
                     this.fail("RACES20", 6000, true);
                     return;
                 }
-                if (this.baseRaceDisablePlayerCheckpointsChek)
+                if (this.baseRaceDisablePlayerCheckpointsCheck)
                     continue;
                 this.baseRaceMissionUpdatePlayerRoute(streetRacer);
                 continue;
