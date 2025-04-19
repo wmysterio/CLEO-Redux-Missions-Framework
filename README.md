@@ -1,6 +1,12 @@
 Deep alpha version.
 
 ### Latest
+- [x] Cellphone module
+- [x] Dialog module
+- [x] AudioPlayer module
+- [x] Timer module
+- [x] Counter module
+- [x] Bar module
 - [x] Races missions templates
 - - [x] Cops mode
 - - [x] Radars mode
@@ -11,12 +17,6 @@ Deep alpha version.
 - - [x] Lap knockout mode
 
 ### Next
-- [ ] Cellphone module
-- [x] Dialog module
-- [x] AudioPlayer module
-- [x] Timer module
-- [x] Counter module
-- [x] Bar module
 
 ### Promlems
 - [ ] Deleting mission's launcher blip before save
