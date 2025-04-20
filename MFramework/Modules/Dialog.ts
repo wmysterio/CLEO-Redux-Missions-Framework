@@ -87,6 +87,7 @@ export class Dialog {
             this.dialogCanSpeekAction = () => { return false; };
             return false;
         }
+        this.fixDialogDurationIfAudioPlayerUsed(this.dialogCurrentReplicaIndex);
         if (this.dialogForPlayerFlags[this.dialogCurrentReplicaIndex])
             playerChar.startFacialTalk(this.dialogDurations[this.dialogCurrentReplicaIndex]);
         Text.ClearPrints();
@@ -95,6 +96,11 @@ export class Dialog {
     }
 
 
+
+
+    private fixDialogDurationIfAudioPlayerUsed(index: int): void {
+        this.dialogDurations[index] = this.dialogAudioPlayer.playNext(this.dialogDurations[index]);
+    }
 
     private dialogReset(): void {
         this.dialogForPlayerFlags = new Array<boolean>();

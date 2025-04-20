@@ -68,20 +68,20 @@ export class AudioPlayer {
      * Stops the current audio file and plays the audio file with the name corresponding to the number
      * @returns Returns the audio stream duration in seconds. If the file does not load, then returns the specified default value
      */
-    public play(number: int, loop: boolean, defaultLength: int = 1): int {
+    public play(number: int, loop: boolean, defaultLengthInMilliseconds: int = 1000): int {
         if (this.audioPlayerHaveCurrentTrack())
             this.audioPlayerStopAudio(this.audioPlayerCurrentTrack);
         if (this.audioPlayerNumTracks === 0 || 0 > number || number >= this.audioPlayerNumTracks)
-            return defaultLength;
+            return defaultLengthInMilliseconds;
         this.audioPlayerCurrentTrack = number;
         let audioStream = this.audioPlayerAudioStreams[number];
         if (audioStream === undefined)
-            return defaultLength;
+            return defaultLengthInMilliseconds;
         if (loop)
             audioStream.setLooped(true);
         audioStream.setVolume(this.audioPlayerVolume);
         audioStream.setState(1);
-        return audioStream.getLength() + 1;
+        return (audioStream.getLength() + 1) * 1000;
     }
 
     /** Stops the current audio file and plays the next one. If the file does not load, then returns the specified default value */

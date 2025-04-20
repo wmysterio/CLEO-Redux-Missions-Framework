@@ -5,7 +5,7 @@
 //import { BaseRadarRace } from "../Modules/Racing/BaseRadarRace";
 //import { BaseCircuitRace } from "../Modules/Racing/BaseCircuitRace";
 //import { BaseLapKnockoutRace } from "../Modules/Racing/BaseLapKnockoutRace";
-//import { BaseSpeedTrapRace } from "../Modules/Racing/BaseSpeedTrapRace";
+//import { BaseSpeedtrapRace } from "../Modules/Racing/BaseSpeedtrapRace";
 import { BaseSprintRace } from "../Modules/Racing/BaseSprintRace";
 
 
@@ -14,20 +14,20 @@ export class ExampleSubMission2 extends BaseSprintRace {
 	protected onStartEvent(): void {
 		this.setTitle("@CRS@00", true);
 		this.audioBackground.load(1);
-		this.dialog
-			.addAReplica(false, "BURG_04", 4000, true)
-			.addAReplica(false, "BURG_05", 4000, true)
-			.addAReplica(false, "BURG_07", 4000, true)
-			.addAReplica(false, "BURG_08", 4000, true)
-			.addAReplica(false, "BURG_09", 4000, true)
-			.load();
+		//this.dialog
+		//	.addAReplica(false, "BURG_04", 4000, true)
+		//	.addAReplica(false, "BURG_05", 4000, true)
+		//	.addAReplica(false, "BURG_07", 4000, true)
+		//	.addAReplica(false, "BURG_08", 4000, true)
+		//	.addAReplica(false, "BURG_09", 4000, true)
+		//	.load();
 		super.onStartEvent();
 	}
 
 	protected onRaceBeforeStartEvent(): void {
 
-		while (this.dialog.perform(this.playerChar))
-			wait(0);
+		//while (this.dialog.perform(this.playerChar))
+		//	wait(0);
 
 		Camera.DoFade(1000, 0);
 		wait(1000);
