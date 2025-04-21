@@ -5,8 +5,7 @@ Deep alpha version.
 - [x] Dialog module
 - [x] AudioPlayer module
 - [x] Timer module
-- [x] Counter module
-- [x] Bar module
+- [x] Screen class for display timers, counters, bars.
 - [x] Races missions templates
 - - [x] Cops mode
 - - [x] Radars mode
