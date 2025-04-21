@@ -2,7 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
-import { Counter } from "../Counter";
+import { Screen } from "../Screen";
 import { Timer } from "../Timer";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RadarNode } from "./Core/RadarNode";
@@ -74,7 +74,7 @@ export abstract class BaseRadarRace extends BaseRaceMission {
             }
             let minutes = this.baseRadarRaceTimer.getMinutesLeft();
             let seconds = this.baseRadarRaceTimer.getSecondsLeft();
-            Timer.Display(minutes, seconds);
+            Screen.DisplayTimer(minutes, seconds);
         }
         for (let i = 0; i < this.baseRadarRaceNumRadars; ++i) {
             let radar = this.baseRadarRaceRadarNodes[i];
@@ -90,9 +90,9 @@ export abstract class BaseRadarRace extends BaseRaceMission {
                 Text.PrintWith2NumbersNow("SN_ONE", this.baseRadarRaceNumPassedRadars, this.baseRadarRaceNumRadars, 5000, 1);
             }
         }
-        Counter.Display(this.baseRadarRacePlayerSpeed, 1, "KICK1_9");
-        Counter.Display(this.baseRadarRaceNeedSpeed, 2, "ST1_7");
-        Counter.Display(this.baseRadarRacePlayerCar.getSpeed(), 4);
+        Screen.DisplayCounter(this.baseRadarRacePlayerSpeed, 1, "KICK1_9");
+        Screen.DisplayCounter(this.baseRadarRaceNeedSpeed, 2, "ST1_7");
+        Screen.DisplayCounter(this.baseRadarRacePlayerCar.getSpeed(), 4);
         if (this.baseRadarRaceNumPassedRadars === this.baseRadarRaceNumRadars)
             this.baseRadarRaceRemoveAll(this.baseRadarRaceNeedSpeed > this.baseRadarRacePlayerSpeed, "DNC_003");
     }

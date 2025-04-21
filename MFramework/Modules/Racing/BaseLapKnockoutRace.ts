@@ -2,7 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
-import { Counter } from "../Counter";
+import { Screen } from "../Screen";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RouteNode } from "./Core/RouteNode";
 import { StreetRacer } from "./Core/StreetRacer";
@@ -107,9 +107,9 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
                 }
             }
         }
-        Counter.Display(this.baseLapKnockoutRaceGetPlayerPosition(), 1, "RACES44");
+        Screen.DisplayCounter(this.baseLapKnockoutRaceGetPlayerPosition(), 1, "RACES44");
         if (this.baseLapKnockoutRaceNumLaps > 1)
-            Counter.DisplayWith2Numbers(this.baseLapKnockoutRacePlayerStreetRacer.currentLap + 1, this.baseLapKnockoutRaceNumLaps, "RACES32", 2);
+            Screen.DisplayCounterWith2Numbers(this.baseLapKnockoutRacePlayerStreetRacer.currentLap + 1, this.baseLapKnockoutRaceNumLaps, "RACES32", 2);
     }
 
 

@@ -2,8 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
-import { Bar } from "../Bar";
-import { Counter } from "../Counter";
+import { Screen } from "../Screen";
 import { Timer } from "../Timer";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 import { RouteNode } from "./Core/RouteNode";
@@ -68,14 +67,14 @@ export abstract class BaseCheckpointRace extends BaseRaceMission {
             }
         }
         if (this.baseCheckpointRaceNumLaps > 1)
-            Counter.DisplayWith2Numbers(this.baseCheckpointRacePlayerStreetRacer.currentLap + 1, this.baseCheckpointRaceNumLaps, "RACES32");
+            Screen.DisplayCounterWith2Numbers(this.baseCheckpointRacePlayerStreetRacer.currentLap + 1, this.baseCheckpointRaceNumLaps, "RACES32");
         let minutes = this.baseCheckpointTimer.getMinutesLeft();
         let seconds = this.baseCheckpointTimer.getSecondsLeft();
         if (0 >= this.baseCheckpointTimer.getMillisecondsLeft()) {
             this.fail("BB_17", 5000, true);
             return;
         }
-        Timer.Display(minutes, seconds);
+        Screen.DisplayTimer(minutes, seconds);
     }
 
 }

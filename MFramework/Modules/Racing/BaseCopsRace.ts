@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.././.config/sa.d.ts" />
 
+import { Screen } from "../Screen";
 import { Timer } from "../Timer";
 import { BaseRaceMission } from "./Core/BaseRaceMission";
 
@@ -98,7 +99,7 @@ export abstract class BaseCopsRace extends BaseRaceMission {
             case 1:
                 let minutes = this.baseCopsRaceTimer.getMinutesLeft();
                 let seconds = this.baseCopsRaceTimer.getSecondsLeft();
-                Timer.Display(minutes, seconds);
+                Screen.DisplayTimer(minutes, seconds);
                 if (this.baseCopsRaceFailedWantedLevel > this.player.storeWantedLevel()) {
                     this.fail(this.baseCopsRaceLostWantedGxt, 5000, true);
                     return;

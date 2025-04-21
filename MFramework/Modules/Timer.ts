@@ -5,19 +5,6 @@
 /** Class for working with custom timers */
 export class Timer {
 
-    /** Draws the specified minutes and seconds. Enable "Text.UseCommands" before using */
-    public static Display(minutes: int, seconds: int, line: int = 0, gxtKey: string = "BB_19"): void {
-        let timerPositionY = 128.0 + 22.0 * line;
-        Timer.timerSetTextForDrawing();
-        Text.Display(548.0, timerPositionY, gxtKey);
-        Timer.timerSetTextForDrawing();
-        if (10 > seconds) {
-            Text.DisplayWith2Numbers(608.0, timerPositionY, "TIME_0", minutes, seconds);
-            return;
-        }
-        Text.DisplayWith2Numbers(608.0, timerPositionY, "TIME", minutes, seconds);
-    }
-
     private milliseconds: int;
 
     /** Creates a new timer and sets the new timer value with the specified offset in milliseconds */
@@ -87,18 +74,6 @@ export class Timer {
     public set(offsetMilliseconds: int = 0): Timer {
         this.milliseconds = Date.now() + offsetMilliseconds;
         return this;
-    }
-
-
-
-    private static timerSetTextForDrawing(): void {
-        Text.SetFont(2);
-        Text.SetScale(0.5, 2.0);
-        Text.SetRightJustify(true);
-        Text.SetWrapX(640.0);
-        Text.SetDropshadow(0, 0, 0, 0, 0);
-        Text.SetEdge(1, 0, 0, 0, 255);
-        Text.SetColor(172, 203, 241, 255);
     }
 
 }

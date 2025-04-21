@@ -16,7 +16,7 @@ export class Save {
         IniFile.WriteInt(difficulty, Save.savePathToIni, "<GAME_CONFIG>", "Difficulty");
     }
 
-    /**  */
+    /** Signals all scripts about the status of a phone call */
     public static SetCellphoneCallPlayer(state: boolean): void {
         IniFile.WriteInt(state ? 1 : 0, Save.savePathToIni, "<CELLPHONE>", "Calling");
     }
@@ -105,6 +105,12 @@ export class Save {
         if (Save.saveIsSectionDisabled)
             return;
         Save.saveDefaultSectionName = iniSectionName;
+
+        //let status = IniFile.ReadInt(Save.savePathToIni, "<CELLPHONE>", "Calling");
+        //if (status !== undefined && status === 1)
+        //    return; // try fix
+
+        Save.SetCellphoneCallPlayer(false);
         Save.saveIsSectionDisabled = true;
     }
 
@@ -114,5 +120,3 @@ export class Save {
     }
 
 }
-
-Save.SetCellphoneCallPlayer(false);
