@@ -87,22 +87,5 @@ export class ScriptedClips {
         this.scriptedClipsActions.push(undefined);
         return this;
     }
-    /*
-    /** Tells the scripted clip to wait for the specified time in milliseconds and perform the specified action * /
-    public waitWithAction(duration: int, action: () => void): ScriptedClips {
-        this.scriptedClipsDurations.push(0 > duration ? 0 : duration);
-        this.scriptedClipsConditions.push(undefined);
-        this.scriptedClipsActions.push(action);
-        return this;
-    }
-
-    /** Tells the scripted clip to wait until the condition is met and perform the specified action * /
-    public actionWithCondition(condition: () => boolean, action: () => void): ScriptedClips {
-        this.scriptedClipsDurations.push(-1);
-        this.scriptedClipsConditions.push(condition);
-        this.scriptedClipsActions.push(action);
-        return this;
-    }
-    */
 
 }

@@ -18,6 +18,8 @@ export class Screen {
         Text.DisplayWith2Numbers(608.0, timerPositionY, "TIME", minutes, seconds);
     }
 
+
+
     /** Draws a counter with the specified value. Enable "Text.UseCommands" before using */
     public static DisplayCounter(value: int, line: int = 1, gxtKey: string = "NUMBER"): void {
         Screen.streenSetTextForDrawing();
@@ -47,13 +49,13 @@ export class Screen {
     }
 
     /** Draws a health bar for the specified char. Enable "Text.UseCommands" before using */
-    public static DisplayBarWithCharHeadlth(char: Char, line: int = 1, gxtKey: string = "DUMMY"): void {
-        Screen.DisplayBar(char.getHealth(), char.getMaxHealth(), line, gxtKey);
+    public static DisplayBarWithCharHealth(char: Char, maxHealth: int = 100, line: int = 1, gxtKey: string = "DUMMY"): void {
+        Screen.DisplayBar(char.getHealth(), maxHealth, line, gxtKey);
     }
 
     /** Draws a bar with the health of the specified car. Enable "Text.UseCommands" before using */
-    public static DisplayBarWithCarHeadlth(car: Car, maxValue: int = 1000, line: int = 0, gxtKey: string = "DUMMY"): void {
-        Screen.DisplayBar(car.getHealth(), maxValue, line, gxtKey);
+    public static DisplayBarWithCarHealth(car: Car, maxHealth: int = 1000, line: int = 0, gxtKey: string = "DUMMY"): void {
+        Screen.DisplayBar(car.getHealth(), maxHealth, line, gxtKey);
     }
 
 

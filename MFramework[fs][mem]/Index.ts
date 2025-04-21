@@ -16,6 +16,7 @@ If you want to manually specify the names of the files to be run, specify them i
 The files must be located in the "Launchers" folder and end with the line "[fs]!.ts".
 Automatic scanning and starting has some limitations, so perhaps specifying names in an array would be a better choice.
 */
+
 launchFiles([
     // "Example",  // GTA\CLEO\*\Launchers\Example[fs]!.ts
     // "Example2", // GTA\CLEO\*\Launchers\Example2[fs]!.ts

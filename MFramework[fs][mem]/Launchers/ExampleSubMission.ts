@@ -1,6 +1,8 @@
 /// <reference path="../../.config/sa.d.ts" />
 
 import { BaseMission } from "../BaseMission";
+import { LANDSTAL, MAFFA, WMYST } from "../Models";
+import { Screen } from "../Screen";
 import { ExampleScriptedScene } from "./ExampleScriptedScene";
 import { ExampleScriptedScene2 } from "./ExampleScriptedScene2";
 
@@ -27,15 +29,15 @@ export class ExampleSubMission extends BaseMission {
 
 				World.ClearArea(2435.2422, -1674.4182, 13.6572, 1.0, true);
 
-				this.loadModelsNow(400); // LANDSTAL
+				this.loadModels(LANDSTAL, WMYST, MAFFA);
 				this.loadWeaponModelsNow(22);
-				this.addCar(400, 2443.9675, -1668.3519, 13.0863, 65.4277);
+				this.addCar(LANDSTAL, 2443.9675, -1668.3519, 13.0863, 65.4277);
 				this.addPickupWithAmmo(22, 100, 2422.2898, -1667.1139, 13.5434, true);
-				this.unloadModels(400); // LANDSTAL
+				this.unloadModels(LANDSTAL, WMYST, MAFFA);
 				this.unloadWeaponModels(22);
 
-				this.friend = this.addFriend(0, 2435.635, -1650.3596, 12.5469, 190.1485);
-				this.target = this.addEnemy(0, 2435.2422, -1674.4182, 12.6572, 359.8532);
+				this.friend = this.addFriend(WMYST, 2435.635, -1650.3596, 12.5469, 190.1485);
+				this.target = this.addEnemy(MAFFA, 2435.2422, -1674.4182, 12.6572, 359.8532);
 				this.addBlipForChar(this.target, false);
 				this.addBlipForChar(this.friend, true).changeDisplay(1);
 				this.playerGroup.setMember(this.friend);
@@ -48,6 +50,8 @@ export class ExampleSubMission extends BaseMission {
 					this.fail("~r~Friend is dead!");
 				if (Char.IsDead(+this.target))
 					this.complete();
+				Text.UseCommands(true);
+				Screen.DisplayBarWithCharHealth(this.friend);
 				return;
 		}
 	}

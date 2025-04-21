@@ -563,7 +563,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         return char.setRelationship(4, 0).setDecisionMaker(+this.baseMissionDecisionsMakersChar[0]);
     }
 
-    private baseMissionPrepareBlip(blip: Blip, asFriendly: boolean = false, blipDisplay: int): Blip {
+    private baseMissionPrepareBlip(blip: Blip, asFriendly: boolean, blipDisplay: int): Blip {
         this.baseMissionBlipsArray.push(blip);
         return blip.setAsFriendly(asFriendly).changeDisplay(blipDisplay);
     }

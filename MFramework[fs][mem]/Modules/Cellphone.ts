@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../.././.config/sa.d.ts" />
 
+import { CELLPHONE } from "../Models";
 import { Save } from "../Save";
 import { Dialog } from "./Dialog";
 import { Timer } from "./Timer";
@@ -45,12 +46,12 @@ export class Cellphone {
                 this.cellphoneState = 2;
                 return;
             case 2:
-                Streaming.RequestModel(330);
+                Streaming.RequestModel(CELLPHONE);
                 Audio.LoadMissionAudio(1, Cellphone.RINGTONE_ID);
                 this.cellphoneState = 3;
                 return;
             case 3:
-                if (Streaming.HasModelLoaded(330) && Audio.HasMissionAudioLoaded(1)) {
+                if (Streaming.HasModelLoaded(CELLPHONE) && Audio.HasMissionAudioLoaded(1)) {
                     timer.set(Cellphone.TIME_TO_RESPONCE);
                     this.cellphoneState = 4;
                 }
@@ -92,7 +93,7 @@ export class Cellphone {
                 playerChar.clearTasks();
                 this.cellphoneLastDialog.load(this.cellphoneLastDialogSubfolder);
                 Task.UseMobilePhone(playerChar, true);
-                timer.set(); // wait(2000) is crashed game. WTF???
+                timer.set();
                 this.cellphoneState = 7;
                 return;
             case 7:
@@ -120,7 +121,7 @@ export class Cellphone {
             case 8:
                 this.cellphoneLastDialog.unload();
                 this.cellphoneSetPlayer(player, playerChar, true);
-                Streaming.MarkModelAsNoLongerNeeded(330);
+                Streaming.MarkModelAsNoLongerNeeded(CELLPHONE);
                 Audio.ClearMissionAudio(1);
                 this.cellphoneReset();
                 return;
