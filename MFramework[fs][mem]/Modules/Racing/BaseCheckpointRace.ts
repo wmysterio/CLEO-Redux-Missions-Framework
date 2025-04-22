@@ -12,15 +12,15 @@ import { StreetRacer } from "./Core/StreetRacer";
 export abstract class BaseCheckpointRace extends BaseRaceMission {
 
     private baseCheckpointRaceIsFirstCalculation: boolean;
-    private baseCheckpointRacePlayerStreetRacer: StreetRacer;
+    private baseCheckpointRaceStreetRacerPlayer: StreetRacer;
     private baseCheckpointRaceNumLaps: int;
     private baseCheckpointTimer: Timer;
 
     protected onInitEvent(): void {
         super.onInitEvent();
-        this.baseCheckpointRaceNumLaps = 1;
         this.baseCheckpointRaceIsFirstCalculation = true;
-        this.baseCheckpointRacePlayerStreetRacer = undefined;
+        this.baseCheckpointRaceNumLaps = 1;
+        this.baseCheckpointRaceStreetRacerPlayer = undefined;
         this.baseCheckpointTimer = new Timer();
         this.makeCheckpointTuneAsCameraShot();
     }
@@ -29,6 +29,7 @@ export abstract class BaseCheckpointRace extends BaseRaceMission {
     protected setNumberOfRaceLaps(numLaps: int): void {
         this.baseCheckpointRaceNumLaps = 1 > numLaps ? 1 : numLaps;
     }
+
 
     protected onStreetRacerCheckpointPassedEvent(streetRacer: StreetRacer, lastNode: RouteNode): void {
         if (streetRacer.isPlayer && lastNode.isCheckpoint) {
@@ -54,20 +55,13 @@ export abstract class BaseCheckpointRace extends BaseRaceMission {
         super.onDrawInfoEvent();
         if (this.baseCheckpointRaceIsFirstCalculation) {
             this.baseCheckpointRaceIsFirstCalculation = false;
-            let streetRacers = this.getStreetRacers();
-            let numStreetRacers = streetRacers.length;
-            for (let i = 0; i < numStreetRacers; ++i) {
-                if (streetRacers[i].isPlayer) {
-                    this.baseCheckpointRacePlayerStreetRacer = streetRacers[i];
-                    let nextCheckpointId = this.findNextCheckpointId(-1);
-                    let nextRouteNode = this.getRouteNode(nextCheckpointId);
-                    this.baseCheckpointTimer.set(nextRouteNode.timeLimitInMilliseconds);
-                    break;
-                }
-            }
+            let nextCheckpointId = this.findNextCheckpointId(-1);
+            let nextRouteNode = this.getRouteNode(nextCheckpointId);
+            this.baseCheckpointRaceStreetRacerPlayer = this.getStreetRacerPlayer();
+            this.baseCheckpointTimer.set(nextRouteNode.timeLimitInMilliseconds);
         }
         if (this.baseCheckpointRaceNumLaps > 1)
-            Screen.DisplayCounterWith2Numbers(this.baseCheckpointRacePlayerStreetRacer.currentLap + 1, this.baseCheckpointRaceNumLaps, "RACES32");
+            Screen.DisplayCounterWith2Numbers(this.baseCheckpointRaceStreetRacerPlayer.currentLap + 1, this.baseCheckpointRaceNumLaps, "RACES32");
         let minutes = this.baseCheckpointTimer.getMinutesLeft();
         let seconds = this.baseCheckpointTimer.getSecondsLeft();
         if (0 >= this.baseCheckpointTimer.getMillisecondsLeft()) {

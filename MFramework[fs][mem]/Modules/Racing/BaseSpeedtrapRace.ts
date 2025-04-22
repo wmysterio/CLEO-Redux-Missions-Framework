@@ -12,17 +12,17 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
 
     private baseSpeedtrapRaceIsFirstCalculation: boolean;
     private baseSpeedtrapRaceNumStreetRacers: int;
-    private baseSpeedtrapRacePlayerStreetRacer: StreetRacer;
-    private baseSpeedtrapRacePlayerStreetRacerIndex: int;
+    private baseSpeedtrapRaceStreetRacerPlayer: StreetRacer;
+    private baseSpeedtrapRaceStreetRacerPlayerId: int;
     private baseSpeedtrapRaceNumLaps: int;
 
     protected onInitEvent(): void {
         super.onInitEvent();
-        this.baseSpeedtrapRaceNumLaps = 1;
         this.baseSpeedtrapRaceIsFirstCalculation = true;
+        this.baseSpeedtrapRaceNumLaps = 1;
         this.baseSpeedtrapRaceNumStreetRacers = 0;
-        this.baseSpeedtrapRacePlayerStreetRacer = undefined;
-        this.baseSpeedtrapRacePlayerStreetRacerIndex = -1;
+        this.baseSpeedtrapRaceStreetRacerPlayer = undefined;
+        this.baseSpeedtrapRaceStreetRacerPlayerId = -1;
         this.makeCheckpointTuneAsCameraShot();
     }
 
@@ -30,6 +30,7 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
     protected setNumberOfRaceLaps(numLaps: int): void {
         this.baseSpeedtrapRaceNumLaps = 1 > numLaps ? 1 : numLaps;
     }
+
 
     protected onStreetRacerCheckpointPassedEvent(streetRacer: StreetRacer, lastNode: RouteNode): void {
         if (!streetRacer.isPlayer || this.baseSpeedtrapRaceNumLaps > (streetRacer.currentLap + 1))
@@ -48,19 +49,13 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
         super.onDrawInfoEvent();
         if (this.baseSpeedtrapRaceIsFirstCalculation) {
             this.baseSpeedtrapRaceIsFirstCalculation = false;
-            let streetRacers = this.getStreetRacers();
-            this.baseSpeedtrapRaceNumStreetRacers = streetRacers.length;
-            for (let i = 0; i < this.baseSpeedtrapRaceNumStreetRacers; ++i) {
-                if (streetRacers[i].isPlayer) {
-                    this.baseSpeedtrapRacePlayerStreetRacerIndex = i;
-                    this.baseSpeedtrapRacePlayerStreetRacer = streetRacers[i];
-                    break;
-                }
-            }
+            this.baseSpeedtrapRaceNumStreetRacers = this.getNumberOfStreetRacers();
+            this.baseSpeedtrapRaceStreetRacerPlayer = this.getStreetRacerPlayer();
+            this.baseSpeedtrapRaceStreetRacerPlayerId = this.getStreetRacerPlayerId();
         }
         Screen.DisplayCounter(this.baseSpeedtrapRaceGetPlayerPosition(), 1, "RACES44");
-        Screen.DisplayCounterWith2Numbers(this.baseSpeedtrapRacePlayerStreetRacer.currentLap + 1, this.baseSpeedtrapRaceNumLaps, "RACES32", 2);
-        Screen.DisplayCounter(this.baseSpeedtrapRacePlayerStreetRacer.summOfSpeed, 3, "KICK1_9");
+        Screen.DisplayCounterWith2Numbers(this.baseSpeedtrapRaceStreetRacerPlayer.currentLap + 1, this.baseSpeedtrapRaceNumLaps, "RACES32", 2);
+        Screen.DisplayCounter(this.baseSpeedtrapRaceStreetRacerPlayer.summOfSpeed, 3, "KICK1_9");
     }
 
 
@@ -68,10 +63,10 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
     private baseSpeedtrapRaceGetPlayerPosition(): int {
         let position = 1;
         for (let i = 0; i < this.baseSpeedtrapRaceNumStreetRacers; ++i) {
-            if (this.baseSpeedtrapRacePlayerStreetRacerIndex === i)
+            if (this.baseSpeedtrapRaceStreetRacerPlayerId === i)
                 continue;
             let currentStreetRacer = this.getStreetRacer(i);
-            if (currentStreetRacer.summOfSpeed > this.baseSpeedtrapRacePlayerStreetRacer.summOfSpeed)
+            if (currentStreetRacer.summOfSpeed > this.baseSpeedtrapRaceStreetRacerPlayer.summOfSpeed)
                 position += 1;
         }
         return position;
@@ -80,7 +75,7 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
     private recalculateSpeeds(winnerStreetRacerId: int): void {
         let lastCheckpointId = this.getLastCheckpointId();
         for (let i = 0; i < this.baseSpeedtrapRaceNumStreetRacers; ++i) {
-            if (winnerStreetRacerId === i || this.baseSpeedtrapRacePlayerStreetRacerIndex === i)
+            if (winnerStreetRacerId === i || this.baseSpeedtrapRaceStreetRacerPlayerId === i)
                 continue;
             let currentStreetRacer = this.getStreetRacer(i);
             if (lastCheckpointId === currentStreetRacer.nextNodeId) {

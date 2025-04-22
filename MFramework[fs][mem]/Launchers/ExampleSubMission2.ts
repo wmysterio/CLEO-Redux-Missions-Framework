@@ -36,7 +36,7 @@ export class ExampleSubMission2 extends BaseSprintRace {
 
 		//this.setBossPath(906, 0.92);
 
-		this.addStreetRacer(400, 11.7631, -2665.104, 39.899, 3.7039, 0);
+		this.addStreetRacerAsPlayer(400, 11.7631, -2665.104, 39.899, 3.7039);
 		this.addStreetRacer(400, 6.4237, -2666.1279, 39.9072, 3.9453);
 		this.addStreetRacer(400, 12.1201, -2675.7891, 40.2367, 3.774);
 

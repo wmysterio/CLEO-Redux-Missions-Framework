@@ -48,14 +48,7 @@ export abstract class BaseRadarRace extends BaseRaceMission {
         super.onDrawInfoEvent();
         if (this.baseRadarRaceIsFirstCalculation) {
             this.baseRadarRaceIsFirstCalculation = false;
-            let streetRacers = this.getStreetRacers();
-            let numStreetRacers = streetRacers.length;
-            for (let i = 0; i < numStreetRacers; ++i) {
-                if (streetRacers[i].isPlayer) {
-                    this.baseRadarRacePlayerCar = streetRacers[i].car;
-                    break;
-                }
-            }
+            this.baseRadarRacePlayerCar = this.getStreetRacerPlayer().car;
             let checkpointId = this.getLastCheckpointId();
             do {
                 let routeNode = this.getRouteNode(checkpointId);

@@ -12,29 +12,21 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 
     private baseLapKnockoutRaceIsFirstCalculation: boolean;
     private baseLapKnockoutRaceNumStreetRacers: int;
-    private baseLapKnockoutRacePlayerStreetRacer: StreetRacer;
-    private baseLapKnockoutRacePlayerStreetRacerIndex: int;
+    private baseLapKnockoutRaceStreetRacerPlayer: StreetRacer;
+    private baseLapKnockoutRaceStreetRacerPlayerId: int;
     private baseLapKnockoutRaceNumLaps: int;
     private baseLapKnockoutRaceSafeZPositionForCars: float;
     private baseLapKnockoutRaceRandomNames: int[];
 
     protected onInitEvent(): void {
         super.onInitEvent();
-        this.baseLapKnockoutRaceNumLaps = 1;
         this.baseLapKnockoutRaceIsFirstCalculation = true;
+        this.baseLapKnockoutRaceNumLaps = 1;
         this.baseLapKnockoutRaceNumStreetRacers = 0;
-        this.baseLapKnockoutRacePlayerStreetRacer = undefined;
-        this.baseLapKnockoutRacePlayerStreetRacerIndex = -1;
+        this.baseLapKnockoutRaceStreetRacerPlayer = undefined;
+        this.baseLapKnockoutRaceStreetRacerPlayerId = -1;
         this.baseLapKnockoutRaceSafeZPositionForCars = -1000.0;
-        this.baseLapKnockoutRaceRandomNames = new Array<int>();
-        for (let i = 0; i < 10; ++i)
-            this.baseLapKnockoutRaceRandomNames.push(i);
-        for (let i = 0; i < 80; ++i) {
-            let left = 9 * Math.random();
-            let temp = this.baseLapKnockoutRaceRandomNames[0];
-            this.baseLapKnockoutRaceRandomNames[0] = this.baseLapKnockoutRaceRandomNames[left];
-            this.baseLapKnockoutRaceRandomNames[left] = temp;
-        }
+        this.generateRandomStreetRacersNames();
         FxtStore.insert("NAMEKNO", "~d~ ~a~ ~d~", false);
     }
 
@@ -58,7 +50,7 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
         let isKnocked = true;
         for (let i = 0; i < this.baseLapKnockoutRaceNumStreetRacers; ++i) {
             let racer = this.getStreetRacer(i);
-            if (racer.isKnockedOut) // || streetRacer.id === i
+            if (racer.isKnockedOut)
                 continue;
             if (lastLap > racer.currentLap) {
                 isKnocked = false;
@@ -96,41 +88,35 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
         super.onDrawInfoEvent();
         if (this.baseLapKnockoutRaceIsFirstCalculation) {
             this.baseLapKnockoutRaceIsFirstCalculation = false;
-            let streetRacers = this.getStreetRacers();
-            this.baseLapKnockoutRaceNumStreetRacers = streetRacers.length;
+            this.baseLapKnockoutRaceNumStreetRacers = this.getNumberOfStreetRacers();
             this.baseLapKnockoutRaceNumLaps = this.baseLapKnockoutRaceNumStreetRacers - 1;
-            for (let i = 0; i < this.baseLapKnockoutRaceNumStreetRacers; ++i) {
-                if (streetRacers[i].isPlayer) {
-                    this.baseLapKnockoutRacePlayerStreetRacerIndex = i;
-                    this.baseLapKnockoutRacePlayerStreetRacer = streetRacers[i];
-                    break;
-                }
-            }
+            this.baseLapKnockoutRaceStreetRacerPlayer = this.getStreetRacerPlayer();
+            this.baseLapKnockoutRaceStreetRacerPlayerId = this.getStreetRacerPlayerId();
         }
         Screen.DisplayCounter(this.baseLapKnockoutRaceGetPlayerPosition(), 1, "RACES44");
         if (this.baseLapKnockoutRaceNumLaps > 1)
-            Screen.DisplayCounterWith2Numbers(this.baseLapKnockoutRacePlayerStreetRacer.currentLap + 1, this.baseLapKnockoutRaceNumLaps, "RACES32", 2);
+            Screen.DisplayCounterWith2Numbers(this.baseLapKnockoutRaceStreetRacerPlayer.currentLap + 1, this.baseLapKnockoutRaceNumLaps, "RACES32", 2);
     }
 
 
 
     private baseLapKnockoutRaceGetPlayerPosition(): int {
         let position = 1;
-        let currentPlayerCheckpointId = this.baseLapKnockoutRacePlayerStreetRacer.nextNodeId;
+        let currentPlayerCheckpointId = this.baseLapKnockoutRaceStreetRacerPlayer.nextNodeId;
         for (let i = 0; i < this.baseLapKnockoutRaceNumStreetRacers; ++i) {
-            if (this.baseLapKnockoutRacePlayerStreetRacerIndex === i)
+            if (this.baseLapKnockoutRaceStreetRacerPlayerId === i)
                 continue;
             let currentStreetRacer = this.getStreetRacer(i);
-            if (currentStreetRacer.currentLap > this.baseLapKnockoutRacePlayerStreetRacer.currentLap) {
+            if (currentStreetRacer.currentLap > this.baseLapKnockoutRaceStreetRacerPlayer.currentLap) {
                 position += 1;
-            } else if (currentStreetRacer.currentLap === this.baseLapKnockoutRacePlayerStreetRacer.currentLap) {
+            } else if (currentStreetRacer.currentLap === this.baseLapKnockoutRaceStreetRacerPlayer.currentLap) {
                 let currentStreetRacerCheckpointId = currentStreetRacer.nextNodeId;
                 if (!this.isRouteNodeACheckpoint(currentStreetRacerCheckpointId))
                     currentStreetRacerCheckpointId = this.findNextCheckpointId(currentStreetRacerCheckpointId);
                 if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
                     position += 1;
                 } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
-                    let playerCoord = this.baseLapKnockoutRacePlayerStreetRacer.car.getCoordinates();
+                    let playerCoord = this.baseLapKnockoutRaceStreetRacerPlayer.car.getCoordinates();
                     let racerCoord = currentStreetRacer.car.getCoordinates();
                     let nextNode = this.getRouteNode(currentPlayerCheckpointId);
                     let playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
@@ -141,6 +127,18 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
             }
         }
         return position;
+    }
+
+    private generateRandomStreetRacersNames(): void {
+        this.baseLapKnockoutRaceRandomNames = new Array<int>();
+        for (let i = 0; i < 10; ++i)
+            this.baseLapKnockoutRaceRandomNames.push(i);
+        for (let i = 0; i < 80; ++i) {
+            let left = 9 * Math.random();
+            let temp = this.baseLapKnockoutRaceRandomNames[0];
+            this.baseLapKnockoutRaceRandomNames[0] = this.baseLapKnockoutRaceRandomNames[left];
+            this.baseLapKnockoutRaceRandomNames[left] = temp;
+        }
     }
 
 }

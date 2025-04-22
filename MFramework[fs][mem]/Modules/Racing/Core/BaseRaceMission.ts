@@ -4,7 +4,7 @@
 
 import { BaseMission } from "../../../BaseMission";
 import { AddedRacerInfo } from "./AddedRacerInfo";
-import { Route } from "./Route";
+//import { Route } from "./Route";
 import { RouteNode } from "./RouteNode";
 import { StreetRacer } from "./StreetRacer";
 
@@ -14,44 +14,46 @@ export abstract class BaseRaceMission extends BaseMission {
     private static baseRaceMissionEmptyCarSetup: (car: Car) => void = (car: Car) => { };
 
     private baseRaceMissionStage: int;
-    private baseRaceMissionRoute: Route;
-    private baseRaceMissionStreetRacers: StreetRacer[];
-    private baseRaceMissionMinWantedLevel: int;
+    private baseRaceMissionAddedRacerInfo: AddedRacerInfo[];
+    private baseRaceMissionRoute: RouteNode[];
     private baseRaceMissionNumRouteNodes: int;
+    private baseRaceMissionLastCheckpointId: int;
+    private baseRaceMissionStreetRacers: StreetRacer[];
+    private baseRaceMissionNumStreetRacers: int;
+    private baseRaceMissionPlayerStreetRacersIndex: int;
+    private baseRaceMissionBossPath: int;
+    private baseRaceMissionBossPathSpeed: float;
     private baseRaceMissionCarDensityMultiplier: float;
     private baseRaceMissionPedDensityMultiplier: float;
     private baseRaceMissionWantedMultiplier: float;
     private baseRaceMissionSpawnCops: boolean;
-    private baseRaceMissionNumStreetRacers: int;
-    private baseRaceMissionAddedRacerInfo: AddedRacerInfo[];
+    private baseRaceMissionMinWantedLevel: int;
     private baseRaceMissionBlips: Blip[];
     private baseRaceMissionCheckpoint: Checkpoint;
     private baseRaceMissionBlip: Blip;
-    private baseRaceMissionLastCheckpointForPlayer: boolean;
-    private baseRaceMissionLastCheckpointId: int;
     private baseRaceMissionOnCheckpointTune: int;
+    private baseRaceMissionLastCheckpointForPlayer: boolean;
     private baseRaceDisablePlayerCheckpointsCheck: boolean;
-    private baseRaceMissionBossPath: int;
-    private baseRaceMissionBossPathSpeed: float;
 
     protected onInitEvent(): void {
         super.onInitEvent();
         this.baseRaceMissionStage = 0;
-        this.baseRaceMissionRoute = new Route();
-        this.baseRaceMissionStreetRacers = new Array<StreetRacer>();
         this.baseRaceMissionAddedRacerInfo = new Array<AddedRacerInfo>();
-        this.baseRaceMissionBlips = new Array<Blip>();
-        this.baseRaceMissionMinWantedLevel = 0;
-        this.baseRaceMissionNumStreetRacers = 0;
+        this.baseRaceMissionRoute = new Array<RouteNode>();
         this.baseRaceMissionNumRouteNodes = 0;
         this.baseRaceMissionLastCheckpointId = 0;
-        this.baseRaceDisablePlayerCheckpointsCheck = false;
-        this.baseRaceMissionCheckpoint = new Checkpoint(-1);
-        this.baseRaceMissionBlip = new Blip(-1);
-        this.baseRaceMissionLastCheckpointForPlayer = false;
-        this.baseRaceMissionOnCheckpointTune = 1058;
+        this.baseRaceMissionStreetRacers = new Array<StreetRacer>();
+        this.baseRaceMissionNumStreetRacers = 0;
+        this.baseRaceMissionPlayerStreetRacersIndex = -1;
         this.baseRaceMissionBossPath = -1;
         this.baseRaceMissionBossPathSpeed = 0.0;
+        this.baseRaceMissionMinWantedLevel = 0;
+        this.baseRaceMissionBlips = new Array<Blip>();
+        this.baseRaceMissionCheckpoint = new Checkpoint(-1);
+        this.baseRaceMissionBlip = new Blip(-1);
+        this.baseRaceMissionOnCheckpointTune = 1058;
+        this.baseRaceMissionLastCheckpointForPlayer = false;
+        this.baseRaceDisablePlayerCheckpointsCheck = false;
     }
 
     /** Reaction to an event before the start of the race */
@@ -72,21 +74,53 @@ export abstract class BaseRaceMission extends BaseMission {
     /** Reaction to the event of drawing information about the player's state in the race */
     protected onDrawInfoEvent(): void { }
 
-    /** Adds a new route node */
+
+    /** 
+     * Adds a new street racer. Character and car models will be loaded and unloaded automatically
+     * @param charModelId Use -1 for random char model
+     * @param carSetup Function for additional car settings. Use "undefined" to skip
+     */
+    protected addStreetRacer(carModel: int, x: float, y: float, z: float, heading: float, charModelId: int = -1, carSetup: (car: Car) => void = undefined): void {
+        if (this.baseRaceMissionStage === 0) {
+            if (carSetup === undefined)
+                carSetup = BaseRaceMission.baseRaceMissionEmptyCarSetup;
+            let addedRacerInfo = new AddedRacerInfo(carModel, x, y, z, heading, 8 > charModelId ? -1 : charModelId, carSetup);
+            this.baseRaceMissionAddedRacerInfo.push(addedRacerInfo);
+        }
+    }
+
+    /** 
+     * Adds a new street racer as player. Car model will be loaded and unloaded automatically
+     * @param carSetup Function for additional car settings. Use "undefined" to skip
+     */
+    protected addStreetRacerAsPlayer(carModel: int, x: float, y: float, z: float, heading: float, carSetup: (car: Car) => void = undefined): void {
+        if (this.baseRaceMissionStage === 0) {
+            if (carSetup === undefined)
+                carSetup = BaseRaceMission.baseRaceMissionEmptyCarSetup;
+            let addedRacerInfo = new AddedRacerInfo(carModel, x, y, z, heading, 0, carSetup);
+            this.baseRaceMissionAddedRacerInfo.push(addedRacerInfo);
+        }
+    }
+
+    /** Adds a new route node, required NPC */
     protected addRouteNode(x: float, y: float, z: float, heading: float, speed: float, timeLimitInMilliseconds: int = 0): void {
-        if (this.baseRaceMissionStage === 0)
-            this.baseRaceMissionRoute.addNode(x, y, z, heading, speed, false, timeLimitInMilliseconds);
+        if (this.baseRaceMissionStage === 0) {
+            this.baseRaceMissionRoute.push(new RouteNode(x, y, z, heading, speed, false, timeLimitInMilliseconds));
+        }
     }
 
-    /** Adds a new route node that is mandatory for the player */
-    protected addRouteNodeAsCheckpoint(x: float, y: float, z: float, heading: float, speed: float, timeLimit: int = 0): void {
-        if (this.baseRaceMissionStage === 0)
-            this.baseRaceMissionRoute.addNode(x, y, z, heading, speed, true, timeLimit);
+    /** Adds a new route node that is mandatory for the player and NPC */
+    protected addRouteNodeAsCheckpoint(x: float, y: float, z: float, heading: float, speed: float, timeLimitInMilliseconds: int = 0): void {
+        if (this.baseRaceMissionStage === 0) {
+            let node = new RouteNode(x, y, z, heading, speed, true, timeLimitInMilliseconds);
+            node.checkpointId = this.baseRaceMissionRoute.length;
+            this.baseRaceMissionRoute.push(node);
+        }
     }
 
-    /** Gets all added street racers */
-    protected getStreetRacers(): StreetRacer[] {
-        return this.baseRaceMissionStreetRacers;
+    /** Returns the number of street racers */
+    protected getNumberOfStreetRacers(): int {
+        return this.baseRaceMissionNumStreetRacers;
     }
 
     /** Returns information about a street racer */
@@ -94,14 +128,24 @@ export abstract class BaseRaceMission extends BaseMission {
         return this.baseRaceMissionStreetRacers[id];
     }
 
+    /** Returns the street racer player */
+    protected getStreetRacerPlayer(): StreetRacer {
+        return this.baseRaceMissionStreetRacers[this.baseRaceMissionPlayerStreetRacersIndex];
+    }
+
+    /** Returns the street racing player's ID */
+    protected getStreetRacerPlayerId(): int {
+        return this.baseRaceMissionPlayerStreetRacersIndex;
+    }
+
     /** Returns information about a route node */
     protected getRouteNode(id: int): RouteNode {
-        return this.baseRaceMissionRoute.getNode(id);
+        return this.baseRaceMissionRoute[id];
     }
 
     /** Returns true if the route node is a checkpoint */
     protected isRouteNodeACheckpoint(id: int): boolean {
-        return this.baseRaceMissionRoute.getNode(id).isCheckpoint;
+        return this.baseRaceMissionRoute[id].isCheckpoint;
     }
 
     /** Sets the minimum wanted level during a race */
@@ -118,19 +162,6 @@ export abstract class BaseRaceMission extends BaseMission {
         this.baseRaceMissionSpawnCops = cops;
     }
 
-    /** 
-     * Adds a new street racer. Character and car models will be loaded and unloaded automatically
-     * @param charModelId Use 0 for player's car
-     * @param carSetup Function for additional car settings. Use "undefined" to skip
-     */
-    protected addStreetRacer(carModel: int, x: float, y: float, z: float, heading: float, charModelId: int = -1, carSetup: (car: Car) => void = undefined): void {
-        if (this.baseRaceMissionStage === 0) {
-            if (carSetup === undefined)
-                carSetup = BaseRaceMission.baseRaceMissionEmptyCarSetup;
-            let addedRacerInfo = new AddedRacerInfo(carModel, x, y, z, heading, charModelId, carSetup);
-            this.baseRaceMissionAddedRacerInfo.push(addedRacerInfo);
-        }
-    }
 
     /** Returns true if it is now possible to mark all checkpoints as finished (visually) */
     protected canMarkCheckpointsAsFinish(): boolean {
@@ -166,17 +197,17 @@ export abstract class BaseRaceMission extends BaseMission {
     protected findNextCheckpointId(currentId: int): int {
         let nextId = currentId + 1;
         for (let i = nextId; i < this.baseRaceMissionNumRouteNodes; ++i) {
-            if (this.baseRaceMissionRoute.isCheckpoint(i))
+            if (this.baseRaceMissionRoute[i].isCheckpoint)
                 return i;
         }
         for (let i = 0; i < currentId; ++i) {
-            if (this.baseRaceMissionRoute.isCheckpoint(i))
+            if (this.baseRaceMissionRoute[i].isCheckpoint)
                 return i;
         }
         throw new Error("Route not have a checkpoints!");
     }
 
-    /** Specifies the path of the boss's vehicle and the speed of this path */
+    /** Specifies the path of the boss's vehicle and the speed of this path. The first non-player street racer found will be considered a boss */
     protected setBossPath(path: int, speed: float = 1.0): void {
         this.baseRaceMissionBossPath = path;
         this.baseRaceMissionBossPathSpeed = speed;
@@ -283,15 +314,16 @@ export abstract class BaseRaceMission extends BaseMission {
         usedModels.forEach(modelId => {
             Streaming.MarkModelAsNoLongerNeeded(modelId);
         });
-        this.baseRaceMissionNumRouteNodes = this.baseRaceMissionRoute.getNumNodes();
+        this.baseRaceMissionNumRouteNodes = this.baseRaceMissionRoute.length;
         this.baseRaceMissionLastCheckpointId = this.baseRaceMissionFindLastCheckpointId();
-        let startLocation = this.baseRaceMissionRoute.getNode(0);
+        let startLocation = this.baseRaceMissionRoute[0];
         World.ClearArea(startLocation.x, startLocation.y, startLocation.z, 300.0, true);
         this.refreshArea(startLocation.x, startLocation.y, startLocation.z);
         this.baseRaceMissionNumStreetRacers = this.baseRaceMissionStreetRacers.length;
         for (let i = 0; i < this.baseRaceMissionNumStreetRacers; ++i) {
             let streetRacer = this.baseRaceMissionStreetRacers[i];
             if (streetRacer.isPlayer) {
+                this.baseRaceMissionPlayerStreetRacersIndex = i;
                 streetRacer.nextNodeId = -1;
                 break;
             }
@@ -304,10 +336,12 @@ export abstract class BaseRaceMission extends BaseMission {
             while (!Streaming.HasCarRecordingBeenLoaded(this.baseRaceMissionBossPath))
                 wait(0);
             for (let i = 0; i < this.baseRaceMissionNumStreetRacers; ++i) {
-                let streetRacer = this.baseRaceMissionStreetRacers[i];
-                if (streetRacer.isPlayer)
+                if (this.baseRaceMissionPlayerStreetRacersIndex === i)
                     continue;
-                bossCar = streetRacer.car;
+                //let streetRacer = this.baseRaceMissionStreetRacers[i];
+                //if (streetRacer.isPlayer)
+                //    continue;
+                bossCar = this.baseRaceMissionStreetRacers[i].car;
                 break;
             }
         }
@@ -359,7 +393,7 @@ export abstract class BaseRaceMission extends BaseMission {
                 streetRacer.char.warpIntoCar(streetRacer.car);
             if (streetRacer.isKnockedOut)
                 continue;
-            let currentNode = this.baseRaceMissionRoute.getNode(streetRacer.nextNodeId);
+            let currentNode = this.baseRaceMissionRoute[streetRacer.nextNodeId];
             if (StuckCarCheck.IsCarStuck(streetRacer.car) && !streetRacer.car.isOnScreen() && !streetRacer.car.isPlaybackGoingOn())
                 this.baseRaceMissionTryRestoreRacerCar(streetRacer, currentNode);
             if (streetRacer.car.locate3D(currentNode.x, currentNode.y, currentNode.z, 12.0, 12.0, 12.0, false)) {
@@ -375,7 +409,7 @@ export abstract class BaseRaceMission extends BaseMission {
                 }
                 streetRacer.lastNode = currentNode;
                 streetRacer.nextNodeId = nextNodeId;
-                currentNode = this.baseRaceMissionRoute.getNode(nextNodeId);
+                currentNode = this.baseRaceMissionRoute[nextNodeId];
                 streetRacer.char.clearTasks();
             }
             if (streetRacer.car.isPlaybackGoingOn())
@@ -410,7 +444,7 @@ export abstract class BaseRaceMission extends BaseMission {
     private baseRaceMissionUpdatePlayerRoute(streetRacer: StreetRacer): void {
         if (streetRacer.nextNodeId === -1)
             streetRacer.nextNodeId = this.findNextCheckpointId(-1);
-        let currentCheckpoint = this.baseRaceMissionRoute.getNode(streetRacer.nextNodeId);
+        let currentCheckpoint = this.baseRaceMissionRoute[streetRacer.nextNodeId];
         if (streetRacer.car.locate3D(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z, 12.0, 12.0, 12.0, false)
             /*&& streetRacer.car.isOnAllWheels()*/) {
             streetRacer.summOfSpeed += streetRacer.car.getSpeed();
@@ -425,12 +459,12 @@ export abstract class BaseRaceMission extends BaseMission {
                 streetRacer.nextNodeId = -1;
             }
             streetRacer.nextNodeId = this.findNextCheckpointId(streetRacer.nextNodeId);
-            currentCheckpoint = this.baseRaceMissionRoute.getNode(streetRacer.nextNodeId);
+            currentCheckpoint = this.baseRaceMissionRoute[streetRacer.nextNodeId];
         }
         if (Blip.DoesExist(+this.baseRaceMissionBlip))
             return;
         let nextCheckpointId = this.findNextCheckpointId(streetRacer.nextNodeId);
-        let nextCheckpoint = this.baseRaceMissionRoute.getNode(nextCheckpointId);
+        let nextCheckpoint = this.baseRaceMissionRoute[nextCheckpointId];
         this.baseRaceMissionBlip = Blip.AddForCoord(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z);
         this.baseRaceMissionCheckpoint = Checkpoint.Create(
             this.baseRaceMissionLastCheckpointForPlayer ? 1 : 0,
@@ -442,7 +476,7 @@ export abstract class BaseRaceMission extends BaseMission {
     private baseRaceMissionGetNumCheckpoints(): int {
         let result = 0;
         for (let i = 0; i < this.baseRaceMissionNumRouteNodes; ++i) {
-            if (this.baseRaceMissionRoute.isCheckpoint(i))
+            if (this.baseRaceMissionRoute[i].isCheckpoint)
                 result += 1;
         }
         return result;
@@ -451,7 +485,7 @@ export abstract class BaseRaceMission extends BaseMission {
     private baseRaceMissionFindLastCheckpointId(): int {
         let start = this.baseRaceMissionNumRouteNodes - 1;
         for (let i = start; i >= 0; --i) {
-            if (this.baseRaceMissionRoute.isCheckpoint(i))
+            if (this.baseRaceMissionRoute[i].isCheckpoint)
                 return i
         }
         throw new Error("Route not have a checkpoints!");

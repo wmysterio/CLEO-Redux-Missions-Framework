@@ -12,15 +12,15 @@ export abstract class BaseSprintRace extends BaseRaceMission {
 
     private baseSprintRaceIsFirstCalculation: boolean;
     private baseSprintRaceNumStreetRacers: int;
-    private baseSprintRacePlayerStreetRacer: StreetRacer;
-    private baseSprintRacePlayerStreetRacerIndex: int;
+    private baseSprintRaceStreetRacerPlayer: StreetRacer;
+    private baseSprintRaceStreetRacerPlayerId: int;
 
     protected onInitEvent(): void {
         super.onInitEvent();
         this.baseSprintRaceIsFirstCalculation = true;
         this.baseSprintRaceNumStreetRacers = 0;
-        this.baseSprintRacePlayerStreetRacer = undefined;
-        this.baseSprintRacePlayerStreetRacerIndex = -1;
+        this.baseSprintRaceStreetRacerPlayer = undefined;
+        this.baseSprintRaceStreetRacerPlayerId = -1;
     }
 
     protected onStreetRacerCheckpointPassedEvent(streetRacer: StreetRacer, lastNode: RouteNode): void {
@@ -40,15 +40,9 @@ export abstract class BaseSprintRace extends BaseRaceMission {
         super.onDrawInfoEvent();
         if (this.baseSprintRaceIsFirstCalculation) {
             this.baseSprintRaceIsFirstCalculation = false;
-            let streetRacers = this.getStreetRacers();
-            this.baseSprintRaceNumStreetRacers = streetRacers.length;
-            for (let i = 0; i < this.baseSprintRaceNumStreetRacers; ++i) {
-                if (streetRacers[i].isPlayer) {
-                    this.baseSprintRacePlayerStreetRacerIndex = i;
-                    this.baseSprintRacePlayerStreetRacer = streetRacers[i];
-                    break;
-                }
-            }
+            this.baseSprintRaceNumStreetRacers = this.getNumberOfStreetRacers();
+            this.baseSprintRaceStreetRacerPlayer = this.getStreetRacerPlayer();
+            this.baseSprintRaceStreetRacerPlayerId = this.getStreetRacerPlayerId();
         }
         Screen.DisplayCounter(this.baseSprintRaceGetPlayerPosition(), 1, "RACES44");
     }
@@ -57,9 +51,9 @@ export abstract class BaseSprintRace extends BaseRaceMission {
 
     private baseSprintRaceGetPlayerPosition(): int {
         let position = 1;
-        let currentPlayerCheckpointId = this.baseSprintRacePlayerStreetRacer.nextNodeId;
+        let currentPlayerCheckpointId = this.baseSprintRaceStreetRacerPlayer.nextNodeId;
         for (let i = 0; i < this.baseSprintRaceNumStreetRacers; ++i) {
-            if (this.baseSprintRacePlayerStreetRacerIndex === i)
+            if (this.baseSprintRaceStreetRacerPlayerId === i)
                 continue;
             let currentStreetRacer = this.getStreetRacer(i);
             let currentStreetRacerCheckpointId = currentStreetRacer.nextNodeId;
@@ -68,7 +62,7 @@ export abstract class BaseSprintRace extends BaseRaceMission {
             if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
                 position += 1;
             } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
-                let playerCoord = this.baseSprintRacePlayerStreetRacer.car.getCoordinates();
+                let playerCoord = this.baseSprintRaceStreetRacerPlayer.car.getCoordinates();
                 let racerCoord = currentStreetRacer.car.getCoordinates();
                 let nextNode = this.getRouteNode(currentPlayerCheckpointId);
                 let playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
