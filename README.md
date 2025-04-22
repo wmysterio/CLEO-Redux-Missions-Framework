@@ -1,19 +1,15 @@
 Deep alpha version.
 
+## Modules
+- AudioPlayer
+- Timer
+- Dialog
+- Cellphone
+- Races (Sprint, Circuit, Lap knockout, Speedtrap, Checkpoint, Radars, Cops)
+- Screen class for display (Timers, Counters, Bars)
+- Models class with base models id contsants
+
 ### Latest
-- [x] Cellphone module
-- [x] Dialog module
-- [x] AudioPlayer module
-- [x] Timer module
-- [x] Screen class for display timers, counters, bars.
-- [x] Races missions templates
-- - [x] Cops mode
-- - [x] Radars mode
-- - [x] Checkpoint mode
-- - [x] Sprint mode
-- - [x] Speed trap mode
-- - [x] Circuit mode
-- - [x] Lap knockout mode
 
 ### Next
 
