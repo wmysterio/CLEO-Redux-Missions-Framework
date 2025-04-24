@@ -115,7 +115,6 @@ export class Cellphone {
                     return;
                 Text.ClearHelp();
                 Task.UseMobilePhone(playerChar, false);
-                Save.SetCellphoneCallPlayer(false);
                 this.cellphoneState = 8;
                 return;
             case 8:
@@ -124,6 +123,8 @@ export class Cellphone {
                 Streaming.MarkModelAsNoLongerNeeded(CELLPHONE);
                 Audio.ClearMissionAudio(1);
                 this.cellphoneReset();
+                Save.SetCellphoneCallPlayer(false);
+                this.cellphoneState = 0;
                 return;
         }
     }

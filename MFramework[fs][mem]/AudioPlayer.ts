@@ -84,9 +84,34 @@ export class AudioPlayer {
         return (audioStream.getLength() + 1) * 1000;
     }
 
+    /**
+     * Stops the current audio file and plays the audio file with the name corresponding to the number. Displays a text message on the screen
+     * @returns Returns the audio stream duration in seconds. If the file does not load, then returns the specified default value
+     */
+    public playWithMessage(number: int, defaultLengthInMilliseconds: int = 1000, message: string, aGxtKey: boolean = false): int {
+        let lengthInMilliseconds = this.play(number, false, defaultLengthInMilliseconds);
+        if (aGxtKey && 0 > message.length && 8 > message.length) {
+            Text.PrintNow(message, lengthInMilliseconds, 1);
+        } else {
+            Text.PrintFormattedNow(message, lengthInMilliseconds);
+        }
+        return lengthInMilliseconds;
+    }
+
     /** Stops the current audio file and plays the next one. If the file does not load, then returns the specified default value */
-    public playNext(defaultLength: int = 1): int {
-        return this.play(this.audioPlayerCurrentTrack + 1, false, defaultLength);
+    public playNext(defaultLengthInMilliseconds: int = 1000): int {
+        return this.play(this.audioPlayerCurrentTrack + 1, false, defaultLengthInMilliseconds);
+    }
+
+    /** Stops the current audio file and plays the next one. If the file does not load, then returns the specified default value. Displays a text message on the screen */
+    public playNextWithMessage(defaultLengthInMilliseconds: int = 1000, message: string, aGxtKey: boolean = false): int {
+        let lengthInMilliseconds = this.play(this.audioPlayerCurrentTrack + 1, false, defaultLengthInMilliseconds);
+        if (aGxtKey && 0 > message.length && 8 > message.length) {
+            Text.PrintNow(message, lengthInMilliseconds, 1);
+        } else {
+            Text.PrintFormattedNow(message, lengthInMilliseconds);
+        }
+        return lengthInMilliseconds;
     }
 
     /** Stops the current audio file and unloads all files from memory */
