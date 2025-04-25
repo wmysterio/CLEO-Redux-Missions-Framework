@@ -52,6 +52,7 @@ export class ScriptedClips {
                     continue;
                 }
                 clips.scriptedClipsTimer.set();
+                //log("D:" + duration + " L:" + clips.scriptedClipsTimer.getMillisecondsLeft() + " P:" + clips.scriptedClipsTimer.getMillisecondsPassed());
                 while (duration > clips.scriptedClipsTimer.getMillisecondsPassed())
                     scriptedWait(0);
             }
@@ -74,6 +75,7 @@ export class ScriptedClips {
 
     /** Tells the scripted clip to wait for the specified time in milliseconds  */
     public wait(duration: int): ScriptedClips {
+        //log(duration);
         this.scriptedClipsDurations.push(0 > duration ? 0 : duration);
         this.scriptedClipsConditions.push(undefined);
         this.scriptedClipsActions.push(undefined);

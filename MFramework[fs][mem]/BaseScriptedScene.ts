@@ -12,6 +12,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
     private baseScriptedSceneCharsArray: Char[];
     private baseScriptedSceneCarsArray: Car[];
     private baseScriptedSceneScriptObjectsArray: ScriptObject[];
+    private baseScriptedSceneUseWorldSettings: boolean;
 
     /** @param debugMode Use true for manual control (e.g. for debugging) */
     constructor(debugMode: boolean = false) {
@@ -20,6 +21,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         this.baseScriptedSceneCarsArray = new Array<Car>();
         this.baseScriptedSceneScriptObjectsArray = new Array<ScriptObject>();
         this.baseScriptedSceneDecisionMakerChar = this.createEmptyDecisionMakerChar();
+        this.baseScriptedSceneUseWorldSettings = true;
         let clips = new ScriptedClips();
         if (debugMode) {
             this.onLoadEvent();
@@ -33,11 +35,6 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
             this.onUnloadEvent();
             return;
         }
-        World.SetPedDensityMultiplier(0.0);
-        World.SetCarDensityMultiplier(0.0);
-        Game.SetWantedMultiplier(0.0);
-        Game.SetPoliceIgnorePlayer(this.player, true);
-        Game.SetEveryoneIgnorePlayer(this.player, true);
         Hud.DisplayZoneNames(false);
         Hud.DisplayCarNames(false);
         this.player.setControl(false);
@@ -47,6 +44,13 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         this.playerChar.shutUp(true).hideWeaponForScriptedCutscene(true).stopFacialTalk()
             .clearTasksImmediately().clearLookAt();
         this.onLoadEvent();
+        if (this.baseScriptedSceneUseWorldSettings) {
+            World.SetPedDensityMultiplier(0.0);
+            World.SetCarDensityMultiplier(0.0);
+            Game.SetWantedMultiplier(0.0);
+            Game.SetPoliceIgnorePlayer(this.player, true);
+            Game.SetEveryoneIgnorePlayer(this.player, true);
+        }
         Hud.DisplayRadar(false);
         Hud.Display(false);
         Hud.SwitchWidescreen(true);
@@ -66,11 +70,13 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         this.baseScriptedSceneDeleteEntities();
         this.onUnloadEvent();
         wait(800);
-        World.SetPedDensityMultiplier(1.0);
-        World.SetCarDensityMultiplier(1.0);
-        Game.SetWantedMultiplier(1.0);
-        Game.SetPoliceIgnorePlayer(this.player, false);
-        Game.SetEveryoneIgnorePlayer(this.player, false);
+        if (this.baseScriptedSceneUseWorldSettings) {
+            World.SetPedDensityMultiplier(1.0);
+            World.SetCarDensityMultiplier(1.0);
+            Game.SetWantedMultiplier(1.0);
+            Game.SetPoliceIgnorePlayer(this.player, false);
+            Game.SetEveryoneIgnorePlayer(this.player, false);
+        }
         this.player.setControl(true);
         this.restorePlayerAfterScriptedScene();
         this.playerChar.clearTasksImmediately();
@@ -93,6 +99,25 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
     protected onSetClipsEvent(clips: ScriptedClips): void { }
 
 
+
+    /** Disables world settings for scripted scenes. Use this when they interfere with the mission */
+    protected dontUseWorldSettings(): void {
+        this.baseScriptedSceneUseWorldSettings = false;
+    }
+
+    /** Makes the character perform an animation */
+    protected playAnim(char: Char, animationName: string, animationFile: string, time: int, facialTalk: boolean = true): void {
+        Task.PlayAnim(char, animationName, animationFile, 4.0, false, false, false, false, time);
+        if (facialTalk)
+            char.startFacialTalk(time);
+    }
+
+    /** Makes a character play an animation that affects only the upper half of their body */
+    protected playAnimSecondary(char: Char, animationName: string, animationFile: string, time: int, facialTalk: boolean = true): void {
+        Task.PlayAnimSecondary(char, animationName, animationFile, 4.0, false, false, false, false, time);
+        if (facialTalk)
+            char.startFacialTalk(time);
+    }
 
     /** Creates a new script object and adds it to the auto-delete list. You must load the model before creating */
     protected addScriptObject(scriptObjectModelId: int, x: float, y: float, z: float): ScriptObject {

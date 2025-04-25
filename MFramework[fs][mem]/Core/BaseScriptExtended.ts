@@ -105,7 +105,7 @@ export abstract class BaseScriptExtended extends BaseScript {
             needContinue = false;
             models.forEach(modelId => {
                 if (!Streaming.HasModelLoaded(modelId))
-                    needContinue = true; // continue;
+                    needContinue = true;
             });
         } while (needContinue);
     }
@@ -119,6 +119,25 @@ export abstract class BaseScriptExtended extends BaseScript {
     /** Releases the specified models, freeing game memory */
     protected unloadModels(...models: int[]): void {
         models.forEach(modelId => { Streaming.MarkModelAsNoLongerNeeded(modelId); });
+    }
+
+    /** Requests loading of new vehicle mod models. Continues if all requested models are available for creation */
+    protected loadVehicleMods(...models: int[]): void {
+        models.forEach(modelId => { Streaming.RequestVehicleMod(modelId); });
+        let needContinue = false;
+        do {
+            wait(0);
+            needContinue = false;
+            models.forEach(modelId => {
+                if (!Streaming.HasVehicleModLoaded(modelId))
+                    needContinue = true;
+            });
+        } while (needContinue);
+    }
+
+    /** Unloads the specified vehicle mod models, freeing up game memory */
+    protected unloadVehicleMods(...models: int[]): void {
+        models.forEach(modelId => { Streaming.MarkVehicleModAsNoLongerNeeded(modelId); });
     }
 
     /** Places a character facing another character */
