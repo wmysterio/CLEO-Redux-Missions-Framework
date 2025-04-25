@@ -190,7 +190,9 @@ export abstract class BaseMission extends BaseScriptExtended {
 
     /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
     protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = -1, color2: int = -1): Car {
-        let car = Car.Create(carModelId, x, y, z).setHeading(heading).changeColor(color1, color2).lockDoors(1);
+        let car = Car.Create(carModelId, x, y, z).setHeading(heading).lockDoors(1);
+        if (color1 > -1 || color2 > -1)
+            car.changeColor(color1, color2)
         this.baseMissionCarsArray.push(car);
         return car;
     }

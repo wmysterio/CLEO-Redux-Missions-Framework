@@ -5,17 +5,6 @@
 /** Class for working with audio files */
 export class AudioPlayer {
 
-    private static audioPlayerModRootDir: string = "";
-    private static audioPlayerDisableSet: boolean = false;
-
-    /** Sets the root folder for music. This is used internally and should have no effect when called */
-    public static setModRoorDir(path: string): void {
-        if (AudioPlayer.audioPlayerDisableSet)
-            return;
-        AudioPlayer.audioPlayerDisableSet = true;
-        AudioPlayer.audioPlayerModRootDir = path;
-    }
-
     private audioPlayerAudioStreams: AudioStream[];
     private audioPlayerNumTracks: int;
     private audioPlayerCurrentTrack: int;
@@ -33,9 +22,9 @@ export class AudioPlayer {
         if (0 > trackNumber || this.audioPlayerNumTracks > 0)
             return;
         this.audioPlayerNumTracks = trackNumber;
-        let rootDir = AudioPlayer.audioPlayerModRootDir + subfolder;
+        let rootDir = __dirname + subfolder;
         for (let i = 0; i < trackNumber; ++i) {
-            let nextFileName = rootDir + i.toString() + ".mp3";
+            let nextFileName = rootDir + "\\" + i.toString() + ".mp3";
             if (Fs.DoesFileExist(nextFileName)) {
                 this.audioPlayerAudioStreams.push(AudioStream.Load(nextFileName));
                 continue;
@@ -88,9 +77,9 @@ export class AudioPlayer {
      * Stops the current audio file and plays the audio file with the name corresponding to the number. Displays a text message on the screen
      * @returns Returns the audio stream duration in seconds. If the file does not load, then returns the specified default value
      */
-    public playWithMessage(number: int, defaultLengthInMilliseconds: int = 1000, message: string, aGxtKey: boolean = false): int {
+    public playWithMessage(number: int, defaultLengthInMilliseconds: int = 1000, message: string = "", aGxtKey: boolean = false): int {
         let lengthInMilliseconds = this.play(number, false, defaultLengthInMilliseconds);
-        if (aGxtKey && 0 > message.length && 8 > message.length) {
+        if (aGxtKey && 1 > message.length && 8 > message.length) {
             Text.PrintNow(message, lengthInMilliseconds, 1);
         } else {
             Text.PrintFormattedNow(message, lengthInMilliseconds);
@@ -106,7 +95,7 @@ export class AudioPlayer {
     /** Stops the current audio file and plays the next one. If the file does not load, then returns the specified default value. Displays a text message on the screen */
     public playNextWithMessage(defaultLengthInMilliseconds: int = 1000, message: string, aGxtKey: boolean = false): int {
         let lengthInMilliseconds = this.play(this.audioPlayerCurrentTrack + 1, false, defaultLengthInMilliseconds);
-        if (aGxtKey && 0 > message.length && 8 > message.length) {
+        if (aGxtKey && 1 > message.length && 8 > message.length) {
             Text.PrintNow(message, lengthInMilliseconds, 1);
         } else {
             Text.PrintFormattedNow(message, lengthInMilliseconds);
@@ -141,5 +130,3 @@ export class AudioPlayer {
     }
 
 }
-
-AudioPlayer.setModRoorDir(__dirname.substring(0, __dirname.length - "Modules".length));

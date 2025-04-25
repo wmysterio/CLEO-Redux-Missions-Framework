@@ -101,7 +101,10 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
 
     /** Creates a new vehicle and adds it to the auto-delete list. You must load the model before creating */
     protected addCar(carModelId: int, x: float, y: float, z: float, heading: float = 0.0, color1: int = -1, color2: int = -1): Car {
-        return this.baseScriptedScenePrepareCar(Car.Create(carModelId, x, y, z).setHeading(heading).changeColor(color1, color2));
+        let car = Car.Create(carModelId, x, y, z).setHeading(heading)
+        if (color1 > -1 || color2 > -1)
+            car.changeColor(color1, color2)
+        return this.baseScriptedScenePrepareCar(car);
     }
 
     /** Creates a new character and adds it to the auto-delete list. You must load the model before creating */
