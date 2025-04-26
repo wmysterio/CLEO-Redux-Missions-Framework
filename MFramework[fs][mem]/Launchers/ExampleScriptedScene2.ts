@@ -17,7 +17,18 @@ export class ExampleScriptedScene2 extends BaseScriptedScene {
 	}
 
 	protected onSetClipsEvent(clips: ScriptedClips): void {
-		clips
+		clips.play(this.getMyClip());
+	}
+
+	protected onUnloadEvent(): void {
+		this.unloadModels(400, 101); // LANDSTAL WMYST
+		this.playerChar.setCoordinates(2443.4963, -1651.0734, 12.402).setHeading(186.0984);
+	}
+
+
+
+	private getMyClip(): ScriptedClips {
+		return new ScriptedClips()
 			.wait(2900)
 			.action(function () {
 				Task.CarDriveToCoord(sceneChar, sceneCar, 2471.1074, -1662.801, 12.3246, 5.0, 0, 0, 0);
@@ -27,11 +38,6 @@ export class ExampleScriptedScene2 extends BaseScriptedScene {
 				this.setCameraPoint(2433.967, -1657.6388, 13.3828, 1);
 			})
 			.wait(6000);
-	}
-
-	protected onUnloadEvent(): void {
-		this.unloadModels(400, 101); // LANDSTAL WMYST
-		this.playerChar.setCoordinates(2443.4963, -1651.0734, 12.402).setHeading(186.0984);
 	}
 
 }

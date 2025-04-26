@@ -18,7 +18,7 @@ export class Save {
 
     /** Signals all scripts about the status of a phone call */
     public static SetCellphoneCallPlayer(state: boolean): void {
-        IniFile.WriteInt(state ? 1 : 0, Save.savePathToIni, "<CELLPHONE>", "Calling");
+        IniFile.WriteInt(state ? 1 : 0, Save.savePathToIni, "<GAME_CONFIG>", "CallCellphone");
     }
 
     /** Returns a int value from the *.ini file for the specified section */

@@ -25,6 +25,8 @@ export class Dialog {
         this.dialogReset();
     }
 
+
+
     /**
      * Adds a new replica to the dialogue
      * @param forPlayer Whether the player will move their mouth during a replica
@@ -40,8 +42,8 @@ export class Dialog {
     }
 
     /** Loads audio files if any */
-    public load(subfolder: string = ""): void {
-        this.dialogAudioPlayer.load(this.dialogCountOfReplicas, subfolder);
+    public load(subfolder: string = "", skip: int = 0): void {
+        this.dialogAudioPlayer.load(this.dialogCountOfReplicas, subfolder, skip);
     }
 
     /** Resets the default replicas settings and unloads audio files if any */
@@ -94,7 +96,6 @@ export class Dialog {
         this.dialogTimer.set();
         return true;
     }
-
 
 
 

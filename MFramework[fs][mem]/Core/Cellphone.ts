@@ -39,7 +39,7 @@ export class Cellphone {
             return;
         switch (this.cellphoneState) {
             case 1:
-                let state = Save.GetIntFromSection("<CELLPHONE>", "Calling", 0);
+                let state = Save.GetIntFromSection("<GAME_CONFIG>", "CallCellphone", 0);
                 if (state === 1)
                     return;
                 Save.SetCellphoneCallPlayer(true);

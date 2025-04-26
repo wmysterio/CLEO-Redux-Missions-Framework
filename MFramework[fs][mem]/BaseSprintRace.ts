@@ -10,10 +10,18 @@ import { StreetRacer } from "./Core/StreetRacer";
 /** Base class implementing sprint racing */
 export abstract class BaseSprintRace extends BaseRaceMission {
 
+    /** Overrides the text that is drawn near the player's position in the race */
+    protected overridePositionText(gxtKey: string): void {
+        this.baseSprintRacePositionGxt = gxtKey;
+    }
+
+
+
     private baseSprintRaceIsFirstCalculation: boolean;
     private baseSprintRaceNumStreetRacers: int;
     private baseSprintRaceStreetRacerPlayer: StreetRacer;
     private baseSprintRaceStreetRacerPlayerId: int;
+    private baseSprintRacePositionGxt: string;
 
     protected onInitEvent(): void {
         super.onInitEvent();
@@ -21,6 +29,7 @@ export abstract class BaseSprintRace extends BaseRaceMission {
         this.baseSprintRaceNumStreetRacers = 0;
         this.baseSprintRaceStreetRacerPlayer = undefined;
         this.baseSprintRaceStreetRacerPlayerId = -1;
+        this.baseSprintRacePositionGxt = "RACES44";
     }
 
     protected onStreetRacerCheckpointPassedEvent(streetRacer: StreetRacer, lastNode: RouteNode): void {
@@ -44,7 +53,7 @@ export abstract class BaseSprintRace extends BaseRaceMission {
             this.baseSprintRaceStreetRacerPlayer = this.getStreetRacerPlayer();
             this.baseSprintRaceStreetRacerPlayerId = this.getStreetRacerPlayerId();
         }
-        Screen.DisplayCounter(this.baseSprintRaceGetPlayerPosition(), 1, "RACES44");
+        Screen.DisplayCounter(this.baseSprintRaceGetPlayerPosition(), 1, this.baseSprintRacePositionGxt);
     }
 
 

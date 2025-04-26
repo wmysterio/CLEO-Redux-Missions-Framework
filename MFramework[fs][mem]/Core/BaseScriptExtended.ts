@@ -2,6 +2,7 @@
 /// https://github.com/wmysterio/CLEO-Redux-Missions-Framework
 /// <reference path="../../.config/sa.d.ts" />
 
+import { AudioPlayer } from "../AudioPlayer";
 import { BaseScript } from "./BaseScript";
 import { Dialog } from "./Dialog";
 
@@ -9,10 +10,17 @@ import { Dialog } from "./Dialog";
 export abstract class BaseScriptExtended extends BaseScript {
 
     private baseScriptExtendedDialog: Dialog;
+    private baseScriptExtendedAudioVoices: AudioPlayer;
 
     constructor() {
         super();
+        this.baseScriptExtendedAudioVoices = new AudioPlayer();
         this.baseScriptExtendedDialog = new Dialog();
+    }
+
+    /** The audio player for voices from the "AudioPlayer" module */
+    protected get audioVoices(): AudioPlayer {
+        return this.baseScriptExtendedAudioVoices;
     }
 
     /** Returns a dynamic dialog from the "Dialog" module */

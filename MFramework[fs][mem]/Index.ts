@@ -9,7 +9,7 @@ wait(500);
 let launchersDir = __dirname + "\\Launchers\\";
 if (!Fs.DoesDirectoryExist(launchersDir))
     exit("Directory 'Launchers' not found!")
-IniFile.WriteInt(0, __dirname + "\\Save.game", "<CELLPHONE>", "Calling");
+IniFile.WriteInt(0, __dirname + "\\Save.game", "<GAME_CONFIG>", "CallCellphone");
 
 /*
 If you want to manually specify the names of the files to be run, specify them in the array below the code.
