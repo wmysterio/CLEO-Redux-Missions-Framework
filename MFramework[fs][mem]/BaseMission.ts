@@ -232,6 +232,8 @@ export abstract class BaseMission extends BaseScriptExtended {
     protected deleteAllAddedEntities(elegantly: boolean = true, warpPlayerToSavePlace: boolean = false, xSavePlace: float = 0.0, ySavePlace: float = 0.0, zSavePlace: float = 0.0): void {
         if (warpPlayerToSavePlace)
             this.playerChar.warpFromCarToCoord(xSavePlace, ySavePlace, zSavePlace);
+        Camera.Restore();
+        Camera.SetBehindPlayer();
         this.baseMissionBlipsArray.forEach(blip => {
             if (Blip.DoesExist(+blip))
                 blip.remove();
@@ -511,7 +513,6 @@ export abstract class BaseMission extends BaseScriptExtended {
     }
 
     private baseMissionProcessEnd(): void {
-        //this.resetCamera();
         this.restorePlayerWeapon();
         this.restorePlayerAfterScriptedScene();
         this.baseMissionRestoreWorld();
@@ -576,7 +577,7 @@ export abstract class BaseMission extends BaseScriptExtended {
         car.markAsNoLongerNeeded();
         if (this.playerChar.isInCar(car) || car.isOnScreen()) {
             car.changePlaybackToUseAi().setProofs(false, false, false, false, false).setCanBurstTires(true)
-                .setUpsidedownNotDamaged(false).setCanBeVisiblyDamaged(true).setCollision(true);
+                .setUpsidedownNotDamaged(false).freezePosition(false).setCanBeVisiblyDamaged(true).setCollision(true);
             if (car.isHealthGreater(1000))
                 car.setHealth(1000);
             return;

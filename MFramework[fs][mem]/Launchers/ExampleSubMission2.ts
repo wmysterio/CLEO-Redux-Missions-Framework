@@ -28,8 +28,7 @@ export class ExampleSubMission2 extends BaseSprintRace {
 		//while (this.dialog.perform(this.playerChar))
 		//	wait(0);
 
-		Camera.DoFade(1000, 0);
-		wait(1000);
+		wait(this.fade0());
 
 		this.setNextRestartPosition(2443.4963, -1651.0734, 12.402, 186.0984);
 
@@ -50,13 +49,12 @@ export class ExampleSubMission2 extends BaseSprintRace {
 	}
 
 	protected onRaceEndEvent(isFailed: boolean): void {
-		Camera.DoFade(750, 0);
-		wait(750);
+		wait(this.fade0());
 		this.refreshArea(2443.4963, -1651.0734, 12.402);
 		this.playerChar.warpFromCarToCoord(2443.4963, -1651.0734, 12.402).setHeading(186.0984);
 		this.resetCamera();
-		Camera.DoFade(1000, 0);
-		wait(750);
+		wait(1000);
+		wait(this.fade1());
 	}
 
 

@@ -18,7 +18,7 @@ export class ExampleScriptedScene extends BaseScriptedScene {
 		this.setCameraPoint(2452.2646, -1649.2939, 13.6653);
 		this.loadModelsNow(WMYST, 3065); // BALL
 		this.addScriptObject(3065, 2448.4094, -1652.7698, 12.3482);
-		this.actorA = this.addChar(101, 2450.2615, -1650.9594, 12.4039, 272.5792);
+		this.actorA = this.addChar(WMYST, 2450.2615, -1650.9594, 12.4039, 272.5792);
 		this.actorB = this.addCharInFrontOfChar(0, this.actorA);
 		Task.ChatWithChar(this.actorA, this.actorB, true, 1);
 		Task.ChatWithChar(this.actorB, this.actorA, false, 1);

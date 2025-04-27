@@ -1,6 +1,7 @@
 /// <reference path="../../.config/sa.d.ts" />
 
 import { BaseScriptedScene } from "../BaseScriptedScene";
+import { LANDSTAL, WMYST } from "../Models";
 import { ScriptedClips } from "../ScriptedClips";
 
 let sceneCar: Car;
@@ -11,9 +12,9 @@ export class ExampleScriptedScene2 extends BaseScriptedScene {
 	protected onLoadEvent(): void {
 		this.setCameraPosition(2447.998, -1656.2468, 13.3047);
 		this.setCameraPoint(2434.3547, -1645.7083, 13.5132);
-		this.loadModelsNow(400, 101); // LANDSTAL WMYST
-		sceneCar = this.addCar(400, 2420.3801, -1660.4674, 12.9916, 271.7204);
-		sceneChar = this.addCharInsideCar(101, sceneCar);
+		this.loadModelsNow(LANDSTAL, WMYST);
+		sceneCar = this.addCar(LANDSTAL, 2420.3801, -1660.4674, 12.9916, 271.7204);
+		sceneChar = this.addCharInsideCar(WMYST, sceneCar);
 	}
 
 	protected onSetClipsEvent(clips: ScriptedClips): void {
@@ -21,7 +22,7 @@ export class ExampleScriptedScene2 extends BaseScriptedScene {
 	}
 
 	protected onUnloadEvent(): void {
-		this.unloadModels(400, 101); // LANDSTAL WMYST
+		this.unloadModels(LANDSTAL, WMYST); //  
 		this.playerChar.setCoordinates(2443.4963, -1651.0734, 12.402).setHeading(186.0984);
 	}
 

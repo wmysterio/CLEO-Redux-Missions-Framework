@@ -31,6 +31,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
                 ScriptedClips.Play(clips);
                 Game.AllowPauseInWidescreen(false);
             }
+            this.resetCamera();
             this.baseScriptedSceneDeleteEntities();
             this.onUnloadEvent();
             return;
@@ -38,7 +39,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         Hud.DisplayZoneNames(false);
         Hud.DisplayCarNames(false);
         this.player.setControl(false);
-        Camera.DoFade(800, 0);
+        this.fade0();
         while (Camera.GetFadingStatus())
             wait(199);
         this.playerChar.shutUp(true).hideWeaponForScriptedCutscene(true).stopFacialTalk()
@@ -56,7 +57,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         Hud.SwitchWidescreen(true);
         wait(800);
         this.clearText();
-        Camera.DoFade(800, 1);
+        this.fade1();
         this.onSetClipsEvent(clips);
         if (clips !== undefined) {
             Game.AllowPauseInWidescreen(true);
@@ -64,9 +65,10 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
             Game.AllowPauseInWidescreen(false);
         }
         this.clearText();
-        Camera.DoFade(800, 0);
+        this.fade0();
         while (Camera.GetFadingStatus())
             wait(199);
+        this.resetCamera();
         this.baseScriptedSceneDeleteEntities();
         this.onUnloadEvent();
         wait(800);
@@ -81,9 +83,8 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         this.restorePlayerAfterScriptedScene();
         this.playerChar.clearTasksImmediately();
         this.resetHud();
-        this.resetCamera();
         this.clearText();
-        Camera.DoFade(800, 1);
+        this.fade1();
     }
 
     /** Reaction to the loading event */

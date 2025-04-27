@@ -28,6 +28,18 @@ export abstract class BaseScriptExtended extends BaseScript {
         return this.baseScriptExtendedDialog;
     }
 
+    /** Makes the screen transparent and returns the duration of the transition */
+    protected fade1(): int {
+        Camera.DoFade(800, 1);
+        return 800;
+    }
+
+    /** Makes the screen opaque and returns the duration of the transition */
+    protected fade0(): int {
+        Camera.DoFade(800, 0);
+        return 800;
+    }
+
     /** Returns an empty decision maker with no event responses (for chars) */
     protected createEmptyDecisionMakerChar(): DecisionMakerChar {
         let dm = DecisionMakerChar.Load(0);

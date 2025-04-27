@@ -361,6 +361,8 @@ export abstract class BaseRaceMission extends BaseMission {
         this.player.alterWantedLevelNoDrop(this.baseRaceMissionMinWantedLevel).setControl(true);
         if (this.canMarkCheckpointsAsFinish())
             this.markAllCheckpointsAsFinish();
+        for (let i = 0; i < this.baseRaceMissionNumStreetRacers; ++i)
+            this.baseRaceMissionStreetRacers[i].car.freezePosition(false);
         if (Car.DoesExist(+bossCar) && this.baseRaceMissionBossPath > -1)
             bossCar.startPlayback(this.baseRaceMissionBossPath).setPlaybackSpeed(this.baseRaceMissionBossPathSpeed);
         this.baseRaceMissionStage = 2;
