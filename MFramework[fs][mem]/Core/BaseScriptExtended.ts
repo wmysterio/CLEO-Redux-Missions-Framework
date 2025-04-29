@@ -160,6 +160,25 @@ export abstract class BaseScriptExtended extends BaseScript {
         models.forEach(modelId => { Streaming.MarkVehicleModAsNoLongerNeeded(modelId); });
     }
 
+    /** Requests loading of new animations. Continues if all requested animations are available for use */
+    protected loadAnimations(...ifpNames: string[]): void {
+        ifpNames.forEach(ifpName => { Streaming.RequestAnimation(ifpName); });
+        let needContinue = false;
+        do {
+            wait(0);
+            needContinue = false;
+            ifpNames.forEach(ifpName => {
+                if (!Streaming.HasAnimationLoaded(ifpName))
+                    needContinue = true;
+            });
+        } while (needContinue);
+    }
+
+    /** Unloads the specified animations, freeing up game memory */
+    protected unloadAnimations(...ifpNames: string[]): void {
+        ifpNames.forEach(ifpName => { Streaming.RemoveAnimation(ifpName); });
+    }
+
     /** Places a character facing another character */
     protected placeCharFacingAnotherChar(char: Char, target: Char, relativeDistance: float = 1.0): void {
         let position = target.getOffsetInWorldCoords(0.0, relativeDistance, 0.0);
