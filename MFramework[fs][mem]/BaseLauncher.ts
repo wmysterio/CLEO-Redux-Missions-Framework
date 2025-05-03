@@ -188,6 +188,8 @@ export abstract class BaseLauncher extends BaseScript {
         this.baseLauncherPositionY = 0.0;
         this.baseLauncherPositionZ = 0.0;
         this.baseLauncherHasLongRange = true;
+        TIMERA = 0;
+        TIMERB = 0;
     }
 
 }
