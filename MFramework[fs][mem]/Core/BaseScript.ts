@@ -52,4 +52,14 @@ export abstract class BaseScript {
         return hour >= left || right > hour;
     }
 
+    /** Sets n-th bit of the number. Fuck 2701 opcode */
+    protected setBitTo1(number: int, bitIndex: int): int {
+        return number |= (1 << bitIndex);
+    }
+
+    /** Clears n-th bit of the number. Fuck 2702 opcode */
+    protected setBitTo0(number: int, bitIndex: int): int {
+        return number & ~(1 << bitIndex);
+    }
+
 }

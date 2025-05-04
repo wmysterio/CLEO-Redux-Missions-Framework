@@ -157,7 +157,7 @@ export abstract class BaseScriptedScene extends BaseScriptExtended {
         this.baseScriptedSceneCharsArray.push(char);
         return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, 31)
             .setProofs(true, true, true, true, true).setMoney(0).setDropsWeaponsWhenDead(false)
-            .setDecisionMaker(+this.baseScriptedSceneDecisionMakerChar);
+            .setDrownsInWater(false).setDecisionMaker(+this.baseScriptedSceneDecisionMakerChar);
     }
 
     private baseScriptedScenePrepareCar(car: Car): Car {
