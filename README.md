@@ -18,8 +18,12 @@ Deep alpha version.
 ### Latest
 
 ### Next
+- [ ] Use the new Config class to save the framework configuration and remove them from the Save class.
+
+### Nice to have
+- [ ] Save and load data relative to the slot selected by the player.
 
 ### Promlems
 - [ ] Deleting mission's launcher blip before save
 
-***Potential solution: Use a drawn menu to call the mission instead of the launcher. (Launcher as a storyline)***
+***Potential solution: Use a drawn menu to call the mission instead of the launcher. (Launcher as a storyline).***
