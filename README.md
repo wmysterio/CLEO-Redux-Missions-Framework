@@ -21,4 +21,5 @@ Deep alpha version.
 
 ### Promlems
 - [ ] Deleting mission's launcher blip before save
-***Potential solution: Use a drawn menu to call the mission instead of the launcher.***
+
+***Potential solution: Use a drawn menu to call the mission instead of the launcher. (Launcher as a storyline)***
