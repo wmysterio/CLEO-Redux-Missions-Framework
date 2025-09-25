@@ -39,7 +39,8 @@ export class App {
      */
     public static Run(useManualProjectLoading: boolean = true): boolean {
         Core.Run(useManualProjectLoading);
-        if (1 > Core.ProjectsCount) {
+        this._projectCount = Core.ProjectsCount;
+        if (1 > this._projectCount) {
             if (!useManualProjectLoading)
                 exit("Application must have at least one project!");
             return false;
