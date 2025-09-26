@@ -2,7 +2,7 @@
 
 CLEO Redux Missions Framework is a scripting modification for GTA: San Andreas that allows launching missions from a special menu. The menu is opened by pressing the `F2` key and looks approximately like the image below:
 
-![](preview.png)
+![](MFramework[fs][mem]/preview.png)
 
 Use the `A` and `D` keys to switch between connected projects. Each project has its own set of storylines, which can be selected using the `W` and `S` keys. After selecting the desired storyline, press `Enter` to start the mission. The `???` symbols in mission names indicate that the selected mission is currently unavailable, and you must complete other missions first. You can reset the selected project to its initial state (using the `R` key) and replay its missions.
 You can choose mission difficulty by pressing `1`, `2`, or `3`. In the menu, difficulty is displayed with white `★` symbols. The more stars, the higher the difficulty. Note that difficulty does not affect the game itself. Developers may also choose to ignore this parameter and program missions at their discretion.
