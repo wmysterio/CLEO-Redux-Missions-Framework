@@ -39,7 +39,7 @@ The modification in its basic configuration includes only the core for launching
 
 ### Text does not appear in the menu or missions:
 - No access to in-game texts (see "Requirements and Setup");
-- The `Text.fxt` file is missing in the project's root directory or has an incorrect format;
+- The `PROJECT.fxt` file is missing in the project's root directory or has an incorrect format;
 - The project uses an incorrect root directory for its files;
 - The project lacks a storyline or mission;
 
