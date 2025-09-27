@@ -7,7 +7,8 @@ export class GxtTime {
     /** Duration of the text display in milliseconds. */
     public duration: int;
 
-
+    /** Indicates whether the text message should be displayed. */
+    public isEnabled: boolean;
 
     /**
      * Initializes a new instance with a GXT key and its display duration.
@@ -17,6 +18,7 @@ export class GxtTime {
     public constructor(gxt: string = "DUMMY", duration: int = 0) {
         this.gxt = gxt;
         this.duration = duration;
+        this.isEnabled = true;
     }
 
 }

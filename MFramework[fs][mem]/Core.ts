@@ -110,8 +110,6 @@ export class Core {
     private constructor() { }
 
 
-
-
     /**
      * Checks if the player is in a non-playable state ({@link Player.isPlaying}, {@link Char.DoesExist}, {@link Char.IsDead}, and {@link Char.hasBeenArrested}).
      * @returns True if the player cannot interact with the game world, false otherwise.
@@ -151,6 +149,7 @@ export class Core {
         const missionInfo = this.GetMissionInfoAt(this.ActiveMissionInfo.projectIndex, this.ActiveMissionInfo.storylineIndex, this.ActiveMissionInfo.missionIndex);
         const mission = missionInfo.create();
         ONMISSION = true;
+        TIMERA = 0;
         TIMERB = 0;
         do {
             wait(0);
@@ -295,11 +294,10 @@ export class Core {
         if (this._isInitialized)
             return;
         const missionConstructor = mission.constructor as new () => BaseMission;
-        let create = (): BaseMission => {
+        const create = (): BaseMission => {
             const instance = new missionConstructor();
-            if (!(instance instanceof BaseMission)) {
+            if (!(instance instanceof BaseMission))
                 throw new Error(`Created instance is not of type BaseMission: ${missionConstructor.name}`);
-            }
             return instance;
         };
         this._lastMissions.set(this._lastMissions.size, new MissionInfo(mission.constructor.name, create));
@@ -323,11 +321,11 @@ export class Core {
     public static RegisterProject(project: BaseProject): void {
         if (this._isInitialized)
             return;
-        let projectRootDirectory = project.getRootDirectory();
-        let pathToTest = projectRootDirectory.replace(__dirname, '').replace(/^\\/g, '');
+        const projectRootDirectory = project.getRootDirectory();
+        const pathToTest = projectRootDirectory.replace(__dirname, '').replace(/^\\/g, '');
         if (/[\[\]\\\/]/g.test(pathToTest))
             exit(`Invalid project directory: ${projectRootDirectory}!`);
-        let projectTypeName = project.constructor.name;
+        const projectTypeName = project.constructor.name;
         if (projectTypeName !== "PROJECT")
             exit(`Incorrect project name: ${projectTypeName}!`);
         this._lastProjects.set(this._lastProjects.size, new ProjectInfo(projectTypeName, `${projectRootDirectory}\\`, `PROJECT_${pathToTest}`, this._lastStorylines));
@@ -352,7 +350,7 @@ export class Core {
      * @remarks The FXT file is expected to be located in the project's root directory.
      */
     public static LoadFxtFile(projectIndex: int): void {
-        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}Text.fxt`;
+        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}PROJECT.fxt`;
         FxtStore.insert("TEXTW2N", "~1~ ~1~", true);
         if (Fs.DoesFileExist(fxtPath))
             Text.LoadFxt(fxtPath);
@@ -364,7 +362,7 @@ export class Core {
      * @remarks The FXT file is expected to be located in the project's root directory.
      */
     public static UnloadFxtFile(projectIndex: int): void {
-        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}Text.fxt`;
+        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}PROJECT.fxt`;
         FxtStore.delete("TEXTW2N", true);
         if (Fs.DoesFileExist(fxtPath))
             Text.UnloadFxt(fxtPath);
@@ -397,13 +395,46 @@ export class Core {
         return errors;
     }
 
+    /**
+     * Logs a message to the console with an optional sender prefix.
+     * @param message - The message to log.
+     * @param sender - The sender identifier (default: "").
+     
+    public static Log(message: string, sender: string = ""): void {
+        log(`>>> MFramework${sender ? ` >>> ${sender}` : ""}: ${message}`);
+    }*/
+
+
+    /**
+     * Writes an integer value to the save file for for the specified project.
+     * @param projectIndex - The index of the project to write the value for.
+     * @param key - The key to write the value under.
+     * @param value - The integer value to write.
+     */
+    public static WriteIntValueToSaveFile(projectIndex: int, key: string, value: int): void {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        IniFile.WriteInt(value, this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
+    }
+
+    /**
+     * Reads an integer value from the save file for the specified project.
+     * @param projectIndex - The index of the project to read the value from.
+     * @param key - The key to read the value from.
+     * @param defaultValue - The default value to return if the key is not found (default: 0).
+     * @returns The integer value from the save file, or the default value if not found.
+     */
+    public static ReadIntValueFromSaveFile(projectIndex: int, key: string, defaultValue: int = 0): int {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        const value = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
+        return value === undefined ? defaultValue : value;
+    }
+
 
 
     private static _initializePlayer(): void {
         this.Player = new Player(0);
-        while (!this.Player.isPlaying()) {
+        while (!this.Player.isPlaying())
             wait(250);
-        }
         this.PlayerChar = Core.Player.getChar();
         this.PlayerGroup = Core.Player.getGroup();
     }
@@ -429,7 +460,7 @@ export class Core {
         const split = __dirname.split('\\');
         const cleoIndex = split.findIndex(s => s.toUpperCase() === "CLEO");
         if (cleoIndex === -1 || cleoIndex < 2)
-            exit(`Invalid framework directory: ${__dirname}`);
+            exit(`Invalid framework directory: ${__dirname} `);
         this.GameRootDirectory = split.slice(cleoIndex).join('\\').replace(/^\\/g, '');
     }
 
@@ -466,7 +497,7 @@ export class Core {
         let progress = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, this._getMissionsPassedIniKey(storylineInfo.storylineIndex));
         if (progress === undefined || 0 > progress)
             progress = 0;
-        let numMissions = storylineInfo.missions.size;
+        const numMissions = storylineInfo.missions.size;
         if (progress >= numMissions)
             progress = numMissions;
         return progress;
@@ -531,7 +562,8 @@ export class Core {
             rewardFlag += 2;
             this.Player.addScore(cashReward);
         }
-        if (mission.enableSuccessBigMessage) {
+        const bigMessage = mission.successBigMessage;
+        if (bigMessage.isEnabled) {
             switch (rewardFlag) {
                 case 3:
                     Text.PrintWithNumberBig("M_PASSS", cashReward, 5000, 1); // Mission passed +$ +Respect
@@ -543,7 +575,6 @@ export class Core {
                     Text.PrintBig("M_PASSR", 5000, 1); // Mission passed +Respect
                     break;
                 default:
-                    let bigMessage = mission.successBigMessage;
                     Text.PrintBig(bigMessage.gxt, bigMessage.duration, 1);
                     break;
             }
@@ -557,8 +588,8 @@ export class Core {
     private static _runMissionFailureEvent(mission: BaseMission): void {
         this._runMissionCleanupEvent(mission);
         mission.onFailureEvent();
-        if (mission.enableFailureBigMessage) {
-            const bigMessage = mission.failureBigMessage;
+        const bigMessage = mission.failureBigMessage;
+        if (bigMessage.isEnabled) {
             wait(250);
             Text.PrintBig(bigMessage.gxt, bigMessage.duration, 1);
         }
@@ -619,7 +650,7 @@ export class Core {
         const actions = sequenceChaining.actionsSequence;
         try {
             for (let i = 0; i < actions.length; ++i) {
-                let action = actions[i];
+                const action = actions[i];
                 if (action.action !== undefined)
                     action.action();
                 if (action.duration === -1) {

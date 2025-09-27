@@ -226,9 +226,10 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     private _prepareChar(char: Char): Char {
         this._chars.push(char);
+        const dm = +this._decisionMakerChar;
         return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, 31)
             .setProofs(true, true, true, true, true).setMoney(0).setDropsWeaponsWhenDead(false)
-            .setDrownsInWater(false).setDecisionMaker(+this._decisionMakerChar);
+            .setDrownsInWater(false).setDecisionMaker(dm);
     }
 
     private _prepareCar(car: Car): Car {

@@ -12,6 +12,7 @@ export abstract class BaseMission extends BaseScript {
     private _successBigMessage: GxtTime;
     private _failureBigMessage: GxtTime;
     private _failureSmallMessage: GxtTime;
+    private _projectIndex: int;
     private _cashReward: int;
     private _respectReward: int;
     private _isSuccessSoundEnabled: boolean;
@@ -26,8 +27,6 @@ export abstract class BaseMission extends BaseScript {
 
     public enableProgressSaving: boolean;
     public enableTitleMessage: boolean;
-    public enableSuccessBigMessage: boolean;
-    public enableFailureBigMessage: boolean;
     public stage: int;
 
     /** Gets the player group in the game. */
@@ -113,6 +112,7 @@ export abstract class BaseMission extends BaseScript {
     public constructor() {
         super();
         Core.RegisterMission(this);
+        this._projectIndex = Core.ActiveMissionInfo.projectIndex;
     }
 
 
@@ -123,10 +123,7 @@ export abstract class BaseMission extends BaseScript {
      */
     public onInitEvent(): void {
         super.onInitEvent();
-        this._cashReward = 0;
-        this._respectReward = 0;
-        this._isSuccessSoundEnabled = true;
-        this._audioBackground = new AudioPlayer(Core.ActiveMissionInfo.projectIndex);
+        this._audioBackground = new AudioPlayer(this._projectIndex);
         this._successBigMessage = new GxtTime("M_PASSD", 5000);
         this._failureSmallMessage = new GxtTime();
         this._failureBigMessage = new GxtTime("M_FAIL", 5000);
@@ -139,12 +136,12 @@ export abstract class BaseMission extends BaseScript {
         this._blips = new Array<Blip>();
         this._pickups = new Array<Pickup>();
         this._setupDecisionMakers();
+        this._cashReward = 0;
+        this._respectReward = 0;
+        this._isSuccessSoundEnabled = true;
         this.enableProgressSaving = true;
         this.enableTitleMessage = true;
-        this.enableSuccessBigMessage = true;
-        this.enableFailureBigMessage = true;
         this.stage = 0;
-        TIMERA = 0;
     }
 
     /**
@@ -163,7 +160,6 @@ export abstract class BaseMission extends BaseScript {
 
     /** Handles the mission failure event, called when the mission fails. */
     public onFailureEvent(): void { }
-
 
     /** 
      * Handles the mission stop event, called when the mission ends.
@@ -221,7 +217,7 @@ export abstract class BaseMission extends BaseScript {
      * @returns The last successfully completed mission index.
      */
     public getStorylineProgress(storylineIndex: int): int {
-        return Core.GetStorylineInfoAt(Core.ActiveMissionInfo.projectIndex, storylineIndex).progress;
+        return Core.GetStorylineInfoAt(this._projectIndex, storylineIndex).progress;
     }
 
     /** Saves the player's weapons and their ammo, then removes all weapons from the player. */
@@ -232,6 +228,25 @@ export abstract class BaseMission extends BaseScript {
         for (let i = 0; i < 47; ++i)
             this._savedPlayerWeaponsAmmo.push(this.playerChar.hasGotWeapon(i) ? this.playerChar.getAmmoInWeapon(i) : 0);
         this.playerChar.removeAllWeapons();
+    }
+
+    /**
+     * Writes an integer value to the save file for for the current project.
+     * @param key - The key to write the value under.
+     * @param value - The integer value to write.
+     */
+    public writeIntValueToSaveFile(key: string, value: int): void {
+        Core.WriteIntValueToSaveFile(this._projectIndex, key, value);
+    }
+
+    /**
+     * Reads an integer value from the save file for the current project.
+     * @param key - The key to read the value from.
+     * @param defaultValue - The default value to return if the key is not found (default: 0).
+     * @returns The integer value from the save file, or the default value if not found.
+     */
+    public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
+        return Core.ReadIntValueFromSaveFile(this._projectIndex, key, defaultValue);
     }
 
     /**
@@ -459,11 +474,11 @@ export abstract class BaseMission extends BaseScript {
             if (Pickup.DoesExist(+pickup))
                 pickup.remove();
         });
+        this._scriptObjects.forEach(obj => {
+            if (ScriptObject.DoesExist(+obj))
+                obj.markAsNoLongerNeeded().delete();
+        });
         if (elegantly) {
-            this._scriptObjects.forEach(obj => {
-                if (ScriptObject.DoesExist(+obj))
-                    obj.markAsNoLongerNeeded().removeElegantly();
-            });
             this._chars.forEach(char => {
                 if (Char.DoesExist(+char)) {
                     if (char.isHealthGreater(100))
@@ -474,10 +489,6 @@ export abstract class BaseMission extends BaseScript {
                 }
             });
         } else {
-            this._scriptObjects.forEach(obj => {
-                if (ScriptObject.DoesExist(+obj))
-                    obj.markAsNoLongerNeeded().delete();
-            });
             this._chars.forEach(char => {
                 if (Char.DoesExist(+char))
                     char.markAsNoLongerNeeded().delete();

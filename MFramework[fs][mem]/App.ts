@@ -32,6 +32,7 @@ export class App {
     private constructor() { }
 
 
+
     /**
      * Runs the application, initializing the core and handling menu interactions.
      * @param useManualProjectLoading - Whether to use manual project loading (default: true).
@@ -51,8 +52,6 @@ export class App {
         if (errorsState.hasMissionErrors)
             exit("Storyline must have at least one mission!");
         this._readActivationKeyCode();
-        Core.ActiveMissionInfo.projectIndex = 0;
-        Core.ActiveMissionInfo.storylineIndex = 0;
         while (true) {
             wait(0);
             if (!this._canPlayerOpenMenu(true)) {
@@ -67,10 +66,12 @@ export class App {
 
 
     private static _updateMenu(): void {
+        Core.ActiveMissionInfo.projectIndex = 0;
+        Core.ActiveMissionInfo.storylineIndex = 0;
+        Core.ActiveMissionInfo.missionIndex = -1;
         this._canvas = this._loadCanvas();
         this._changeDifficultyStarsColors(Core.GameDifficulty);
         this._selectProject(Core.ActiveMissionInfo.projectIndex);
-        Core.ActiveMissionInfo.missionIndex = -1;
         Core.Player.setControl(false);
         TIMERA = 0;
         while (this._canPlayerOpenMenu()) {
@@ -123,6 +124,7 @@ export class App {
             if (Core.ActiveMissionInfo.missionIndex > -1)
                 break;
         }
+        this._unloadCanvas();
         Text.UseCommands(false);
         Core.Player.setControl(true);
         if (Core.ActiveMissionInfo.missionIndex > -1) {
@@ -130,7 +132,6 @@ export class App {
             wait(250);
         }
         Core.UnloadFxtFile(Core.ActiveMissionInfo.projectIndex);
-        Core.ActiveMissionInfo.missionIndex = -1;
         while (!Core.Player.isPlaying())
             wait(250);
         Core.PlayerChar = Core.Player.getChar();
@@ -153,9 +154,9 @@ export class App {
 
     private static _selectProject(projectIndex: int): void {
         Core.UnloadFxtFile(Core.ActiveMissionInfo.projectIndex)
-        Core.ActiveMissionInfo.projectIndex = projectIndex;
-        let projectInfo = Core.GetProjectInfoAt(projectIndex);
         Core.LoadFxtFile(projectIndex);
+        Core.ActiveMissionInfo.projectIndex = projectIndex;
+        const projectInfo = Core.GetProjectInfoAt(projectIndex);
         this._projectNameLabel.text = projectInfo.titleGxtKey;
         this._storylineCount = projectInfo.storylines.size;
         this._selectStoryline(0, false);
@@ -178,20 +179,22 @@ export class App {
     }
 
     private static _selectStoryline(nextIndex: int, playAudio: boolean): void {
+        Core.ActiveMissionInfo.storylineIndex = nextIndex;
         this._clearCanvasTexts();
-        let projectInfo = Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex);
-        let storylinesCount = projectInfo.storylines.size;
+        this._missionIndexToSelect = -1;
+        const projectInfo = Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex);
+        const storylinesCount = projectInfo.storylines.size;
         for (let i = 0, j = nextIndex - this.NUM_TOP_STORYLINES_ROWS; i < this.ALL_STORYLINES_ROWS; ++i, ++j) {
             if (0 > j)
                 continue;
             if (storylinesCount > j) {
-                let storylineInfo = projectInfo.storylines.get(j);
-                let missionsCount = storylineInfo.missions.size;
-                let progress = storylineInfo.progress;
+                const storylineInfo = projectInfo.storylines.get(j);
+                const missionsCount = storylineInfo.missions.size;
+                const progress = storylineInfo.progress;
                 let storylineGxt = "BJ_HIDE";
                 if (missionsCount > progress) {
-                    let missionInfo = storylineInfo.missions.get(progress);
-                    let canStartMission = missionInfo.create().onCheckStartConditions();
+                    const missionInfo = storylineInfo.missions.get(progress);
+                    const canStartMission = missionInfo.create().onCheckStartConditions();
                     if (canStartMission || progress > 0)
                         storylineGxt = storylineInfo.titleGxtKey;
                     if (j === nextIndex) {
@@ -212,7 +215,6 @@ export class App {
                 this._storylinesNames[i].visible = true;
             }
         }
-        Core.ActiveMissionInfo.storylineIndex = nextIndex;
         if (playAudio)
             Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1137);
         TIMERA = 0;
@@ -236,14 +238,14 @@ export class App {
         this._storylinesNames = new Array<Label>();
 
         let globalCenterY = SCREEN_CENTER_Y - 110.0;
-        let starCenterY = globalCenterY + 5.0;
-        let storylineHeight = Label.CalculateRowHeight(1.8, 6.0);
+        const starCenterY = globalCenterY + 5.0;
+        const storylineHeight = Label.CalculateRowHeight(1.8, 6.0);
         let alphaStep = 70;
         let alpha = 255 - this.NUM_TOP_STORYLINES_ROWS * alphaStep;
 
-        let canvas = new Canvas(0, 0, 0, 0);
+        const canvas = new Canvas(0, 0, 0, 0);
 
-        let storylineBackground = canvas.addRect(SCREEN_CENTER_X, 0.0, SCREEN_WIDTH, (this.ALL_STORYLINES_ROWS + 1) * storylineHeight + 6.0, 37, 41, 46, 172);
+        const storylineBackground = canvas.addRect(SCREEN_CENTER_X, 0.0, SCREEN_WIDTH, (this.ALL_STORYLINES_ROWS + 1) * storylineHeight + 6.0, 37, 41, 46, 172);
 
         this._projectNameLabel = canvas.addLabel(10.0, globalCenterY, 255, 255, 255, 255);
         this._projectNameLabel.shadowA = 0;
@@ -253,7 +255,7 @@ export class App {
         canvas.insertAtStart(new Rect(SCREEN_CENTER_X, this._projectNameLabel.calculateYCenterForRect(globalCenterY), SCREEN_WIDTH, this._projectNameLabel.height, 37, 41, 46, 240))
 
         for (let i = 0, j = 636.0 - (2.0 * 26.0); i < 3; ++i, j += 26.0) {
-            let star = canvas.addLabel(j, starCenterY, 255, 255, 255, 128);
+            const star = canvas.addLabel(j, starCenterY, 255, 255, 255, 128);
             star.font = TextFont.Gothic;
             star.align = TextAlign.Right;
             star.shadowA = 0;
@@ -267,7 +269,7 @@ export class App {
         this._selectedStorylineRect = canvas.addRect(SCREEN_CENTER_X, 0.0, SCREEN_WIDTH, storylineHeight * 2.0, 210, 45, 57, 172);
 
         for (let i = 0, storylinePositionY = globalCenterY; i < this.ALL_STORYLINES_ROWS; ++i, storylinePositionY += storylineHeight) {
-            let storylinesName = canvas.addLabel(10.0, storylinePositionY, 255, 255, 255, alpha);
+            const storylinesName = canvas.addLabel(10.0, storylinePositionY, 255, 255, 255, alpha);
             storylinesName.font = TextFont.Menu;
             storylinesName.shadowA = 0;
             storylinesName.changeScale(0.5, 1.8, 6.0);
@@ -298,6 +300,16 @@ export class App {
         return canvas;
     }
 
+    private static _unloadCanvas(): void {
+        this._selectedStorylineRect = null;
+        this._missionNameLabel = null;
+        this._missionCounterLabel = null;
+        this._projectNameLabel = null;
+        this._storylinesNames = null;
+        this._difficultyStars = null;
+        this._canvas = null;
+    }
+
     private static _clearCanvasTexts(): void {
         for (let i = 0; i < this.ALL_STORYLINES_ROWS; ++i) {
             this._storylinesNames[i].visible = false;
@@ -305,7 +317,6 @@ export class App {
         }
         this._missionCounterLabel.changeFormattedText("");
         this._missionNameLabel.text = "DUMMY";
-        this._missionIndexToSelect = -1;
     }
 
     private static _canPlayerOpenMenu(requireControl: boolean = false): boolean {
