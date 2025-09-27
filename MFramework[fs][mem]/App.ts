@@ -121,8 +121,6 @@ export class App {
             }
             Core.ClearText();
             this._canvas.draw();
-            if (Core.ActiveMissionInfo.missionIndex > -1)
-                break;
         }
         this._unloadCanvas();
         Text.UseCommands(false);
@@ -183,11 +181,10 @@ export class App {
         this._clearCanvasTexts();
         this._missionIndexToSelect = -1;
         const projectInfo = Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex);
-        const storylinesCount = projectInfo.storylines.size;
         for (let i = 0, j = nextIndex - this.NUM_TOP_STORYLINES_ROWS; i < this.ALL_STORYLINES_ROWS; ++i, ++j) {
             if (0 > j)
                 continue;
-            if (storylinesCount > j) {
+            if (this._storylineCount > j) {
                 const storylineInfo = projectInfo.storylines.get(j);
                 const missionsCount = storylineInfo.missions.size;
                 const progress = storylineInfo.progress;

@@ -10,6 +10,8 @@ export class GxtTime {
     /** Indicates whether the text message should be displayed. */
     public isEnabled: boolean;
 
+    
+
     /**
      * Initializes a new instance with a GXT key and its display duration.
      * @param gxt - GXT key for text display (default: "DUMMY").

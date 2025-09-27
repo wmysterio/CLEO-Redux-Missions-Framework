@@ -63,6 +63,7 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
     private _chars: Char[];
     private _cars: Car[];
     private _scriptObjects: ScriptObject[];
+    private _hDecisionMakerChar: int;
 
     /** Determines whether to apply global game world settings to the scripted scene. */
     public useWorldSettings: boolean;
@@ -88,6 +89,7 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
         this._cars = new Array<Car>();
         this._scriptObjects = new Array<ScriptObject>();
         this._decisionMakerChar = this.createClearedDecisionMakerChar();
+        this._hDecisionMakerChar = +this._decisionMakerChar;
         this.useWorldSettings = true;
     }
 
@@ -226,10 +228,9 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     private _prepareChar(char: Char): Char {
         this._chars.push(char);
-        const dm = +this._decisionMakerChar;
         return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, 31)
             .setProofs(true, true, true, true, true).setMoney(0).setDropsWeaponsWhenDead(false)
-            .setDrownsInWater(false).setDecisionMaker(dm);
+            .setDrownsInWater(false).setDecisionMaker(this._hDecisionMakerChar);
     }
 
     private _prepareCar(car: Car): Car {

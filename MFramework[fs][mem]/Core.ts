@@ -107,7 +107,10 @@ export class Core {
         IniFile.WriteInt(level, this.CONFIG_PATH, "Application", "GameDifficulty");
     }
 
+
+
     private constructor() { }
+
 
 
     /**
@@ -396,16 +399,6 @@ export class Core {
     }
 
     /**
-     * Logs a message to the console with an optional sender prefix.
-     * @param message - The message to log.
-     * @param sender - The sender identifier (default: "").
-     
-    public static Log(message: string, sender: string = ""): void {
-        log(`>>> MFramework${sender ? ` >>> ${sender}` : ""}: ${message}`);
-    }*/
-
-
-    /**
      * Writes an integer value to the save file for for the specified project.
      * @param projectIndex - The index of the project to write the value for.
      * @param key - The key to write the value under.
@@ -518,11 +511,11 @@ export class Core {
         Game.SwitchEmergencyServices(false);
         this.Player.setGroupRecruitment(false);
         mission.playerGroup.remove();
-        mission.audioBackground.play(0, true);
+        mission.backgroundAudio.play(0, true);
         mission.onStartEvent();
         if (mission.enableTitleMessage)
             Text.PrintBig(this.ActiveMissionInfo.titleGxtKey, 1000, 2);
-        mission.audioBackground.play(0, true);
+        mission.backgroundAudio.play(0, true);
         this._missionState = 1;
     }
 
@@ -602,7 +595,7 @@ export class Core {
     private static _runMissionCleanupEvent(mission: BaseMission): void {
         mission.clearText();
         mission.voiceAudio.unload();
-        mission.audioBackground.unload();
+        mission.backgroundAudio.unload();
         mission.dialogue.unload();
         mission.onCleanupEvent();
     }

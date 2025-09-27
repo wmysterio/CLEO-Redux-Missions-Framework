@@ -20,6 +20,7 @@ export class Dialogue {
     }
 
 
+
     /** Initializes a new dialogue sequence. */
     public constructor() {
         this._voiceAudio = new AudioPlayer(Core.ActiveMissionInfo.projectIndex, true);

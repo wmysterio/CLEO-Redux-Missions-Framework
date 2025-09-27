@@ -8,7 +8,7 @@ import { GxtTime } from "./GxtTime";
 /** Abstract base class for game missions, extending script functionality with mission-specific logic. */
 export abstract class BaseMission extends BaseScript {
 
-    private _audioBackground: AudioPlayer;
+    private _backgroundAudio: AudioPlayer;
     private _successBigMessage: GxtTime;
     private _failureBigMessage: GxtTime;
     private _failureSmallMessage: GxtTime;
@@ -35,8 +35,8 @@ export abstract class BaseMission extends BaseScript {
     }
 
     /** Gets the audio player for background music. */
-    public get audioBackground(): AudioPlayer {
-        return this._audioBackground;
+    public get backgroundAudio(): AudioPlayer {
+        return this._backgroundAudio;
     }
 
     /** Gets the current game difficulty level for mission-specific logic. */
@@ -123,7 +123,7 @@ export abstract class BaseMission extends BaseScript {
      */
     public onInitEvent(): void {
         super.onInitEvent();
-        this._audioBackground = new AudioPlayer(this._projectIndex);
+        this._backgroundAudio = new AudioPlayer(this._projectIndex);
         this._successBigMessage = new GxtTime("M_PASSD", 5000);
         this._failureSmallMessage = new GxtTime();
         this._failureBigMessage = new GxtTime("M_FAIL", 5000);
@@ -167,7 +167,7 @@ export abstract class BaseMission extends BaseScript {
      */
     public onEndEvent(): void {
         super.onEndEvent();
-        this._audioBackground.unload();
+        this._backgroundAudio.unload();
         this._restorePlayerWeapons();
         this.deleteAllAddedEntities();
         this._decisionMakersChar.forEach(dm => {
