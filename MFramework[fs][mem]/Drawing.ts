@@ -553,7 +553,6 @@ export class Canvas extends VisualElement {
     /** 
      * Draws the canvas and all its visual elements.
      * @remarks Called 'in a loop' to draw.
-     * @remarks Enables {@link Text.UseCommands} before drawing and disables it afterward.
      */
     public draw(): void {
         Text.UseCommands(true);
@@ -569,7 +568,6 @@ export class Canvas extends VisualElement {
 /**
  * Manages drawing HUD elements on the screen.
  * @remarks Called 'in a loop' to draw.
- * @remarks Enables {@link Text.UseCommands} before drawing and disables it afterward.
  */
 export class Screen {
 
@@ -598,10 +596,12 @@ export class Screen {
      */
     public static DisplayTimeValues(minutes: int, seconds: int, line: int = 0, gxtKey: string = "BB_19"): void {
         const yPosition = this._calculateLineTopOffset(line);
+        Text.UseCommands(true);
         this._setupDisplayText();
         Text.Display(548.0, yPosition, gxtKey);
         this._setupDisplayText();
         Text.DisplayWith2Numbers(608.0, yPosition, 10 > seconds ? "TIME_0" : "TIME", minutes, seconds);
+        Text.UseCommands(false);
     }
 
     /**
@@ -631,8 +631,10 @@ export class Screen {
      * @param gxtKey - The GXT key for the counter label (default: "NUMBER").
      */
     public static DisplayCounter(value: int, line: int = 1, gxtKey: string = "NUMBER"): void {
+        Text.UseCommands(true);
         this._setupDisplayText();
         Text.DisplayWithNumber(608.0, this._calculateLineTopOffset(line), gxtKey, value);
+        Text.UseCommands(false);
     }
 
     /**
@@ -643,8 +645,10 @@ export class Screen {
      * @param gxtKey - The GXT key for the counter label (default: "TEXTW2N").
      */
     public static DisplayCounterWith2Numbers(value1: int, value2: int, line: int = 1, gxtKey: string = "TEXTW2N"): void {
+        Text.UseCommands(true);
         this._setupDisplayText();
         Text.DisplayWith2Numbers(608.0, this._calculateLineTopOffset(line), gxtKey, value1, value2);
+        Text.UseCommands(false);
     }
 
     /** 
@@ -657,6 +661,7 @@ export class Screen {
     public static DisplayBar(currentValue: int, maxValue: int, line: int = 1, gxtKey: string = "DUMMY"): void {
         let yPosition = this._calculateLineTopOffset(line);
         const barWidth = this._calculateBarWidth(currentValue, maxValue);
+        Text.UseCommands(true);
         if (gxtKey !== "DUMMY") {
             this._setupDisplayText();
             Text.Display(496.0, yPosition, gxtKey);
@@ -665,6 +670,7 @@ export class Screen {
         Hud.DrawRect(558.0, yPosition, this.BAR_MAX_WIDTH, this.BAR_MAX_HEIGHT, 0, 0, 0, 255);
         Hud.DrawRect(558.0, yPosition, this.BAR_WIDTH, this.BAR_HEIGHT, 74, 90, 107, 255);
         Hud.DrawRect(558.0 - this._calculateBarOffset(barWidth), yPosition, barWidth, this.BAR_HEIGHT, 172, 203, 241, 255);
+        Text.UseCommands(false);
     }
 
     /**

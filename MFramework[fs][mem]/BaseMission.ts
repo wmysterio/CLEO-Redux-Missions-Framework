@@ -193,9 +193,8 @@ export abstract class BaseMission extends BaseScript {
      * Aborts the mission with a success notification, displaying the specified GXT message.
      * @param bigMessageGxt - The GXT key for the success message (default: "M_PASSD").
      */
-    public complete(bigMessageGxt: string = "M_PASSD"): void {
+    public complete(): void {
         Restart.CancelOverride();
-        this._successBigMessage.gxt = bigMessageGxt;
         throw Core.MISSION_SUCCESS_ERROR;
     }
 
