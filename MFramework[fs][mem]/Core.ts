@@ -176,7 +176,8 @@ export class Core {
                     break;
             }
         } while (this._missionState !== 5);
-        ONMISSION = false;
+        if (ONMISSION)
+            ONMISSION = false;
         this._missionState = 0;
     }
 
@@ -512,9 +513,9 @@ export class Core {
         this.Player.setGroupRecruitment(false);
         mission.playerGroup.remove();
         mission.backgroundAudio.play(0, true);
-        mission.onStartEvent();
         if (mission.enableTitleMessage)
             Text.PrintBig(this.ActiveMissionInfo.titleGxtKey, 1000, 2);
+        mission.onStartEvent();
         mission.backgroundAudio.play(0, true);
         this._missionState = 1;
     }
@@ -532,8 +533,8 @@ export class Core {
             } else if (error === this.MISSION_FAILURE_ERROR) {
                 this._missionState = 3;
             } else {
-                log(error);
-                Text.PrintHelpFormatted("Script error. Check logs.");
+                log(error.message);
+                Text.PrintHelpFormatted("Mission error. Check logs.");
                 this._missionState = 5;
             }
         }

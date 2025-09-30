@@ -235,8 +235,19 @@ export abstract class BaseScript {
      * @param car - The vehicle to check.
      * @returns True if the vehicle is destroyed, false otherwise.
      */
-    public isCarDead(car: Car): boolean {
+    public isCarDestroyed(car: Car): boolean {
         return Car.IsDead(+car);
+    }
+
+    /**
+     * Checks if the specified vehicle is destroyed, in water, or on fire.
+     * @param car - The vehicle to check.
+     * @returns True if the car is unusable, false otherwise.
+     */
+    public isCarDead(car: Car): boolean {
+        if (this.isCarDestroyed(car) || car.isOnFire())
+            return true;
+        return car.isInWater() && !Streaming.IsThisModelABoat(car.getModel());
     }
 
     /**

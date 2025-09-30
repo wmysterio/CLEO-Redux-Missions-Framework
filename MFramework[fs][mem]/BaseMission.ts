@@ -161,18 +161,12 @@ export abstract class BaseMission extends BaseScript {
     /** Handles the mission failure event, called when the mission fails. */
     public onFailureEvent(): void { }
 
-    /** 
-     * Handles the mission stop event, called when the mission ends.
-     * @remarks `Used for internal framework operations. Do not call directly!`
-     */
     public onEndEvent(): void {
         super.onEndEvent();
         this._backgroundAudio.unload();
         this._restorePlayerWeapons();
         this.deleteAllAddedEntities();
-        this._decisionMakersChar.forEach(dm => {
-            dm.remove();
-        });
+        this._decisionMakersChar.forEach(dm => { dm.remove(); });
         this._decisionMakersChar = new Array<DecisionMakerChar>();
     }
 
@@ -547,8 +541,9 @@ export abstract class BaseMission extends BaseScript {
             return;
         car.markAsNoLongerNeeded();
         if (this.playerChar.isInCar(car) || car.isOnScreen()) {
-            car.changePlaybackToUseAi().setProofs(false, false, false, false, false).setCanBurstTires(true)
-                .setUpsidedownNotDamaged(false).freezePosition(false).setCanBeVisiblyDamaged(true).setCollision(true);
+            car.changePlaybackToUseAi().setMission(0).setProofs(false, false, false, false, false).setCanBurstTires(true)
+                .setUpsidedownNotDamaged(false).freezePosition(false).setCanBeVisiblyDamaged(true).setCollision(true)
+                .removeUpsidedownCheck().setCanBeDamaged(true).setCanBeTargeted(true);
             if (car.isHealthGreater(1000))
                 car.setHealth(1000);
             return;

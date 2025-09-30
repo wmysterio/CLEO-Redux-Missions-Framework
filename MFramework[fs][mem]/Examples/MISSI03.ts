@@ -40,7 +40,6 @@ new class MISSI03 extends BaseMission {
 		if (this.isCharDead(this.enemy))
 			this.complete();
 
-		Text.UseCommands(true);
 		Screen.DisplayTimeLeft(this.timer);
 		Screen.DisplayCounterWith2Numbers(this.friend.getHealth(), this.getCharMaxHealth(this.friend), 1, "INFO004");
 		Screen.DisplayCharHealthBar(this.enemy, 2, "INFO005");

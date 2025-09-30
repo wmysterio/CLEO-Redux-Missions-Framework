@@ -69,6 +69,7 @@ export class App {
         Core.ActiveMissionInfo.projectIndex = 0;
         Core.ActiveMissionInfo.storylineIndex = 0;
         Core.ActiveMissionInfo.missionIndex = -1;
+        Core.ActiveMissionInfo.titleGxtKey = "DUMMY";
         this._canvas = this._loadCanvas();
         this._changeDifficultyStarsColors(Core.GameDifficulty);
         this._selectProject(Core.ActiveMissionInfo.projectIndex);
@@ -198,8 +199,10 @@ export class App {
                         this._selectedStorylineRect.changeColor(210, 45, 57, 172);
                         this._missionCounterLabel.changeFormattedText("%d/%d", progress, missionsCount);
                         this._missionNameLabel.changeText(canStartMission ? missionInfo.titleGxtKey : "BJ_HIDE");
-                        if (canStartMission)
+                        if (canStartMission) {
+                            Core.ActiveMissionInfo.titleGxtKey = missionInfo.titleGxtKey;
                             this._missionIndexToSelect = missionInfo.missionIndex;
+                        }
                     }
                 } else {
                     storylineGxt = storylineInfo.titleGxtKey;
