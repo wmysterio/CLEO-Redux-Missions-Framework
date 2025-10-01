@@ -1,5 +1,6 @@
 import { BaseMission } from "./BaseMission";
 import { Screen } from "./Drawing";
+import { NativeCamera } from "./Native";
 import { Timer } from "./Timer";
 
 /** Represents a node in a race route. */
@@ -316,6 +317,7 @@ abstract class BaseRaceMission extends BaseMission {
         this._onUpdateEvent = this.onUpdateEvent;
 
         this.onStartEvent = () => {
+            wait(this.fadeToOpaque());
             this._onStartEvent();
             this.setTraffic(0.0, 0.0, false, 0.0);
             this._changeTraffic();
@@ -586,6 +588,7 @@ abstract class BaseRaceMission extends BaseMission {
             }
         }
         wait(1000);
+        wait(this.fadeToTransparent());
         Text.PrintBig("RACES_4", 1100, 4); // 3
         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
         wait(1100);

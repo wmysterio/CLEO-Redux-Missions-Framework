@@ -176,8 +176,7 @@ export class Core {
                     break;
             }
         } while (this._missionState !== 5);
-        if (ONMISSION)
-            ONMISSION = false;
+        ONMISSION = false;
         this._missionState = 0;
     }
 
@@ -203,37 +202,31 @@ export class Core {
         Hud.DisplayZoneNames(false);
         Hud.DisplayCarNames(false);
         this.Player.setControl(false);
-        if (NativeCamera.GetFadingStatus() !== 2)
-            scriptedScene.fadeToOpaque();
-        while (NativeCamera.GetFadingStatus() !== 2)
-            wait(100);
-        scriptedScene.onStartEvent();
-        wait(1500);
-        if (scriptedScene.useWorldSettings)
-            this._disableDefaultWorldSetting();
+        wait(scriptedScene.fadeToOpaque());
         Hud.DisplayRadar(false);
         Hud.Display(false);
         Hud.SwitchWidescreen(true);
-        wait(App.FADE_TRANSITION_DURATION);
+        this._disableDefaultWorldSetting();
+        scriptedScene.onStartEvent();
+        wait(1500);
         scriptedScene.clearText();
         scriptedScene.fadeToTransparent();
         scriptedScene.onRunEvent();
         this._playSequenceChaining(scriptedScene);
         scriptedScene.clearText();
-        scriptedScene.fadeToOpaque();
-        while (NativeCamera.GetFadingStatus() !== 2)
-            wait(100);
+        wait(scriptedScene.fadeToOpaque());
         scriptedScene.resetCamera();
         scriptedScene.onCleanupEvent();
         scriptedScene.onEndEvent();
         wait(App.FADE_TRANSITION_DURATION);
-        if (scriptedScene.useWorldSettings)
-            this._enableDefaultWorldSetting();
-        this.Player.setControl(true);
         this._runScriptedSceneAfterEndEvent();
         this.PlayerChar.clearTasksImmediately();
+        this.Player.setControl(true);
         scriptedScene.resetHud();
         scriptedScene.clearText();
+        this._enableDefaultWorldSetting();
+        if (scriptedScene.preventFadeToTransparentAtEnd)
+            return;
         scriptedScene.fadeToTransparent();
     }
 

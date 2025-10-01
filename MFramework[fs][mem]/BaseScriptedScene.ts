@@ -64,9 +64,20 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
     private _cars: Car[];
     private _scriptObjects: ScriptObject[];
     private _hDecisionMakerChar: int;
+    private _preventFadeToTransparentAtEnd: boolean;
 
-    /** Determines whether to apply global game world settings to the scripted scene. */
-    public useWorldSettings: boolean;
+    /** Gets whether the transition to a transparent screen is prevented at the end of the scene. */
+    public get preventFadeToTransparentAtEnd(): boolean {
+        return this._preventFadeToTransparentAtEnd;
+    }
+
+    /**
+     * Sets whether to prevent the transition to a transparent screen at the end of the scene.
+     * @param value - True to prevent fade-in, false to allow it.
+     */
+    public set preventFadeToTransparentAtEnd(value: boolean) {
+        this._preventFadeToTransparentAtEnd = value;
+    }
 
     /**
      * The array of actions in the scripted scene sequence.
@@ -78,19 +89,21 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
 
 
-    /**
-     * Handles the scripted scene initialization event, called before the scene starts.
-     * @remarks Used for internal framework operations. Do not call directly!
-     */
     public onInitEvent(): void {
         super.onInitEvent();
+        this.voiceAudio.unload();
         this._sequenceActions = new Array<ScriptedSceneAction>();
         this._chars = new Array<Char>();
         this._cars = new Array<Car>();
         this._scriptObjects = new Array<ScriptObject>();
         this._decisionMakerChar = this.createClearedDecisionMakerChar();
         this._hDecisionMakerChar = +this._decisionMakerChar;
-        this.useWorldSettings = true;
+        this._preventFadeToTransparentAtEnd = false;
+    }
+
+    public onEndEvent(): void {
+        super.onEndEvent();
+        this._deleteEntities();
     }
 
     /**
@@ -99,15 +112,6 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
      * @remarks Do not use the `{@link wait}` method during a scripted scene. There may be bugs!
      */
     public onRunEvent(): void { }
-
-    /**
-     * Handles the scripted scene end event, called when the scene ends.
-     * @remarks Used for internal framework operations. Do not call directly!
-     */
-    public onEndEvent(): void {
-        super.onEndEvent();
-        this._deleteEntities();
-    }
 
 
 

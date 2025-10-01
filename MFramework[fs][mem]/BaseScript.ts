@@ -92,8 +92,10 @@ export abstract class BaseScript {
      * @returns The transition duration in milliseconds.
      */
     public fadeToTransparent(r: int = 0, g: int = 0, b: int = 0): int {
-        Camera.SetFadingColor(r, g, b);
-        Camera.DoFade(App.FADE_TRANSITION_DURATION, 1);
+        if (NativeCamera.GetFadingStatus() !== 0) {
+            Camera.SetFadingColor(r, g, b);
+            Camera.DoFade(App.FADE_TRANSITION_DURATION, 1);
+        }
         return App.FADE_TRANSITION_DURATION;
     }
 
@@ -105,8 +107,10 @@ export abstract class BaseScript {
      * @returns The transition duration in milliseconds.
      */
     public fadeToOpaque(r: int = 0, g: int = 0, b: int = 0): int {
-        Camera.SetFadingColor(r, g, b);
-        Camera.DoFade(App.FADE_TRANSITION_DURATION, 0);
+        if (NativeCamera.GetFadingStatus() !== 2) {
+            Camera.SetFadingColor(r, g, b);
+            Camera.DoFade(App.FADE_TRANSITION_DURATION, 0);
+        }
         return App.FADE_TRANSITION_DURATION;
     }
 

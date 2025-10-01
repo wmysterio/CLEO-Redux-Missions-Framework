@@ -541,7 +541,7 @@ export abstract class BaseMission extends BaseScript {
             return;
         car.markAsNoLongerNeeded();
         if (this.playerChar.isInCar(car) || car.isOnScreen()) {
-            car.changePlaybackToUseAi().setMission(0).setProofs(false, false, false, false, false).setCanBurstTires(true)
+            car.stopPlayback().setMission(0).setProofs(false, false, false, false, false).setCanBurstTires(true)
                 .setUpsidedownNotDamaged(false).freezePosition(false).setCanBeVisiblyDamaged(true).setCollision(true)
                 .removeUpsidedownCheck().setCanBeDamaged(true).setCanBeTargeted(true);
             if (car.isHealthGreater(1000))
