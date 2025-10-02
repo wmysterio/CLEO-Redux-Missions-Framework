@@ -60,5 +60,11 @@ hDynamicImportFile.close();
 if (projectsNotFound)
     exit("Application must have at least one project!");
 
+//async function loadProjects() {
+//@ts-ignore
+//    await import("./DynamicImport");
+//}
 import "./DynamicImport";
+//loadProjects().then(function () {
 App.Run(false);
+//});

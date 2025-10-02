@@ -72,8 +72,7 @@ export class Core {
     private static _lastStorylines: Map<int, StorylineInfo> = new Map<int, StorylineInfo>();
     private static _lastMissions: Map<int, MissionInfo> = new Map<int, MissionInfo>();
     private static _projectsMap: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
-
-    private static readonly _skipScriptedSceneError = new Error();
+    private static readonly SKIP_SCRIPTED_SCENE_ERROR = new Error();
 
     public static readonly SAVE_PATH: string = __dirname + "\\Save";
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
@@ -154,28 +153,33 @@ export class Core {
         ONMISSION = true;
         TIMERA = 0;
         TIMERB = 0;
-        do {
-            wait(0);
-            if (this.IsPlayerInactive())
-                this._missionState = 3;
-            switch (this._missionState) {
-                case 0:
-                    this._runMissionStartEvent(mission);
-                    break;
-                case 1:
-                    this._runMissionUpdateEvent(mission);
-                    break;
-                case 2:
-                    this._runMissionSuccessEvent(mission);
-                    break;
-                case 3:
-                    this._runMissionFailureEvent(mission);
-                    break;
-                case 4:
-                    this._runMissionEndEvent(mission);
-                    break;
-            }
-        } while (this._missionState !== 5);
+        try {
+            do {
+                wait(0);
+                if (this.IsPlayerInactive())
+                    this._missionState = 3;
+                switch (this._missionState) {
+                    case 0:
+                        this._runMissionStartEvent(mission);
+                        break;
+                    case 1:
+                        this._runMissionUpdateEvent(mission);
+                        break;
+                    case 2:
+                        this._runMissionSuccessEvent(mission);
+                        break;
+                    case 3:
+                        this._runMissionFailureEvent(mission);
+                        break;
+                    case 4:
+                        this._runMissionEndEvent(mission);
+                        break;
+                }
+            } while (this._missionState !== 5);
+        } catch (error) {
+            log(error.message);
+            Text.PrintHelpFormatted("Mission error. Check logs.");
+        }
         ONMISSION = false;
         this._missionState = 0;
     }
@@ -526,9 +530,8 @@ export class Core {
             } else if (error === this.MISSION_FAILURE_ERROR) {
                 this._missionState = 3;
             } else {
-                log(error.message);
-                Text.PrintHelpFormatted("Mission error. Check logs.");
                 this._missionState = 5;
+                throw error;
             }
         }
     }
@@ -631,7 +634,7 @@ export class Core {
         const scriptedWait = (time) => {
             _wait(time);
             if (Pad.IsSkipCutsceneButtonPressed())
-                throw this._skipScriptedSceneError;
+                throw this.SKIP_SCRIPTED_SCENE_ERROR;
         };
         const timer = new Timer();
         const actions = sequenceChaining.actionsSequence;
@@ -652,18 +655,14 @@ export class Core {
                     scriptedWait(0);
             }
         } catch (e) {
-            if (e !== this._skipScriptedSceneError) {
-                //@ts-ignore
-                wait = _wait;
-                Camera.DoFade = _fade;
-                Game.AllowPauseInWidescreen(false);
+            if (e !== this.SKIP_SCRIPTED_SCENE_ERROR)
                 throw e;
-            }
+        } finally {
+            //@ts-ignore
+            wait = _wait;
+            Camera.DoFade = _fade;
+            Game.AllowPauseInWidescreen(false);
         }
-        //@ts-ignore
-        wait = _wait;
-        Camera.DoFade = _fade;
-        Game.AllowPauseInWidescreen(false);
     }
 
     private static _disableDefaultWorldSetting(): void {

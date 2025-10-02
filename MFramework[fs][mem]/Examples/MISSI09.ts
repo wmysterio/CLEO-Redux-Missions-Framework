@@ -11,7 +11,7 @@ new class MISSI09 extends BaseRadarChallenge {
         this.addRouteNode(1197.4524, -1400.2775, 12.8647, 177.0966, 20.0);
         this.addRouteNode(1195.5041, -1534.1971, 12.9867, 172.8321, 20.0);
 
-        this.timeLimit = 15000;
+        this.timeLimit = 40000;
 
     }
 

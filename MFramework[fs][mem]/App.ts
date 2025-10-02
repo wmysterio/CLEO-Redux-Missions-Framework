@@ -320,12 +320,12 @@ export class App {
     }
 
     private static _canPlayerOpenMenu(requireControl: boolean = false): boolean {
-        if (Core.IsPlayerInactive() || ONMISSION || NativeCamera.GetFadingStatus() > 0)
+        if (Core.IsPlayerInactive() || ONMISSION || NativeCamera.GetFadingStatus() !== 0)
             return false;
         if (Streaming.GetAreaVisible() !== 0 || Core.PlayerChar.getAreaVisible() !== 0)
             return false;
         if (requireControl) {
-            if (Core.PlayerChar.isInWater() || Core.PlayerChar.isInAir())
+            if (Core.PlayerChar.isInWater() || Core.PlayerChar.isInAir() || Core.Player.isUsingJetpack())
                 return false;
             return Core.Player.isControlOn() && Core.PlayerChar.isOnFoot() && Core.PlayerChar.isStopped();
         }
