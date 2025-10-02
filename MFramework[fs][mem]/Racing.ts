@@ -1,6 +1,6 @@
 import { BaseMission } from "./BaseMission";
+import { Core } from "./Core";
 import { Screen } from "./Drawing";
-import { NativeCamera } from "./Native";
 import { Timer } from "./Timer";
 
 /** Represents a node in a race route. */
@@ -220,138 +220,378 @@ class RacerInfo {
 
 }
 
-/** Base class for race missions, managing racers, routes, and checkpoints. */
-abstract class BaseRaceMission extends BaseMission {
 
-    private static readonly _setupEmptyCar: (car: Car) => void = (car: Car) => { };
 
-    private _racersInfo: RacerInfo[];
-    private _racers: Racer[];
-    private _racersBlips: Blip[];
-    private _racersCount: int;
-    private _playerRacerCar: Car;
-    private _route: RouteNode[];
-    private _nodesCount: int;
-    private _checkpoint: Checkpoint;
-    private _carDensityMultiplier: float;
-    private _pedDensityMultiplier: float;
-    private _wantedMultiplier: float;
-    private _spawnCops: boolean;
-    private _minWantedLevel: int;
-    private _blip: Blip;
-    private _bossPath: int;
-    private _bossPathSpeed: float;
-    private _playerIndex: int;
-    private _lastCheckpointId: int;
-    private _checkpointTune: int;
-    private _lastCheckpointForPlayer: boolean;
-    private _disablePlayerCheckpointsCheck: boolean;
-    private _isWantedChallenge: boolean;
-    private _onStartEvent: () => void;
-    private _onUpdateEvent: () => void;
 
-    /** Gets the number of street racers. */
-    public get racersCount(): int {
-        return this._racersCount;
+
+class SuperMissionTemplate {
+
+    public readonly SetupEmptyCar: (car: Car) => void = (car: Car) => { };
+
+    public PositionGxt: string = "RACES44";
+    public StartWantedGxt: string = "";
+    public LostWantedGxt: string = "RACEFA";
+    public ClearWantedGxt: string = "";
+    public PedDensityMultiplier: float = 0.0;
+    public CarDensityMultiplier: float = 0.0;
+    public NodesCount: int = 0;
+    public IsWantedChallenge: boolean = false;
+    public DisablePlayerCheckpointsCheck: boolean = false;
+    public IsChallenge: boolean = false;
+    public MinWantedLevel: int = 0;
+    public SpawnCops: boolean = false;
+    public WantedMultiplier: float = 0.0;
+    public LapsCount: int = 1;
+    public PlayerRacer: Racer = null;
+    public PlayerRacerId: int = -1;
+    public LastCheckpointId: int = -1;
+    public LastCheckpointForPlayer: boolean = false;
+    public BossPath: int = -1;
+    public BossPathSpeed: float = 0.0;
+    public Racers: Racer[] = new Array<Racer>();
+    public Route: RouteNode[] = new Array<RouteNode>();
+    public RacersInfo: RacerInfo[] = new Array<RacerInfo>();
+    public RacersBlips: Blip[] = new Array<Blip>();
+    public RacersCount = 0;
+    public CheckpointTune = 1058;
+    public PlayerRacerCar: Car = new Car(-1);
+    public Blip: Blip = new Blip(-1);
+    public Checkpoint: Checkpoint = new Checkpoint(-1);
+
+    public Begin: () => void;
+    public Update: () => void = null;
+    public Draw: () => void = null;
+    public onRacerRouteNodePassedEvent: (racer: Racer, lastNode: RouteNode) => void;
+    public onRacerLapPassedEvent: (racer: Racer, lastLap: int) => void;
+
+    public Load(): void {
+        Text.LoadMissionText("RACETOR");
+        FxtStore.insert("NAMEKNO", "~d~ ~a~ ~d~", true);
     }
 
-    /** Gets the street racer player. */
-    public get playerRacer(): Racer {
-        return this._racers[this._playerIndex];
+    public Unload(): void {
+        FxtStore.delete("NAMEKNO", true);
+        this.Blip.remove();
+        this.Checkpoint.delete();
+        if (this.BossPath > -1)
+            Streaming.RemoveCarRecording(this.BossPath);
     }
 
-    /** Gets the street racing player's ID. */
-    public get playerRacerId(): int {
-        return this._playerIndex;
+    public ChangeTraffic(): void {
+        World.SetPedDensityMultiplier(this.PedDensityMultiplier);
+        World.SetCarDensityMultiplier(this.CarDensityMultiplier);
     }
 
-    /** Gets the ID of the last checkpoint. */
-    public get lastCheckpointId(): int {
-        return this._lastCheckpointId;
+    public ChangeWanted(): void {
+        Game.SetPoliceIgnorePlayer(Core.Player, !this.SpawnCops);
+        Game.SetCreateRandomCops(this.SpawnCops);
+        Game.EnableAmbientCrime(this.SpawnCops);
+        Game.SwitchPoliceHelis(this.SpawnCops);
+        Game.SwitchCopsOnBikes(this.SpawnCops);
+        Game.SetWantedMultiplier(this.WantedMultiplier);
     }
 
-    /** Gets the minimum wanted level. */
-    public get minWantedLevel(): int {
-        return this._minWantedLevel;
+    /** @returns The player position in race. */
+    public CalculatePlayerPositionByDistance(): int {
+        let position = 1;
+        const currentPlayerCheckpointId = this.PlayerRacer.nextNodeId;
+        for (let i = 0; i < this.RacersCount; ++i) {
+            if (this.PlayerRacerId === i)
+                continue;
+            if (this.Racers[i].currentLap > this.PlayerRacer.currentLap) {
+                position += 1;
+            } else if (this.Racers[i].currentLap === this.PlayerRacer.currentLap) {
+                let currentStreetRacerCheckpointId = this.Racers[i].nextNodeId;
+                if (!this.Route[currentStreetRacerCheckpointId].isCheckpoint)
+                    currentStreetRacerCheckpointId = this.FindNextCheckpointId(currentStreetRacerCheckpointId);
+                if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
+                    position += 1;
+                } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
+                    const playerCoord = this.PlayerRacerCar.getCoordinates();
+                    const racerCoord = this.Racers[i].car.getCoordinates();
+                    const nextNode = this.Route[currentPlayerCheckpointId];
+                    const playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
+                    const racerDistance = Math.GetDistanceBetweenCoords3D(racerCoord.x, racerCoord.y, racerCoord.z, nextNode.x, nextNode.y, nextNode.z);
+                    if (playerDistance > racerDistance)
+                        position += 1;
+                }
+            }
+        }
+        return position;
+    }
+
+    /** @returns The player position in race. */
+    public CalculatePlayerPositionBySpeed(): int {
+        let position = 1;
+        const playerSpeed = this.PlayerRacer.totalSpeed;
+        for (let i = 0; i < this.RacersCount; ++i) {
+            if (this.PlayerRacerId === i)
+                continue;
+            let currentStreetRacer = this.Racers[i];
+            if (currentStreetRacer.totalSpeed > playerSpeed)
+                position += 1;
+        }
+        return position;
     }
 
     /**
-     * Sets the minimum wanted level.
-     * @param level - The minimum wanted level (0 to 6).
+     * Returns the ID of the next checkpoint.
+     * @param currentId - The current checkpoint ID.
+     * @returns The ID of the next checkpoint. Throws an error if no checkpoints exist.
      */
-    public set minWantedLevel(level: int) {
-        if (level > -1 && 7 > level)
-            this._minWantedLevel = level;
+    public FindNextCheckpointId(currentId: int): int {
+        let nextId = currentId + 1;
+        for (let i = nextId; i < this.NodesCount; ++i)
+            if (this.Route[i].isCheckpoint)
+                return i;
+        for (let i = 0; i < currentId; ++i)
+            if (this.Route[i].isCheckpoint)
+                return i;
+        throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
     }
 
-
-    public get playerRacerCar(): Car {
-        return this._playerRacerCar;
+    /**
+     * @returns The ID of the last checkpoint. Throws an error if no checkpoints exist.
+     */
+    public FindLastCheckpointId(): int {
+        for (let i = this.NodesCount - 1; i >= 0; --i)
+            if (this.Route[i].isCheckpoint)
+                return i;
+        throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
     }
+
+    /**
+     * 
+     * @returns 
+     */
+    public CalculateCheckpointsCount(): int {
+        let result = 0;
+        for (let i = 0; i < this.NodesCount; ++i)
+            if (this.Route[i].isCheckpoint)
+                result += 1;
+        return result;
+    }
+
+}
+
+
+let MissionTemplate: SuperMissionTemplate = null;
+
+/** Base class for race missions and challenges. */
+abstract class BaseRaceMission extends BaseMission {
+
+    private _disableSetup: boolean;
+    private _onStartEvent: () => void;
+    private _onUpdateEvent: () => void;
+
+    /**
+     * Sets the GXT key for the text displayed near the player's position in the race.
+     * @param gxtKey - The GXT key for the position text.
+     */
+    public set positionGxt(gxtKey: string) {
+        MissionTemplate.PositionGxt = gxtKey;
+    }
+
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._isWantedChallenge = this instanceof BaseWantedChallenge;
-        this._racersInfo = new Array<RacerInfo>();
-        this._route = new Array<RouteNode>();
-        this._nodesCount = 0;
-        this._lastCheckpointId = 0;
-        this._racers = new Array<Racer>();
-        this._racersCount = 0;
-        this._playerIndex = -1;
-        this._bossPath = -1;
-        this._bossPathSpeed = 0.0;
-        this._minWantedLevel = this._isWantedChallenge ? 1 : 0;
-        this._racersBlips = new Array<Blip>();
-        this._blip = new Blip(-1);
-        this._playerRacerCar = new Car(-1);
-        this._checkpoint = new Checkpoint(-1);
-        this._checkpointTune = 1058;
-        this._lastCheckpointForPlayer = false;
-        this._disablePlayerCheckpointsCheck = false;
-        Text.LoadMissionText("RACETOR");
+        MissionTemplate = new SuperMissionTemplate();
+        MissionTemplate.Load();
+        this._disableSetup = true;
         this.successBigMessage.gxt = "RACES18";
 
         this._onStartEvent = this.onStartEvent;
         this._onUpdateEvent = this.onUpdateEvent;
 
+        MissionTemplate.Begin = () => {
+            MissionTemplate.RacersCount = MissionTemplate.RacersInfo.length;
+
+            if (0 > MissionTemplate.RacersCount || MissionTemplate.RacersCount > 8)
+                throw new Error("1");
+
+            let numPlayers = 0;
+            const usedModels = new Array<int>();
+            for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+                usedModels.push(MissionTemplate.RacersInfo[i].carModel);
+                const charModelId = MissionTemplate.RacersInfo[i].charModelId;
+                if (MissionTemplate.RacersInfo[i].isPlayer) {
+                    MissionTemplate.PlayerRacerId = i;
+                    numPlayers += 1;
+                }
+                if (charModelId > 0 && charModelId !== 7)
+                    usedModels.push(charModelId);
+            }
+
+            if (numPlayers !== 1)
+                throw new Error("2");
+
+            if (MissionTemplate.IsChallenge && MissionTemplate.RacersCount > 1)
+                throw new Error("3");
+
+            MissionTemplate.NodesCount = MissionTemplate.Route.length;
+            if (!MissionTemplate.IsWantedChallenge)
+                MissionTemplate.LastCheckpointId = MissionTemplate.FindLastCheckpointId();
+
+            this.loadModels(...usedModels);
+            this.player.clearWantedLevel().setControl(false);
+            this.refreshArea(MissionTemplate.RacersInfo[0].x, MissionTemplate.RacersInfo[0].y, MissionTemplate.RacersInfo[0].z, 300.0);
+            for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+                const racerInfo = MissionTemplate.RacersInfo[i];
+                const racerCar = this.addCar(racerInfo.carModel, racerInfo.x, racerInfo.y, racerInfo.z, racerInfo.heading).setHealth(2000);
+                MissionTemplate.RacersBlips.push(this.addBlipToCar(racerCar).setAsFriendly(true).changeScale(2).changeColor(0));
+                if (racerInfo.setupCar !== undefined)
+                    racerInfo.setupCar(racerCar);
+                let racerChar: Char;
+                if (racerInfo.isPlayer) {
+                    racerChar = this.playerChar;
+                    this.playerChar.warpIntoCar(racerCar);
+                    MissionTemplate.PlayerRacerCar = racerCar;
+                    MissionTemplate.RacersBlips[i].changeDisplay(0);
+                } else {
+                    if (racerInfo.charModelId === -1) {
+                        racerChar = this.addNeutralCharInsideCar(7, racerCar);
+                    } else {
+                        racerChar = this.addNeutralCharInsideCar(racerInfo.charModelId, racerCar);
+                    }
+                    racerCar.setUpsidedownNotDamaged(true).setCanBurstTires(false).setCanBeVisiblyDamaged(false)
+                        .setProofs(false, false, false, true, false);
+                    StuckCarCheck.Add(racerCar.setHealth(20000), 2.0, 3000);
+                    racerChar.setCanBeKnockedOffBike(true).setCantBeDraggedOut(true).setGetOutUpsideDownCar(false)
+                        .setMaxHealth(2000).setHealth(2000).setCanBeShotInVehicle(false);
+                }
+                const racer = new Racer(MissionTemplate.Racers.length, racerChar, racerCar, racerInfo.isPlayer, racerInfo.startNode);
+                MissionTemplate.Racers.push(racer);
+                if (racerInfo.isPlayer)
+                    MissionTemplate.PlayerRacer = racer;
+            }
+            this.unloadModels(...usedModels);
+            //if (!MissionTemplate.IsWantedChallenge) {
+            MissionTemplate.Racers[MissionTemplate.PlayerRacerId].nextNodeId = -1;
+            //}
+            Audio.SetRadioChannel(12);
+            Audio.SetRadioChannel(-1);
+            this.resetCamera();
+            let bossCar = new Car(-1);
+            if (MissionTemplate.BossPath > -1) {
+                Streaming.RequestCarRecording(MissionTemplate.BossPath);
+                while (!Streaming.HasCarRecordingBeenLoaded(MissionTemplate.BossPath))
+                    wait(0);
+                for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+                    if (MissionTemplate.PlayerRacerId === i)
+                        continue;
+                    bossCar = MissionTemplate.Racers[i].car;
+                    break;
+                }
+            }
+            if (2 > MissionTemplate.CalculateCheckpointsCount())
+                MissionTemplate.LastCheckpointForPlayer = true;
+            wait(1000);
+            wait(this.fadeToTransparent());
+            Text.PrintBig("RACES_4", 1100, 4); // 3
+            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
+            wait(1100);
+            Text.PrintBig("RACES_5", 1100, 4); // 2
+            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
+            wait(1100);
+            Text.PrintBig("RACES_6", 1100, 4); // 1
+            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
+            wait(1100);
+            Text.PrintBig("RACES_7", 1100, 4); // GO!
+            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1057);
+            if (!MissionTemplate.IsWantedChallenge)
+                this.player.alterWantedLevelNoDrop(MissionTemplate.MinWantedLevel);
+            this.player.setControl(true);
+            for (let i = 0; i < MissionTemplate.RacersCount; ++i)
+                MissionTemplate.Racers[i].car.freezePosition(false);
+            if (Car.DoesExist(+bossCar) && MissionTemplate.BossPath > -1)
+                bossCar.startPlayback(MissionTemplate.BossPath).setPlaybackSpeed(MissionTemplate.BossPathSpeed);
+            MissionTemplate.ChangeTraffic();
+            MissionTemplate.ChangeWanted();
+        };
+
         this.onStartEvent = () => {
             wait(this.fadeToOpaque());
             this._onStartEvent();
-            this.setTraffic(0.0, 0.0, false, 0.0);
-            this._changeTraffic();
-            if (this._isWantedChallenge)
-                this.setTraffic(1.0, 1.0, true, 1.0);
+            this._disableSetup = false;
+            this.setTraffic(0.0, 0.0);
+            this.setWanted(0, false, 0.0);
+            MissionTemplate.ChangeTraffic();
+            MissionTemplate.ChangeWanted();
             this.onRacerSetupEvent();
-            this._afterRaceSetup();
+            this._disableSetup = true;
+            MissionTemplate.Begin();
+        };
+
+        MissionTemplate.Update = () => {
+            if (this.isCarDead(MissionTemplate.PlayerRacerCar)) {
+                this.fail("RACES24", 6000);
+                return;
+            }
+            if (!this.playerChar.isInAnyCar()) {
+                this.fail("RACES20", 6000);
+                return;
+            }
+            if (MissionTemplate.IsWantedChallenge)
+                return;
+            for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+                const racer = MissionTemplate.Racers[i];
+                if (racer.isPlayer) {
+                    this._updatePlayerRacer(racer);
+                    continue;
+                }
+                if (this.isCharDead(racer.char) || this.isCarDead(racer.car) || racer.car.hasBeenDamagedByChar(this.playerChar)) {
+                    this.fail("RACES25", 6000);
+                    return;
+                }
+                if (!racer.char.isInCar(racer.car))
+                    racer.char.warpIntoCar(racer.car);
+                if (racer.isKnockedOut)
+                    continue;
+                let currentNode = MissionTemplate.Route[racer.nextNodeId];
+                if (StuckCarCheck.IsCarStuck(racer.car) && !(racer.car.isOnScreen() || racer.car.isPlaybackGoingOn()))
+                    this._tryRestoreRacerCar(racer, currentNode);
+                if (racer.car.locate3D(currentNode.x, currentNode.y, currentNode.z, 12.0, 12.0, 12.0, false)) {
+                    if (currentNode.isCheckpoint) {
+                        racer.totalSpeed += racer.car.getSpeed();
+                        MissionTemplate.onRacerRouteNodePassedEvent(racer, currentNode);
+                    }
+                    let nextNodeId = racer.nextNodeId + 1;
+                    if (nextNodeId === MissionTemplate.NodesCount) {
+                        racer.currentLap += 1;
+                        MissionTemplate.onRacerLapPassedEvent(racer, racer.currentLap);
+                        nextNodeId = 0;
+                    }
+                    racer.lastNode = currentNode;
+                    racer.nextNodeId = nextNodeId;
+                    currentNode = MissionTemplate.Route[nextNodeId];
+                    racer.char.clearTasks();
+                }
+                if (racer.car.isPlaybackGoingOn())
+                    continue;
+                if (this.isScriptTaskFinished(racer.char, 0x05D1))
+                    Task.CarDriveToCoord(racer.char, racer.car, currentNode.x, currentNode.y, currentNode.z, currentNode.speed, 0, 0, 2);
+            }
         };
 
         this.onUpdateEvent = () => {
-            this._updateRace();
+            MissionTemplate.Update();
+            MissionTemplate.Draw();
             this._onUpdateEvent();
         };
+
     }
 
     public onEndEvent(): void {
-        this._blip.remove();
-        this._checkpoint.delete();
-        if (this._bossPath > -1)
-            Streaming.RemoveCarRecording(this._bossPath);
+        MissionTemplate.Unload();
+        MissionTemplate = null;
         super.onEndEvent();
     }
 
+
+
     /** Handles the script start event, called when the script begins. */
     public onRacerSetupEvent(): void { }
-
-    /** Handles the event of a racer reaching a route node. */
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void { }
-
-    /** Handles the event of a racer completing a lap of the route. */
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void { }
-
-    /** Handles the display of information. */
-    public abstract onDrawInfoEvent(): void;
 
 
 
@@ -366,10 +606,12 @@ abstract class BaseRaceMission extends BaseMission {
      * @param setupCar - The function to apply additional car settings, or undefined to skip (default: undefined).
      */
     public addRacer(carModel: int, x: float, y: float, z: float, heading: float, charModelId: int = -1, setupCar: (car: Car) => void = undefined): void {
+        if (this._disableSetup)
+            return;
         if (setupCar === undefined)
-            setupCar = BaseRaceMission._setupEmptyCar;
+            setupCar = MissionTemplate.SetupEmptyCar;
         const addedRacerInfo = new RacerInfo(carModel, x, y, z, heading, 8 > charModelId ? -1 : charModelId, setupCar, 0.0, 0.0, false);
-        this._racersInfo.push(addedRacerInfo);
+        MissionTemplate.RacersInfo.push(addedRacerInfo);
     }
 
     /**
@@ -382,9 +624,11 @@ abstract class BaseRaceMission extends BaseMission {
      * @param setupCar - The function to apply additional car settings (default: undefined).
      */
     public addPlayerRacer(carModel: int, x: float, y: float, z: float, heading: float, setupCar: (car: Car) => void = undefined): void {
+        if (this._disableSetup)
+            return;
         if (setupCar === undefined)
-            setupCar = BaseRaceMission._setupEmptyCar;
-        this._racersInfo.push(new RacerInfo(carModel, x, y, z, heading, 0, setupCar, 0.0, 0.0, true));
+            setupCar = MissionTemplate.SetupEmptyCar;
+        MissionTemplate.RacersInfo.push(new RacerInfo(carModel, x, y, z, heading, 0, setupCar, 0.0, 0.0, true));
     }
 
     /**
@@ -397,9 +641,11 @@ abstract class BaseRaceMission extends BaseMission {
      * @param timeLimitMs - The time limit for reaching the node in milliseconds (default: 0).
      */
     public addRouteNode(x: float, y: float, z: float, heading: float, speed: float, timeLimitMs: int = 0): void {
+        if (this._disableSetup)
+            return;
         const node = new RouteNode(x, y, z, heading, speed, true, timeLimitMs);
-        node.checkpointId = this._route.length;
-        this._route.push(node);
+        node.checkpointId = MissionTemplate.Route.length;
+        MissionTemplate.Route.push(node);
     }
 
     /**
@@ -412,267 +658,45 @@ abstract class BaseRaceMission extends BaseMission {
      * @param timeLimitMs - The time limit for reaching the node in milliseconds (default: 0).
      */
     public addRouteNodeNoCheckpoint(x: float, y: float, z: float, heading: float, speed: float, timeLimitMs: int = 0): void {
-        this._route.push(new RouteNode(x, y, z, heading, speed, false, timeLimitMs));
+        if (this._disableSetup)
+            return;
+        MissionTemplate.Route.push(new RouteNode(x, y, z, heading, speed, false, timeLimitMs));
     }
-
-    /**
-     * Returns information about a street racer.
-     * @param id - The unique ID of the racer.
-     * @returns The racer.
-     */
-    public getRacer(id: int): Racer {
-        return this._racers[id];
-    }
-
-    /**
-     * Returns information about a route node.
-     * @param id - The ID of the route node.
-     * @returns The route node.
-     */
-    public getRouteNode(id: int): RouteNode {
-        return this._route[id];
-    }
-
-    /**
-     * Returns true if the route node is a checkpoint.
-     * @param id - The ID of the route node.
-     * @returns True if the node is a checkpoint, false otherwise.
-     */
-    public isRouteNodeACheckpoint(id: int): boolean {
-        return this._route[id].isCheckpoint;
-    }
-
-    /**
-     * Returns the ID of the next checkpoint.
-     * @param currentId - The current checkpoint ID.
-     * @returns The ID of the next checkpoint. Throws an error if no checkpoints exist.
-     */
-    public findNextCheckpointId(currentId: int): int {
-        let nextId = currentId + 1;
-        for (let i = nextId; i < this._nodesCount; ++i)
-            if (this._route[i].isCheckpoint)
-                return i;
-        for (let i = 0; i < currentId; ++i)
-            if (this._route[i].isCheckpoint)
-                return i;
-        throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
-    }
-
-    /**
-     * Hides the street racer's blip.
-     * @param racerId - The ID of the racer whose blip to hide.
-     */
-    public hideRacerBlip(racerId: int): void {
-        this._racersBlips[racerId].changeDisplay(0);
-    }
-
-
-
-
 
     /**
      * Sets traffic parameters.
      * @param cars - The car density multiplier.
      * @param peds - The pedestrian density multiplier.
-     * @param cops - Whether to spawn cops (default: false).
+     */
+    public setTraffic(cars: float, peds: float): void {
+        if (this._disableSetup)
+            return;
+        MissionTemplate.CarDensityMultiplier = cars;
+        MissionTemplate.PedDensityMultiplier = peds;
+    }
+
+    /**
+     * Sets wanted parameters.
+     * @param cops - Whether to spawn cops (default: true).
      * @param wantedMultiplier - The multiplier for wanted level (default: 1.0).
      */
-    public setTraffic(cars: float, peds: float, cops: boolean = false, wantedMultiplier: float = 1.0): void {
-        this._carDensityMultiplier = cars;
-        this._pedDensityMultiplier = peds;
-        this._wantedMultiplier = wantedMultiplier;
-        this._spawnCops = cops;
-    }
-
-    /** Sets the checkpoint sound to a camera snapshot style. */
-    public setCheckpointTuneAsCameraShot(): void {
-        this._checkpointTune = 1132;
-    }
-
-    /**
-     * Returns true if it is possible to mark all checkpoints as finished (visually).
-     * @returns True if fewer than 2 checkpoints remain, false otherwise.
-     */
-    public canMarkCheckpointsAsFinish(): boolean {
-        return 2 > this._calculateCheckpointsCount();
-    }
-
-    /** Sets the checkpoint type to finish (visual). */
-    public markAllCheckpointsAsFinish(): void {
-        this._lastCheckpointForPlayer = true;
-    }
-
-    /** Disables checking if the player is near checkpoints. */
-    public disablePlayerCheckpointsCheck(): void {
-        this._disablePlayerCheckpointsCheck = true;
-    }
-
-    /**
-     * Specifies the path and speed for the boss's vehicle. The first non-player racer is considered the boss.
-     * @param path - The ID of the car recording path.
-     * @param speed - The playback speed for the path (default: 1.0).
-     */
-    public setBossPath(path: int, speed: float = 1.0): void {
-        this._bossPath = path;
-        this._bossPathSpeed = speed;
-    }
-
-
-
-    private _afterRaceSetup(): void {
-        this.player.clearWantedLevel().setControl(false);
-        const racerInfoCount = this._racersInfo.length;
-        const usedModels = new Array<int>();
-        for (let i = 0; i < racerInfoCount; ++i) {
-            usedModels.push(this._racersInfo[i].carModel);
-            let charModelId = this._racersInfo[i].charModelId;
-            if (charModelId > 0 && charModelId !== 7)
-                usedModels.push(charModelId);
-        }
-        this.loadModels(...usedModels);
-        this.refreshArea(this._racersInfo[0].x, this._racersInfo[0].y, this._racersInfo[0].z, 300.0);
-        for (let i = 0; i < racerInfoCount; ++i) {
-            const racerInfo = this._racersInfo[i];
-            const racerCar = this.addCar(racerInfo.carModel, racerInfo.x, racerInfo.y, racerInfo.z, racerInfo.heading).setHealth(2000);
-            if (racerInfo.setupCar !== undefined)
-                racerInfo.setupCar(racerCar);
-            let racerChar: Char;
-            if (racerInfo.isPlayer) {
-                racerChar = this.playerChar;
-                this._playerRacerCar = racerCar;
-            } else if (racerInfo.charModelId === -1) {
-                racerChar = this.addNeutralCharInsideCar(7, racerCar);
-            } else {
-                racerChar = this.addNeutralCharInsideCar(racerInfo.charModelId, racerCar);
-            }
-            this._racersBlips.push(this.addBlipToCar(racerCar).setAsFriendly(true).changeScale(2).changeColor(0));
-            if (racerInfo.isPlayer) {
-                this.playerChar.warpIntoCar(racerCar);
-                this.hideRacerBlip(i);
-            } else {
-                racerCar.setUpsidedownNotDamaged(true).setCanBurstTires(false).setCanBeVisiblyDamaged(false)
-                    .setProofs(false, false, false, true, false);
-                StuckCarCheck.Add(racerCar.setHealth(20000), 2.0, 3000);
-                racerChar.setCanBeKnockedOffBike(true).setCantBeDraggedOut(true).setGetOutUpsideDownCar(false)
-                    .setMaxHealth(2000).setHealth(2000).setCanBeShotInVehicle(false);
-            }
-            this._racers.push(new Racer(this._racers.length, racerChar, racerCar, racerInfo.isPlayer, racerInfo.startNode));
-        }
-        this.unloadModels(...usedModels);
-        if (!this._isWantedChallenge) {
-            this._nodesCount = this._route.length;
-            this._lastCheckpointId = this._findLastCheckpointId();
-            this._racersCount = this._racers.length;
-            for (let i = 0; i < this._racersCount; ++i) {
-                const racer = this._racers[i];
-                if (racer.isPlayer) {
-                    this._playerIndex = i;
-                    racer.nextNodeId = -1;
-                    break;
-                }
-            }
-        }
-        Audio.SetRadioChannel(12);
-        Audio.SetRadioChannel(-1);
-        this.resetCamera();
-        let bossCar = new Car(-1);
-        if (this._bossPath > -1 && !this._isWantedChallenge) {
-            Streaming.RequestCarRecording(this._bossPath);
-            while (!Streaming.HasCarRecordingBeenLoaded(this._bossPath))
-                wait(0);
-            for (let i = 0; i < this._racersCount; ++i) {
-                if (this._playerIndex === i)
-                    continue;
-                bossCar = this._racers[i].car;
-                break;
-            }
-        }
-        wait(1000);
-        wait(this.fadeToTransparent());
-        Text.PrintBig("RACES_4", 1100, 4); // 3
-        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
-        wait(1100);
-        Text.PrintBig("RACES_5", 1100, 4); // 2
-        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
-        wait(1100);
-        Text.PrintBig("RACES_6", 1100, 4); // 1
-        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1056);
-        wait(1100);
-        Text.PrintBig("RACES_7", 1100, 4); // GO!
-        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1057);
-        if (!this._isWantedChallenge)
-            this.player.alterWantedLevelNoDrop(this._minWantedLevel);
-        this.player.setControl(true);
-        if (this.canMarkCheckpointsAsFinish())
-            this.markAllCheckpointsAsFinish();
-        for (let i = 0; i < this._racersCount; ++i)
-            this._racers[i].car.freezePosition(false);
-        if (Car.DoesExist(+bossCar) && this._bossPath > -1)
-            bossCar.startPlayback(this._bossPath).setPlaybackSpeed(this._bossPathSpeed);
-        this._changeTraffic();
-    }
-
-    private _updateRace(): void {
-        if (this.isCarDead(this._playerRacerCar)) {
-            this.fail("RACES24", 6000);
+    public setWanted(minWantedLevel: int, spawnCops: boolean = true, wantedMultiplier: float = 1.0): void {
+        if (this._disableSetup)
             return;
-        }
-        if (!this.playerChar.isInAnyCar()) {
-            this.fail("RACES20", 6000);
-            return;
-        }
-        if (this._isWantedChallenge) {
-            this.onDrawInfoEvent();
-            return;
-        }
-        for (let i = 0; i < this._racersCount; ++i) {
-            const racer = this._racers[i];
-            if (racer.isPlayer) {
-                this._updatePlayerRacer(racer);
-                continue;
-            }
-            if (this.isCharDead(racer.char) || this.isCarDead(racer.car) || racer.car.hasBeenDamagedByChar(this.playerChar)) {
-                this.fail("RACES25", 6000);
-                return;
-            }
-            if (!racer.char.isInCar(racer.car))
-                racer.char.warpIntoCar(racer.car);
-            if (racer.isKnockedOut)
-                continue;
-            let currentNode = this._route[racer.nextNodeId];
-            if (StuckCarCheck.IsCarStuck(racer.car) && !racer.car.isOnScreen() && !racer.car.isPlaybackGoingOn())
-                this._tryRestoreRacerCar(racer, currentNode);
-            if (racer.car.locate3D(currentNode.x, currentNode.y, currentNode.z, 12.0, 12.0, 12.0, false)) {
-                if (currentNode.isCheckpoint) {
-                    racer.totalSpeed += racer.car.getSpeed();
-                    this.onRacerRouteNodePassedEvent(racer, currentNode);
-                }
-                let nextNodeId = racer.nextNodeId + 1;
-                if (nextNodeId === this._nodesCount) {
-                    racer.currentLap += 1;
-                    this.onRacerLapPassedEvent(racer, racer.currentLap);
-                    nextNodeId = 0;
-                }
-                racer.lastNode = currentNode;
-                racer.nextNodeId = nextNodeId;
-                currentNode = this._route[nextNodeId];
-                racer.char.clearTasks();
-            }
-            if (racer.car.isPlaybackGoingOn())
-                continue;
-            if (this.isScriptTaskFinished(racer.char, 0x05D1))
-                Task.CarDriveToCoord(racer.char, racer.car, currentNode.x, currentNode.y, currentNode.z, currentNode.speed, 0, 0, 2);
-        }
-        this.onDrawInfoEvent();
+        MissionTemplate.MinWantedLevel = minWantedLevel;
+        MissionTemplate.SpawnCops = spawnCops;
+        MissionTemplate.WantedMultiplier = wantedMultiplier;
     }
+
+
 
     private _tryRestoreRacerCar(racer: Racer, currentNode: RouteNode): void {
         const lastNode = racer.lastNode;
         let anyRacerLocatedAtLastNode = false;
-        for (let i = 0; i < this._racersCount; ++i) {
-            if (this._racers[i].id === i)
+        for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+            if (MissionTemplate.Racers[i].id === i)
                 continue;
-            const racer = this._racers[i];
+            const racer = MissionTemplate.Racers[i];
             if (racer.char.locateAnyMeans3D(lastNode.x, lastNode.y, lastNode.z, 12.0, 12.0, 12.0, false)
                 || racer.car.locate3D(lastNode.x, lastNode.y, lastNode.z, 12.0, 12.0, 12.0, false)) {
                 anyRacerLocatedAtLastNode = true;
@@ -687,62 +711,36 @@ abstract class BaseRaceMission extends BaseMission {
     }
 
     private _updatePlayerRacer(racer: Racer): void {
-        if (this._disablePlayerCheckpointsCheck)
+        if (MissionTemplate.DisablePlayerCheckpointsCheck)
             return;
         if (racer.nextNodeId === -1)
-            racer.nextNodeId = this.findNextCheckpointId(-1);
-        let currentCheckpoint = this._route[racer.nextNodeId];
-        if (this._playerRacerCar.locate3D(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z, 12.0, 12.0, 12.0, false)) {
+            racer.nextNodeId = MissionTemplate.FindNextCheckpointId(-1);
+        let currentCheckpoint = MissionTemplate.Route[racer.nextNodeId];
+        if (MissionTemplate.PlayerRacerCar.locate3D(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z, 12.0, 12.0, 12.0, false)) {
             /*&& StreetRacer.car.isOnAllWheels()*/
-            racer.totalSpeed += this._playerRacerCar.getSpeed();
+            racer.totalSpeed += MissionTemplate.PlayerRacerCar.getSpeed();
             racer.availableTime += currentCheckpoint.timeLimitMs;
-            this._blip.remove();
-            this._checkpoint.delete();
-            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, this._checkpointTune);
-            this.onRacerRouteNodePassedEvent(racer, currentCheckpoint);
-            if (this._lastCheckpointId === racer.nextNodeId) {
+            MissionTemplate.Blip.remove();
+            MissionTemplate.Checkpoint.delete();
+            Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, MissionTemplate.CheckpointTune);
+            MissionTemplate.onRacerRouteNodePassedEvent(racer, currentCheckpoint);
+            if (MissionTemplate.LastCheckpointId === racer.nextNodeId) {
                 racer.currentLap += 1;
-                this.onRacerLapPassedEvent(racer, racer.currentLap);
+                MissionTemplate.onRacerLapPassedEvent(racer, racer.currentLap);
                 racer.nextNodeId = -1;
             }
-            racer.nextNodeId = this.findNextCheckpointId(racer.nextNodeId);
-            currentCheckpoint = this._route[racer.nextNodeId];
+            racer.nextNodeId = MissionTemplate.FindNextCheckpointId(racer.nextNodeId);
+            currentCheckpoint = MissionTemplate.Route[racer.nextNodeId];
         }
-        if (Blip.DoesExist(+this._blip))
+        if (Blip.DoesExist(+MissionTemplate.Blip))
             return;
-        const nextCheckpoint = this._route[this.findNextCheckpointId(racer.nextNodeId)];
-        this._blip = Blip.AddForCoord(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z);
-        this._checkpoint = Checkpoint.Create(
-            this._lastCheckpointForPlayer ? 1 : 0,
+        const nextCheckpoint = MissionTemplate.Route[MissionTemplate.FindNextCheckpointId(racer.nextNodeId)];
+        MissionTemplate.Blip = Blip.AddForCoord(currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z);
+        MissionTemplate.Checkpoint = Checkpoint.Create(
+            MissionTemplate.LastCheckpointForPlayer ? 1 : 0,
             currentCheckpoint.x, currentCheckpoint.y, currentCheckpoint.z,
             nextCheckpoint.x, nextCheckpoint.y, nextCheckpoint.z, 6.0
         );
-    }
-
-    private _calculateCheckpointsCount(): int {
-        let result = 0;
-        for (let i = 0; i < this._nodesCount; ++i)
-            if (this._route[i].isCheckpoint)
-                result += 1;
-        return result;
-    }
-
-    private _findLastCheckpointId(): int {
-        for (let i = this._nodesCount - 1; i >= 0; --i)
-            if (this._route[i].isCheckpoint)
-                return i;
-        throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
-    }
-
-    private _changeTraffic(): void {
-        World.SetPedDensityMultiplier(this._pedDensityMultiplier);
-        World.SetCarDensityMultiplier(this._carDensityMultiplier);
-        Game.SetPoliceIgnorePlayer(this.player, !this._spawnCops);
-        Game.SetCreateRandomCops(this._spawnCops);
-        Game.EnableAmbientCrime(this._spawnCops);
-        Game.SwitchPoliceHelis(this._spawnCops);
-        Game.SwitchCopsOnBikes(this._spawnCops);
-        Game.SetWantedMultiplier(this._spawnCops ? this._wantedMultiplier : 0.0);
     }
 
 }
@@ -750,66 +748,53 @@ abstract class BaseRaceMission extends BaseMission {
 /** Base class implementing a sprint race, where the player competes against other racers to reach the final checkpoint first. */
 export abstract class BaseSprintRace extends BaseRaceMission {
 
-    private _positionGxt: string;
-
-    /**
-     * Sets the GXT key for the text displayed near the player's position in the race.
-     * @param gxtKey - The GXT key for the position text.
-     */
-    public set positionGxt(gxtKey: string) {
-        this._positionGxt = gxtKey;
-    }
+    private __disableSetup: boolean;
+    private _onRacerSetupEvent: () => void;
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._positionGxt = "RACES44";
-    }
 
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void {
-        if (racer.isPlayer && this.lastCheckpointId === this.findNextCheckpointId(lastNode.checkpointId))
-            this.markAllCheckpointsAsFinish();
-    }
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
 
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void {
-        if (racer.isPlayer) {
-            this.complete();
-        } else {
-            this.fail("RACEFA", 5000);
-        }
-    }
+        this.onRacerSetupEvent = () => {
+            this.__disableSetup = false;
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+        };
 
-    public onDrawInfoEvent(): void {
-        Screen.DisplayCounter(this._getPlayerPosition(), 1, this._positionGxt);
-    }
-
-
-
-    private _getPlayerPosition(): int {
-        let position = 1;
-        const playerRacer = this.playerRacer;
-        const currentPlayerCheckpointId = playerRacer.nextNodeId;
-        for (let i = 0; i < this.racersCount; ++i) {
-            if (this.playerRacerId === i)
-                continue;
-            const currentStreetRacer = this.getRacer(i);
-            let currentStreetRacerCheckpointId = currentStreetRacer.nextNodeId;
-            if (!this.isRouteNodeACheckpoint(currentStreetRacerCheckpointId))
-                currentStreetRacerCheckpointId = this.findNextCheckpointId(currentStreetRacerCheckpointId);
-            if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
-                position += 1;
-            } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
-                const playerCoord = playerRacer.car.getCoordinates();
-                const racerCoord = currentStreetRacer.car.getCoordinates();
-                const nextNode = this.getRouteNode(currentPlayerCheckpointId);
-                const playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                const racerDistance = Math.GetDistanceBetweenCoords3D(racerCoord.x, racerCoord.y, racerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                if (playerDistance > racerDistance)
-                    position += 1;
+        MissionTemplate.onRacerLapPassedEvent = (racer: Racer, lastLap: int) => {
+            if (racer.isPlayer) {
+                this.complete();
+            } else {
+                this.fail("RACEFA", 5000);
             }
         }
-        return position;
+
+        MissionTemplate.onRacerRouteNodePassedEvent = (racer: Racer, lastNode: RouteNode) => {
+            if (racer.isPlayer && MissionTemplate.LastCheckpointId === MissionTemplate.FindNextCheckpointId(lastNode.checkpointId))
+                MissionTemplate.LastCheckpointForPlayer = true;
+        };
+
+        MissionTemplate.Draw = () => {
+            Screen.DisplayCounter(MissionTemplate.CalculatePlayerPositionByDistance(), 1, MissionTemplate.PositionGxt);
+        };
+
+    }
+
+
+
+    /**
+     * Specifies the path and speed for the boss's vehicle. The first non-player racer is considered the boss.
+     * @param path - The ID of the car recording path.
+     * @param speed - The playback speed for the path (default: 1.0).
+     */
+    public setBossPath(path: int, speed: float = 1.0): void {
+        if (this.__disableSetup)
+            return;
+        MissionTemplate.BossPath = path;
+        MissionTemplate.BossPathSpeed = speed;
     }
 
 }
@@ -817,92 +802,56 @@ export abstract class BaseSprintRace extends BaseRaceMission {
 /** Base class implementing circuit racing. */
 export abstract class BaseCircuitRace extends BaseRaceMission {
 
-    private _lapsCount: int;
-    private _positionGxt: string;
+    private __disableSetup: boolean;
+    private _onRacerSetupEvent: () => void;
 
     /**
      * Sets the number of race laps, with a minimum of 2.
      * @param count - The number of laps for the race.
      */
     public set lapsCount(count: int) {
-        this._lapsCount = 2 > count ? 2 : count;
-    }
-
-    /**
-     * Sets the GXT key for the text displayed near the player's position in the race.
-     * @param gxtKey - The GXT key for the position text.
-     */
-    public set positionGxt(gxtKey: string) {
-        this._positionGxt = gxtKey;
+        if (this.__disableSetup)
+            return;
+        if (count > 2)
+            MissionTemplate.LapsCount = count;
     }
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._lapsCount = 2;
-        this._positionGxt = "RACES44";
-    }
 
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void {
-        if (!racer.isPlayer || this._lapsCount > (racer.currentLap + 1))
-            return;
-        if (this.lastCheckpointId === this.findNextCheckpointId(lastNode.checkpointId))
-            this.markAllCheckpointsAsFinish();
-    }
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
 
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void {
-        if (this._lapsCount > lastLap)
-            return;
-        if (racer.isPlayer) {
-            this.complete();
-        } else {
-            this.fail("RACEFA", 5000);
-        }
-    }
+        this.onRacerSetupEvent = () => {
+            MissionTemplate.LapsCount = 2;
+            this.__disableSetup = false;
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+        };
 
-    public onDrawInfoEvent(): void {
-        Screen.DisplayCounter(this._getPlayerPosition(), 1, this._positionGxt);
-        Screen.DisplayCounterWith2Numbers(this.playerRacer.currentLap + 1, this._lapsCount, 2, "RACES32");
-    }
-
-
-
-    /** @returns Always false. */
-    public canMarkCheckpointsAsFinish(): boolean {
-        return false;
-    }
-
-
-
-    private _getPlayerPosition(): int {
-        let position = 1;
-        const playerRacer = this.playerRacer;
-        const currentPlayerCheckpointId = playerRacer.nextNodeId;
-        for (let i = 0; i < this.racersCount; ++i) {
-            if (this.playerRacerId === i)
-                continue;
-            const currentStreetRacer = this.getRacer(i);
-            if (currentStreetRacer.currentLap > playerRacer.currentLap) {
-                position += 1;
-            } else if (currentStreetRacer.currentLap === playerRacer.currentLap) {
-                let currentStreetRacerCheckpointId = currentStreetRacer.nextNodeId;
-                if (!this.isRouteNodeACheckpoint(currentStreetRacerCheckpointId))
-                    currentStreetRacerCheckpointId = this.findNextCheckpointId(currentStreetRacerCheckpointId);
-                if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
-                    position += 1;
-                } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
-                    const playerCoord = playerRacer.car.getCoordinates();
-                    const racerCoord = currentStreetRacer.car.getCoordinates();
-                    const nextNode = this.getRouteNode(currentPlayerCheckpointId);
-                    const playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                    const racerDistance = Math.GetDistanceBetweenCoords3D(racerCoord.x, racerCoord.y, racerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                    if (playerDistance > racerDistance)
-                        position += 1;
-                }
+        MissionTemplate.onRacerLapPassedEvent = (racer: Racer, lastLap: int) => {
+            if (MissionTemplate.LapsCount > lastLap)
+                return;
+            if (racer.isPlayer) {
+                this.complete();
+            } else {
+                this.fail("RACEFA", 5000);
             }
         }
-        return position;
+
+        MissionTemplate.onRacerRouteNodePassedEvent = (racer: Racer, lastNode: RouteNode) => {
+            if (!racer.isPlayer || MissionTemplate.LapsCount > (racer.currentLap + 1))
+                return;
+            if (MissionTemplate.LastCheckpointId === MissionTemplate.FindNextCheckpointId(lastNode.checkpointId))
+                MissionTemplate.LastCheckpointForPlayer = true;
+        };
+
+        MissionTemplate.Draw = () => {
+            Screen.DisplayCounterWith2Numbers(MissionTemplate.PlayerRacer.currentLap + 1, MissionTemplate.LapsCount, 2, "RACES32");
+            Screen.DisplayCounter(MissionTemplate.CalculatePlayerPositionByDistance(), 1, MissionTemplate.PositionGxt);
+        };
+
     }
 
 }
@@ -912,122 +861,80 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 
     private _safeZCoordForCars: float;
     private _randomNames: int[];
-    private _positionGxt: string;
-
-    /**
-     * Sets the GXT key for the text displayed near the player's position in the race.
-     * @param gxtKey - The GXT key for the position text.
-     */
-    public set positionGxt(gxtKey: string) {
-        this._positionGxt = gxtKey;
-    }
+    private _onRacerSetupEvent: () => void;
+    private _onBegin: () => void;
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._generateRandomStreetRacersNames();
-        this._safeZCoordForCars = -1000.0;
-        this._positionGxt = "RACES44";
-        FxtStore.insert("NAMEKNO", "~d~ ~a~ ~d~", true);
-    }
 
-    public onEndEvent(): void {
-        FxtStore.delete("NAMEKNO", true);
-        super.onEndEvent();
-    }
-
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void {
-        if (!racer.isPlayer || this._getLapsCount() > (racer.currentLap + 1))
-            return;
-        if (this.lastCheckpointId === this.findNextCheckpointId(lastNode.checkpointId))
-            this.markAllCheckpointsAsFinish();
-    }
-
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void {
-        let isKnocked = true;
-        for (let i = 0; i < this.racersCount; ++i) {
-            const racer = this.getRacer(i);
-            if (racer.isKnockedOut)
-                continue;
-            if (lastLap > racer.currentLap) {
-                isKnocked = false;
-                break;
-            }
-        }
-        if (isKnocked) {
-            if (racer.isPlayer) {
-                this.fail("RACEFA", 5000);
-                return;
-            }
-            this.hideRacerBlip(racer.id);
-            racer.isKnockedOut = true;
-            this._safeZCoordForCars -= 10.0;
-            racer.char.setProofs(true, true, true, true, true).clearTasks();
-            racer.car.setProofs(true, true, true, true, true).setRotationVelocity(0.0, 0.0, 0.0)
-                .setCoordinates(0.0, 0.0, this._safeZCoordForCars)
-                .freezePositionAndDontLoadCollision(true);
-            if (this._randomNames.length > 0)
-                Text.PrintStringInStringNow("NAMEKNO", ("CRED61" + this._randomNames.pop()), 4000, 1);
-            return;
-        }
-        if (this._getLapsCount() > lastLap)
-            return;
-        if (racer.isPlayer) {
-            this.complete();
-        } else {
-            this.fail("RACEFA", 5000);
-        }
-    }
-
-    public onDrawInfoEvent(): void {
-        Screen.DisplayCounter(this._getPlayerPosition(), 1, this._positionGxt);
-        const lapsCount = this._getLapsCount();
-        if (lapsCount > 1)
-            Screen.DisplayCounterWith2Numbers(this.playerRacer.currentLap + 1, lapsCount, 2, "RACES32");
-    }
-
-
-
-    /** @returns Always false. */
-    public canMarkCheckpointsAsFinish(): boolean {
-        return false;
-    }
-
-
-    private _getLapsCount(): int {
-        return this.racersCount - 1;
-    }
-
-    private _getPlayerPosition(): int {
-        let position = 1;
-        const currentPlayerCheckpointId = this.playerRacer.nextNodeId;
-        const playerRacer = this.playerRacer;
-        for (let i = 0; i < this.racersCount; ++i) {
-            if (this.playerRacerId === i)
-                continue;
-            const currentStreetRacer = this.getRacer(i);
-            if (currentStreetRacer.currentLap > playerRacer.currentLap) {
-                position += 1;
-            } else if (currentStreetRacer.currentLap === playerRacer.currentLap) {
-                let currentStreetRacerCheckpointId = currentStreetRacer.nextNodeId;
-                if (!this.isRouteNodeACheckpoint(currentStreetRacerCheckpointId))
-                    currentStreetRacerCheckpointId = this.findNextCheckpointId(currentStreetRacerCheckpointId);
-                if (currentStreetRacerCheckpointId > currentPlayerCheckpointId) {
-                    position += 1;
-                } else if (currentStreetRacerCheckpointId === currentPlayerCheckpointId) {
-                    const playerCoord = playerRacer.car.getCoordinates();
-                    const racerCoord = currentStreetRacer.car.getCoordinates();
-                    const nextNode = this.getRouteNode(currentPlayerCheckpointId);
-                    const playerDistance = Math.GetDistanceBetweenCoords3D(playerCoord.x, playerCoord.y, playerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                    const racerDistance = Math.GetDistanceBetweenCoords3D(racerCoord.x, racerCoord.y, racerCoord.z, nextNode.x, nextNode.y, nextNode.z);
-                    if (playerDistance > racerDistance)
-                        position += 1;
+        MissionTemplate.onRacerLapPassedEvent = (racer: Racer, lastLap: int) => {
+            let isKnocked = true;
+            for (let i = 0; i < MissionTemplate.RacersCount; ++i) {
+                const racer = MissionTemplate.Racers[i];
+                if (racer.isKnockedOut)
+                    continue;
+                if (lastLap > racer.currentLap) {
+                    isKnocked = false;
+                    break;
                 }
             }
+            if (isKnocked) {
+                if (racer.isPlayer) {
+                    this.fail("RACEFA", 5000);
+                    return;
+                }
+                MissionTemplate.RacersBlips[racer.id].changeDisplay(0);
+                racer.isKnockedOut = true;
+                this._safeZCoordForCars -= 10.0;
+                racer.char.setProofs(true, true, true, true, true).clearTasks();
+                racer.car.setProofs(true, true, true, true, true).setRotationVelocity(0.0, 0.0, 0.0)
+                    .setCoordinates(0.0, 0.0, this._safeZCoordForCars)
+                    .freezePositionAndDontLoadCollision(true);
+                if (this._randomNames.length > 0)
+                    Text.PrintStringInStringNow("NAMEKNO", ("CRED61" + this._randomNames.pop()), 4000, 1);
+                return;
+            }
+            if (MissionTemplate.LapsCount > lastLap)
+                return;
+            if (racer.isPlayer) {
+                this.complete();
+            } else {
+                this.fail("RACEFA", 5000);
+            }
         }
-        return position;
+
+        MissionTemplate.onRacerRouteNodePassedEvent = (racer: Racer, lastNode: RouteNode) => {
+            if (!racer.isPlayer || MissionTemplate.LapsCount > (racer.currentLap + 1))
+                return;
+            if (MissionTemplate.LastCheckpointId === MissionTemplate.FindNextCheckpointId(lastNode.checkpointId))
+                MissionTemplate.LastCheckpointForPlayer = true;;
+        };
+
+        MissionTemplate.Draw = () => {
+            Screen.DisplayCounter(MissionTemplate.CalculatePlayerPositionByDistance(), 1, MissionTemplate.PositionGxt);
+            if (MissionTemplate.LapsCount > 1)
+                Screen.DisplayCounterWith2Numbers(MissionTemplate.PlayerRacer.currentLap + 1, MissionTemplate.LapsCount, 2, "RACES32");
+        };
+
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
+        this._onBegin = MissionTemplate.Begin;
+
+        this.onRacerSetupEvent = () => {
+            this._safeZCoordForCars = -1000.0;
+            this._generateRandomStreetRacersNames();
+            this._onRacerSetupEvent();
+        };
+
+        MissionTemplate.Begin = () => {
+            this._onBegin();
+            MissionTemplate.LapsCount = MissionTemplate.RacersCount - 1;
+        };
+
     }
+
+
 
     private _generateRandomStreetRacersNames(): void {
         this._randomNames = new Array<int>();
@@ -1044,95 +951,85 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 /** Base class implementing a speedtrap race, where the winner is determined by total speed at checkpoints. */
 export abstract class BaseSpeedtrapRace extends BaseRaceMission {
 
-    private _lapsCount: int;
-    private _positionGxt: string;
+    private __disableSetup: boolean;
+    private _onRacerSetupEvent: () => void;
+
 
     /**
      * Sets the number of race laps, with a minimum of 1.
      * @param count - The number of laps for the race.
      */
     public set lapsCount(count: int) {
-        this._lapsCount = 1 > count ? 1 : count;
-    }
-
-    /**
-     * Sets the GXT key for the text displayed near the player's position in the race.
-     * @param gxtKey - The GXT key for the position text.
-     */
-    public set positionGxt(gxtKey: string) {
-        this._positionGxt = gxtKey;
+        if (this.__disableSetup)
+            return;
+        if (count > 1)
+            MissionTemplate.LapsCount = count;
     }
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._lapsCount = 1;
-        this._positionGxt = "RACES44";
-        this.setCheckpointTuneAsCameraShot();
-    }
 
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void {
-        if (!racer.isPlayer || this._lapsCount > (racer.currentLap + 1))
-            return;
-        if (this.lastCheckpointId === this.findNextCheckpointId(lastNode.checkpointId))
-            this.markAllCheckpointsAsFinish();
-    }
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
 
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void {
-        if (this._lapsCount > lastLap)
-            return;
-        this._recalculateSpeeds(racer.id);
-    }
+        this.onRacerSetupEvent = () => {
+            this.__disableSetup = false;
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+            MissionTemplate.CheckpointTune = 1132;
+        };
 
-    public onDrawInfoEvent(): void {
-        Screen.DisplayCounter(this._getPlayerPosition(), 1, this._positionGxt);
-        Screen.DisplayCounter(this.playerRacer.totalSpeed, 2, "KICK1_9");
-        if (this._lapsCount > 1)
-            Screen.DisplayCounterWith2Numbers(this.playerRacer.currentLap + 1, this._lapsCount, 3, "RACES32");
-    }
-
-
-
-    private _getPlayerPosition(): int {
-        let position = 1;
-        const playerSpeed = this.playerRacer.totalSpeed;
-        for (let i = 0; i < this.racersCount; ++i) {
-            if (this.playerRacerId === i)
-                continue;
-            let currentStreetRacer = this.getRacer(i);
-            if (currentStreetRacer.totalSpeed > playerSpeed)
-                position += 1;
+        MissionTemplate.onRacerLapPassedEvent = (racer: Racer, lastLap: int) => {
+            if (MissionTemplate.LapsCount > lastLap)
+                return;
+            this._recalculateSpeeds(racer.id);
         }
-        return position;
+
+        MissionTemplate.onRacerRouteNodePassedEvent = (racer: Racer, lastNode: RouteNode) => {
+            if (!racer.isPlayer || MissionTemplate.LapsCount > (racer.currentLap + 1))
+                return;
+            if (MissionTemplate.LastCheckpointId === MissionTemplate.FindNextCheckpointId(lastNode.checkpointId))
+                MissionTemplate.LastCheckpointForPlayer = true;
+        };
+
+        MissionTemplate.Draw = () => {
+            Screen.DisplayCounter(MissionTemplate.CalculatePlayerPositionBySpeed(), 1, MissionTemplate.PositionGxt);
+            Screen.DisplayCounter(MissionTemplate.PlayerRacer.totalSpeed, 2, "KICK1_9");
+            if (MissionTemplate.LapsCount > 1)
+                Screen.DisplayCounterWith2Numbers(MissionTemplate.PlayerRacer.currentLap + 1, MissionTemplate.LapsCount, 3, "RACES32");
+        };
+
     }
+
+
 
     private _recalculateSpeeds(finishedRacerId: int): void {
-        const lastCheckpointId = this.lastCheckpointId;
-        const racersCount = this.racersCount;
+        const lastCheckpointId = MissionTemplate.LastCheckpointId;
+        const racersCount = MissionTemplate.RacersCount;
         for (let i = 0; i < racersCount; ++i) {
-            if (finishedRacerId === i || this.playerRacerId === i)
+            if (finishedRacerId === i || MissionTemplate.PlayerRacerId === i)
                 continue;
-            const currentStreetRacer = this.getRacer(i);
+            const currentStreetRacer = MissionTemplate.Racers[i];
             if (lastCheckpointId === currentStreetRacer.nextNodeId) {
-                currentStreetRacer.totalSpeed += this.getRouteNode(lastCheckpointId).speed;
+                currentStreetRacer.totalSpeed += MissionTemplate.Route[lastCheckpointId].speed;
                 continue;
             }
             while (lastCheckpointId > currentStreetRacer.nextNodeId) {
-                currentStreetRacer.nextNodeId = this.findNextCheckpointId(currentStreetRacer.nextNodeId);
-                currentStreetRacer.totalSpeed += this.getRouteNode(currentStreetRacer.nextNodeId).speed;
+                currentStreetRacer.nextNodeId = MissionTemplate.FindNextCheckpointId(currentStreetRacer.nextNodeId);
+                currentStreetRacer.totalSpeed += MissionTemplate.Route[currentStreetRacer.nextNodeId].speed;
             }
         }
         let maxSpeed = 0.0;
         let winnerId = 0;
         for (let i = 0; i < racersCount; ++i) {
-            const currentStreetRacer = this.getRacer(i);
+            const currentStreetRacer = MissionTemplate.Racers[i];
             if (currentStreetRacer.totalSpeed > maxSpeed) {
                 maxSpeed = currentStreetRacer.totalSpeed;
                 winnerId = i;
             }
         }
-        if (this.getRacer(winnerId).isPlayer) {
+        if (MissionTemplate.Racers[winnerId].isPlayer) {
             this.complete();
             return;
         }
@@ -1144,22 +1041,25 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
 /** Base class implementing a speed radar challenge, where the player must pass radars to achieve a required speed within an optional time limit. */
 export abstract class BaseRadarChallenge extends BaseRaceMission {
 
+    private __disableSetup: boolean;
     private _timeLimit: int;
     private _radarTimer: Timer;
     private _useTimer: boolean;
     private _playerSpeed: float;
     private _neededSpeed: float;
     private _radarNodes: RadarNode[];
-    private _radarsCount: int;
     private _passedRadarsCount: int;
-    private __onStartEvent: () => void;
+    private _onRacerSetupEvent: () => void;
+    private _onBegin: () => void;
 
     /**
      * Sets the time limit for the player to pass all radars, enabling the timer.
      * @param timeInMilliseconds - Time limit in milliseconds.
      */
-    public set timeLimit(timeInMilliseconds: int) {
-        this._timeLimit = timeInMilliseconds;
+    public set timeLimit(time: int) {
+        if (this.__disableSetup)
+            return;
+        this._timeLimit = time;
         this._useTimer = true;
     }
 
@@ -1167,68 +1067,70 @@ export abstract class BaseRadarChallenge extends BaseRaceMission {
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._radarTimer = new Timer();
-        this._useTimer = false;
-        this._neededSpeed = 0.0;
-        this._playerSpeed = 0.0;
-        this._radarNodes = new Array<RadarNode>();
-        this._radarsCount = 0;
-        this._passedRadarsCount = 0;
-        this._timeLimit = 10000;
-        this.disablePlayerCheckpointsCheck();
 
-        this.__onStartEvent = this.onStartEvent;
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
+        this._onBegin = MissionTemplate.Begin;
 
-        this.onStartEvent = () => {
-            this.__onStartEvent();
-            let checkpointId = this.lastCheckpointId;
+        this.onRacerSetupEvent = () => {
+            this._passedRadarsCount = 0;
+            this._timeLimit = 10000;
+            this._neededSpeed = 0.0;
+            this._playerSpeed = 0.0;
+            this._useTimer = false;
+            this._radarNodes = new Array<RadarNode>();
+            this.__disableSetup = false;
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+            MissionTemplate.IsChallenge = true;
+            MissionTemplate.CheckpointTune = 1132;
+            MissionTemplate.DisablePlayerCheckpointsCheck = true;
+        };
+
+        MissionTemplate.Begin = () => {
+            this._onBegin();
+            let checkpointId = MissionTemplate.LastCheckpointId;
             do {
-                const routeNode = this.getRouteNode(checkpointId);
+                const routeNode = MissionTemplate.Route[checkpointId];
                 this._neededSpeed += routeNode.speed;
                 this._radarNodes.push(new RadarNode(routeNode));
-                checkpointId = this.findNextCheckpointId(checkpointId);
-            } while (checkpointId !== this.lastCheckpointId);
-            this._radarsCount = this._radarNodes.length;
+                checkpointId = MissionTemplate.FindNextCheckpointId(checkpointId);
+            } while (checkpointId !== MissionTemplate.LastCheckpointId);
             this._radarNodes.forEach(radarNode => radarNode.create());
-            if (this._useTimer)
+            if (this._useTimer) {
+                this._radarTimer = new Timer();
                 this._radarTimer.reset(this._timeLimit);
+            }
         };
-    }
 
-    public onDrawInfoEvent(): void {
-        if (this._useTimer) {
-            if (0 >= this._radarTimer.millisecondsLeft) {
-                this._removeAll(true, "BB_17");
-                return;
+        MissionTemplate.Draw = () => {
+            if (this._useTimer) {
+                if (0 >= this._radarTimer.millisecondsLeft) {
+                    this._removeAll(true, "BB_17");
+                    return;
+                }
+                Screen.DisplayTimeLeft(this._radarTimer);
             }
-            Screen.DisplayTimeLeft(this._radarTimer);
-        }
-        for (let i = 0; i < this._radarsCount; ++i) {
-            const radar = this._radarNodes[i];
-            if (radar.isPassed)
-                continue;
-            if (this.playerRacerCar.locate3D(radar.x, radar.y, radar.z, 12.0, 12.0, 12.0, false)) {
-                /*&& this._playerCar.isOnAllWheels()*/
-                Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1132);
-                radar.isPassed = true;
-                radar.remove();
-                this._passedRadarsCount += 1;
-                this._playerSpeed += this.playerRacerCar.getSpeed();
-                Text.PrintWith2NumbersNow("SN_ONE", this._passedRadarsCount, this._radarsCount, 5000, 1);
+            for (let i = 0; i < MissionTemplate.NodesCount; ++i) {
+                const radar = this._radarNodes[i];
+                if (radar.isPassed)
+                    continue;
+                if (MissionTemplate.PlayerRacerCar.locate3D(radar.x, radar.y, radar.z, 12.0, 12.0, 12.0, false)) {
+                    /*&& this._playerCar.isOnAllWheels()*/
+                    Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1132);
+                    radar.isPassed = true;
+                    radar.remove();
+                    this._passedRadarsCount += 1;
+                    this._playerSpeed += MissionTemplate.PlayerRacerCar.getSpeed();
+                    Text.PrintWith2NumbersNow("SN_ONE", this._passedRadarsCount, MissionTemplate.NodesCount, 5000, 1);
+                }
             }
-        }
-        Screen.DisplayCounter(this._playerSpeed, 1, "KICK1_9");
-        Screen.DisplayCounter(this._neededSpeed, 2, "ST1_7");
-        Screen.DisplayCounter(this.playerRacerCar.getSpeed(), 4);
-        if (this._passedRadarsCount === this._radarsCount)
-            this._removeAll(this._neededSpeed > this._playerSpeed, "DNC_003");
-    }
+            Screen.DisplayCounter(this._playerSpeed, 1, "KICK1_9");
+            Screen.DisplayCounter(this._neededSpeed, 2, "ST1_7");
+            Screen.DisplayCounter(MissionTemplate.PlayerRacerCar.getSpeed(), 4);
+            if (this._passedRadarsCount === MissionTemplate.NodesCount)
+                this._removeAll(this._neededSpeed > this._playerSpeed, "DNC_003");
+        };
 
-
-
-    /** @returns Always false. */
-    public canMarkCheckpointsAsFinish(): boolean {
-        return false;
     }
 
 
@@ -1247,63 +1149,78 @@ export abstract class BaseRadarChallenge extends BaseRaceMission {
 /** Base class implementing a timed checkpoint challenge, where the player must pass checkpoints within time limits. */
 export abstract class BaseCheckpointChallenge extends BaseRaceMission {
 
-    private _lapsCount: int;
     private _checkpointTimer: Timer;
-    private __onStartEvent: () => void;
+    private __disableSetup: boolean;
+    private _onRacerSetupEvent: () => void;
+    private _onBegin: () => void;
 
     /**
      * Sets the number of challenge laps, with a minimum of 1.
-     * @param count - The number of laps for the race.
+     * @param count - The number of laps for the challenge.
      */
     public set lapsCount(count: int) {
-        this._lapsCount = 1 > count ? 1 : count;
+        if (this.__disableSetup)
+            return;
+        if (count > 1)
+            MissionTemplate.LapsCount = count;
     }
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._checkpointTimer = new Timer();
-        this._lapsCount = 1;
-        this.setCheckpointTuneAsCameraShot();
-        this.__onStartEvent = this.onStartEvent;
 
-        this.onStartEvent = () => {
-            this.__onStartEvent();
-            const nextCheckpointId = this.findNextCheckpointId(-1);
-            const nextRouteNode = this.getRouteNode(nextCheckpointId);
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
+        this._onBegin = MissionTemplate.Begin;
+
+        this.onRacerSetupEvent = () => {
+            MissionTemplate.LapsCount = 1;
+            this._checkpointTimer = new Timer();
+            this.__disableSetup = false;
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+            MissionTemplate.IsChallenge = true;
+            MissionTemplate.CheckpointTune = 1132;
+        };
+
+        MissionTemplate.onRacerLapPassedEvent = (racer: Racer, lastLap: int) => {
+            if (MissionTemplate.LapsCount > lastLap)
+                return;
+            if (racer.isPlayer)
+                this.complete();
+        }
+
+        MissionTemplate.onRacerRouteNodePassedEvent = (racer: Racer, lastNode: RouteNode) => {
+            if (racer.isPlayer && lastNode.isCheckpoint) {
+                const nextCheckpointId = MissionTemplate.FindNextCheckpointId(lastNode.checkpointId);
+                const nextRouteNode = MissionTemplate.Route[nextCheckpointId];
+                this._checkpointTimer.addMilliseconds(nextRouteNode.timeLimitMs);
+                Text.PrintWithNumberNow("A_TIME", Math.floor((nextRouteNode.timeLimitMs / 1000) % 60), 5000, 1); // +seconds
+            }
+            if (!racer.isPlayer || MissionTemplate.LapsCount > (racer.currentLap + 1))
+                return;
+            if (MissionTemplate.LastCheckpointId === MissionTemplate.FindNextCheckpointId(lastNode.checkpointId))
+                MissionTemplate.LastCheckpointForPlayer = true;
+        };
+
+
+        MissionTemplate.Begin = () => {
+            this._onBegin();
+            const nextCheckpointId = MissionTemplate.FindNextCheckpointId(-1);
+            const nextRouteNode = MissionTemplate.Route[nextCheckpointId];
             this._checkpointTimer.reset(nextRouteNode.timeLimitMs);
         };
-    }
 
-    public onRacerRouteNodePassedEvent(racer: Racer, lastNode: RouteNode): void {
-        if (racer.isPlayer && lastNode.isCheckpoint) {
-            const nextCheckpointId = this.findNextCheckpointId(lastNode.checkpointId);
-            const nextRouteNode = this.getRouteNode(nextCheckpointId);
-            this._checkpointTimer.addMilliseconds(nextRouteNode.timeLimitMs);
-            Text.PrintWithNumberNow("A_TIME", Math.floor((nextRouteNode.timeLimitMs / 1000) % 60), 5000, 1); // +seconds
-        }
-        if (!racer.isPlayer || this._lapsCount > (racer.currentLap + 1))
-            return;
-        if (this.lastCheckpointId === this.findNextCheckpointId(lastNode.checkpointId))
-            this.markAllCheckpointsAsFinish();
-    }
+        MissionTemplate.Draw = () => {
+            if (MissionTemplate.LapsCount > 1)
+                Screen.DisplayCounterWith2Numbers(MissionTemplate.PlayerRacer.currentLap + 1, MissionTemplate.LapsCount, 1, "RACES32");
+            if (0 >= this._checkpointTimer.millisecondsLeft) {
+                this.fail("BB_17", 5000);
+                return;
+            }
+            Screen.DisplayTimeLeft(this._checkpointTimer);
+        };
 
-    public onRacerLapPassedEvent(racer: Racer, lastLap: int): void {
-        if (this._lapsCount > lastLap)
-            return;
-        if (racer.isPlayer)
-            this.complete();
-    }
-
-    public onDrawInfoEvent(): void {
-        if (this._lapsCount > 1)
-            Screen.DisplayCounterWith2Numbers(this.playerRacer.currentLap + 1, this._lapsCount, 1, "RACES32");
-        if (0 >= this._checkpointTimer.millisecondsLeft) {
-            this.fail("BB_17", 5000);
-            return;
-        }
-        Screen.DisplayTimeLeft(this._checkpointTimer);
     }
 
 }
@@ -1311,27 +1228,26 @@ export abstract class BaseCheckpointChallenge extends BaseRaceMission {
 /** Base class implementing a wanted challenge, where the player must maintain a specified wanted level for a set time while evading cops. */
 export abstract class BaseWantedChallenge extends BaseRaceMission {
 
+    private __disableSetup: boolean;
     private _chaseStage: int;
     private _chaseTimer: Timer;
     private _timeMinimum: int;
     private _mandatoryToAvoidPolice: boolean;
-    private _startGxt: string;
-    private _lostWantedGxt: string;
-    private _clearWantedGxt: string;
+    private _onRacerSetupEvent: () => void;
 
     /** Sets the startup message. */
-    public set startMessage(gxtKey: string) {
-        this._startGxt = gxtKey;
+    public set startWantedMessage(gxtKey: string) {
+        MissionTemplate.StartWantedGxt = gxtKey;
     }
 
     /** Sets the message displayed when the wanted level is lost. */
     public set lostWantedMessage(gxtKey: string) {
-        this._lostWantedGxt = gxtKey;
+        MissionTemplate.LostWantedGxt = gxtKey;
     }
 
     /** Sets the message about the need to clear the wanted level. */
     public set clearWantedMessage(gxtKey: string) {
-        this._clearWantedGxt = gxtKey;
+        MissionTemplate.ClearWantedGxt = gxtKey;
     }
 
     /** Sets the minimum time the police wanted level must be maintained. */
@@ -1339,102 +1255,82 @@ export abstract class BaseWantedChallenge extends BaseRaceMission {
         this._timeMinimum = timeInMilliseconds;
     }
 
-    /** Gets the minimum wanted level required to hold. */
-    public get minWantedLevel(): int {
-        return super.minWantedLevel;
-    }
-
-    /**
-     * Sets the minimum wanted level required to hold. 
-     * @param level — The minimum wanted level (0 to 6)
-     */
-    public set minWantedLevel(level: int) {
-        if (1 > level)
-            level = 1;
-        super.minWantedLevel = level;
+    /** Makes it mandatory to avoid the police to complete the mission. */
+    public set setMandatoryToAvoidPolice(state: boolean) {
+        if (this.__disableSetup)
+            return;
+        this._mandatoryToAvoidPolice = state;
     }
 
 
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this._chaseTimer = new Timer(10000);
-        this._chaseStage = 0;
-        this._startGxt = "";
-        this._lostWantedGxt = "RACEFA";
-        this._clearWantedGxt = "";
-        this._mandatoryToAvoidPolice = false;
-        this.savePlayerWeapons();
-        this.loadWeaponModelsNow(29);
-        this.playerChar.giveWeapon(29, 9999).setCurrentWeapon(29);
-        this.unloadWeaponModels(29);
-        this.disablePlayerCheckpointsCheck();
-    }
 
-    public onDrawInfoEvent(): void {
-        switch (this._chaseStage) {
-            case 0:
-                this._chaseTimer.reset(this._timeMinimum);
-                this.player.alterWantedLevel(this.minWantedLevel);
-                if (this._startGxt.length > 0) {
-                    this.printText(this._startGxt, 6000);
-                } else {
-                    this.printText("GYM1_6" + this.minWantedLevel.toString(), 5000);
-                }
-                this._chaseStage = 1;
-                break;
-            case 1:
-                if (this.minWantedLevel > this.player.storeWantedLevel())
-                    this.fail(this._lostWantedGxt, 5000);
-                Screen.DisplayTimeLeft(this._chaseTimer);
-                if (this._chaseTimer.millisecondsLeft > 1)
-                    break;
-                if (this._mandatoryToAvoidPolice) {
-                    if (1 > this._clearWantedGxt.length) {
-                        Text.LoadMissionText("RYDER3");
-                        this._clearWantedGxt = "RYD3_I";
+        this._onRacerSetupEvent = this.onRacerSetupEvent;
+
+        this.onRacerSetupEvent = () => {
+            this._chaseTimer = new Timer(10000);
+            this._chaseStage = 0;
+            this._mandatoryToAvoidPolice = false;
+            this.__disableSetup = false;
+            this.setTraffic(1.0, 1.0);
+            this.setWanted(1, true, 1.0);
+            this._onRacerSetupEvent();
+            this.__disableSetup = true;
+            this.savePlayerWeapons();
+            this.loadWeaponModelsNow(29);
+            this.playerChar.giveWeapon(29, 9999).setCurrentWeapon(29);
+            this.unloadWeaponModels(29);
+            MissionTemplate.IsChallenge = true;
+            MissionTemplate.IsWantedChallenge = true;
+            MissionTemplate.SpawnCops = true;
+        };
+
+        MissionTemplate.Draw = () => {
+            switch (this._chaseStage) {
+                case 0:
+                    this._chaseTimer.reset(this._timeMinimum);
+                    if (1 > MissionTemplate.MinWantedLevel)
+                        MissionTemplate.MinWantedLevel = 1;
+                    this.player.alterWantedLevel(MissionTemplate.MinWantedLevel);
+                    if (MissionTemplate.StartWantedGxt.length > 0) {
+                        this.printText(MissionTemplate.StartWantedGxt, 6000);
+                    } else {
+                        this.printText("GYM1_6" + MissionTemplate.MinWantedLevel.toString(), 5000);
                     }
-                    this.printText(this._clearWantedGxt, 6000);
-                    this._chaseStage = 2;
-                } else {
-                    this._chaseStage = 3;
-                }
-                break;
-            case 2:
-                if (this.player.storeWantedLevel() === 0) {
-                    Text.LoadMissionText("RACETOR");
-                    this._chaseStage = 3;
-                }
-                break;
-            case 3:
-                this.player.clearWantedLevel();
-                this.complete();
-                break;
-        }
-    }
+                    this._chaseStage = 1;
+                    break;
+                case 1:
+                    if (MissionTemplate.MinWantedLevel > this.player.storeWantedLevel())
+                        this.fail(MissionTemplate.LostWantedGxt, 5000);
+                    Screen.DisplayTimeLeft(this._chaseTimer);
+                    if (this._chaseTimer.millisecondsLeft > 1)
+                        break;
+                    if (this._mandatoryToAvoidPolice) {
+                        if (1 > MissionTemplate.ClearWantedGxt.length) {
+                            Text.LoadMissionText("RYDER3");
+                            MissionTemplate.ClearWantedGxt = "RYD3_I";
+                        }
+                        this.printText(MissionTemplate.ClearWantedGxt, 6000);
+                        this._chaseStage = 2;
+                    } else {
+                        this._chaseStage = 3;
+                    }
+                    break;
+                case 2:
+                    if (this.player.storeWantedLevel() === 0) {
+                        Text.LoadMissionText("RACETOR");
+                        this._chaseStage = 3;
+                    }
+                    break;
+                case 3:
+                    this.player.clearWantedLevel();
+                    this.complete();
+                    break;
+            }
+        };
 
-
-
-    /**
-     * Sets traffic parameters, always enabling cops.
-     * @param cars - The car density multiplier.
-     * @param peds - The pedestrian density multiplier.
-     * @param wantedMultiplier - The multiplier for wanted level (default: 1.0).
-     */
-    public setTraffic(cars: float, peds: float, cops: boolean = true, wantedMultiplier: float = 1.0): void {
-        super.setTraffic(cars, peds, true, wantedMultiplier);
-    }
-
-    /** @returns Always false. */
-    public canMarkCheckpointsAsFinish(): boolean {
-        return false;
-    }
-
-
-
-    /** Makes it mandatory to avoid the police to complete the mission. */
-    public makeMandatoryToAvoidPolice(): void {
-        this._mandatoryToAvoidPolice = true;
     }
 
 }

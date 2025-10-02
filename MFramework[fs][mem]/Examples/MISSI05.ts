@@ -16,9 +16,8 @@ new class MISSI05 extends BaseCircuitRace {
         this.addRouteNode(2345.4089, -1658.4236, 12.9914, 89.7493, 22.0);
         this.addRouteNode(2227.1375, -1650.1602, 14.9251, 72.677, 22.0);
 
-        this.setTraffic(0.35, 1.0, true, 1.0);
-        this.minWantedLevel = 2;
-
+        this.setTraffic(0.35, 1.0);
+        this.setWanted(2)
     }
 
 }

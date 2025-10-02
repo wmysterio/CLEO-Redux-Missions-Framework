@@ -18,6 +18,7 @@ if (App.Run())
 const directoryMask = `${__dirname}\\`;
 const dynamicImportFilePath = `${directoryMask}DynamicImport.ts`;
 
+Promise.resolve();
 if (Fs.DoesFileExist(dynamicImportFilePath))
     Fs.DeleteFile(dynamicImportFilePath);
 
@@ -59,6 +60,5 @@ hDynamicImportFile.close();
 if (projectsNotFound)
     exit("Application must have at least one project!");
 
-Promise.resolve();
 import "./DynamicImport";
 App.Run(false);
