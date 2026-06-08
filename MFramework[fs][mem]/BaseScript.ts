@@ -1,4 +1,4 @@
-import { App } from "./App";
+import { FADE_TRANSITION_DURATION } from "./App";
 import { AudioPlayer } from "./AudioPlayer";
 import { Core } from "./Core";
 import { Dialogue } from "./Dialogue";
@@ -8,9 +8,14 @@ import { Timer } from "./Timer";
 /** Abstract base class for game scripts. */
 export abstract class BaseScript {
 
+    //@ts-ignore
     private _dialogue: Dialogue;
+    //@ts-ignore
     private _timer: Timer;
+    //@ts-ignore
     private _voiceAudio: AudioPlayer;
+
+
 
     /** Gets the player. */
     public get player(): Player {
@@ -37,6 +42,20 @@ export abstract class BaseScript {
         return this._voiceAudio;
     }
 
+    /** Gets the root directory of the current project. */
+    public get projectRootDirectory(): string {
+        return Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex).rootDirectory;
+    }
+
+    /**
+     * Gets the storyline progress, clamped between 0 and the total number of missions.
+     * @param storylineIndex - The index of the storyline.
+     * @returns The last successfully completed mission index.
+     */
+    public getStorylineProgress(storylineIndex: int): int {
+        return Core.GetStorylineInfoAt(Core.ActiveMissionInfo.projectIndex, storylineIndex).progress;
+    }
+
 
 
     /**
@@ -46,7 +65,7 @@ export abstract class BaseScript {
     public onInitEvent(): void {
         this._timer = new Timer();
         this._dialogue = new Dialogue();
-        this._voiceAudio = new AudioPlayer(Core.ActiveMissionInfo.projectIndex, true);
+        this._voiceAudio = new AudioPlayer(true);
     }
 
     /** Handles the script start event, called when the script begins. */
@@ -94,9 +113,9 @@ export abstract class BaseScript {
     public fadeToTransparent(r: int = 0, g: int = 0, b: int = 0): int {
         if (NativeCamera.GetFadingStatus() !== 0) {
             Camera.SetFadingColor(r, g, b);
-            Camera.DoFade(App.FADE_TRANSITION_DURATION, 1);
+            Camera.DoFade(FADE_TRANSITION_DURATION, 1);
         }
-        return App.FADE_TRANSITION_DURATION;
+        return FADE_TRANSITION_DURATION;
     }
 
     /**
@@ -109,9 +128,9 @@ export abstract class BaseScript {
     public fadeToOpaque(r: int = 0, g: int = 0, b: int = 0): int {
         if (NativeCamera.GetFadingStatus() !== 2) {
             Camera.SetFadingColor(r, g, b);
-            Camera.DoFade(App.FADE_TRANSITION_DURATION, 0);
+            Camera.DoFade(FADE_TRANSITION_DURATION, 0);
         }
-        return App.FADE_TRANSITION_DURATION;
+        return FADE_TRANSITION_DURATION;
     }
 
     /**
@@ -154,7 +173,7 @@ export abstract class BaseScript {
      * Formats args according to the format string, then displays it similarly to {@link printText}
      * @param format - The formatted string.
      * @param time - The duration of the message in milliseconds. 
-     * @param args - The string arguments.
+     * @param args - The numeric arguments for the formatted text..
      */
     public printFormattedText(format: string, time: int, ...args: number[]): void {
         Text.PrintFormattedNow(format, time, ...args);
@@ -492,7 +511,7 @@ export abstract class BaseScript {
     }
 
     /**
-     * Sets the n-th bit of the number to 1 (alternative to opcode 2701 @see {@link Math.SetBit}).
+     * Sets the n-th bit of the number to 1 (fixed alternative to opcode 2701 {@link Math.SetBit}).
      * @param number - The input number.
      * @param bitIndex - The index of the bit to set (0-31).
      * @returns The number with the specified bit set.
@@ -502,7 +521,7 @@ export abstract class BaseScript {
     }
 
     /**
-     * Clears the n-th bit of the number to 0 (alternative to opcode 2702 @see {@link Math.ClearBit}).
+     * Clears the n-th bit of the number to 0 (fixed alternative to opcode 2702 {@link Math.ClearBit}).
      * @param number - The input number.
      * @param bitIndex - The index of the bit to clear (0-31).
      * @returns The number with the specified bit cleared.

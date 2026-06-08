@@ -10,7 +10,7 @@ export class GxtTime {
     /** Indicates whether the text message should be displayed. */
     public isEnabled: boolean;
 
-    
+
 
     /**
      * Initializes a new instance with a GXT key and its display duration.
@@ -47,6 +47,7 @@ export class DialogueLine extends GxtTime {
      * @param animationName - The name of the animation to play (default: undefined).
      * @param animationFile - The IFP file containing the animation (default: undefined).
      */
+    //@ts-ignore
     public constructor(speaker: Char, gxt: string, duration: int, animationName: string = undefined, animationFile: string = undefined) {
         super(gxt, duration);
         this.speaker = speaker;

@@ -1,16 +1,16 @@
 import { NativePed } from "./Native";
 import { Timer } from "./Timer";
 
-/** Screen width in GTA San Andreas internal coordinates (640.0). */
+/** Screen width internal coordinates (640.0). */
 export const SCREEN_WIDTH: float = 640.0;
 
-/** Screen height in GTA San Andreas internal coordinates (448.0). */
+/** Screen height internal coordinates (448.0). */
 export const SCREEN_HEIGHT: float = 448.0;
 
-/** Screen center X coordinate in GTA San Andreas (320.0). */
+/** Screen center X coordinate (320.0). */
 export const SCREEN_CENTER_X: float = 320.0;
 
-/** Screen center Y coordinate in GTA San Andreas (224.0). */
+/** Screen center Y coordinate (224.0). */
 export const SCREEN_CENTER_Y: float = 224.0;
 
 /** Text alignment options. */
@@ -36,15 +36,19 @@ export abstract class VisualElement {
     public visible: boolean;
 
     /** Red component of the element's color (0-255). */
+    //@ts-ignore
     public r: int;
 
     /** Green component of the element's color (0-255). */
+    //@ts-ignore
     public g: int;
 
     /** Blue component of the element's color (0-255). */
+    //@ts-ignore
     public b: int;
 
     /** Alpha component of the element's color (0-255). */
+    //@ts-ignore
     public a: int;
 
 
@@ -60,6 +64,8 @@ export abstract class VisualElement {
         this.changeColor(r, g, b, a);
         this.visible = true;
     }
+
+
 
     /**
      * Changes the color of the visual element.
@@ -80,7 +86,7 @@ export abstract class VisualElement {
      * @remarks Enable {@link Text.UseCommands} before calling!
      * @remarks Called `in a loop` to draw.
      */
-    public abstract draw();
+    public abstract draw(): void;
 
 }
 
@@ -118,7 +124,9 @@ export class Sprite extends VisualElement {
      */
     public constructor(memorySlot: int, centerX: float, centerY: float, width: float, height: float) {
         super(255, 255, 255, 255);
-        this.memorySlot = memorySlot; // 1 > memorySlot ? 1 : 
+        //if (0 > memorySlot || memorySlot > max)
+        //    Logger.Exit(``);
+        this.memorySlot = memorySlot;
         this.centerX = centerX;
         this.centerY = centerY;
         this.width = width;
@@ -128,7 +136,7 @@ export class Sprite extends VisualElement {
 
 
 
-    public draw() {
+    public draw(): void {
         Hud.DrawSpriteWithRotation(this.memorySlot, this.centerX, this.centerY, this.width, this.height, this.angle, this.r, this.g, this.b, this.a);
     }
 
@@ -138,16 +146,22 @@ export class Sprite extends VisualElement {
 export class Rect extends VisualElement {
 
     /** The X-coordinate of the rectangle's center in screen units. */
+    //@ts-ignore
     public centerX: float;
 
     /** The Y-coordinate of the rectangle's center in screen units. */
+    //@ts-ignore
     public centerY: float;
 
     /** The width of the rectangle in screen units. */
+    //@ts-ignore
     public width: float;
 
     /** The height of the rectangle in screen units. */
+    //@ts-ignore
     public height: float;
+
+
 
     /**
      * Creates a rectangular HUD element.
@@ -222,17 +236,23 @@ export class Label extends VisualElement {
 
 
     private _args: number[];
+    //@ts-ignore
     private _height: float;
+    //@ts-ignore
     private _padding: float;
+    //@ts-ignore
     private _isFormatted: boolean;
 
     /** The X-coordinate offset for the label position. */
+    //@ts-ignore
     public offsetLeft: float;
 
     /** The Y-coordinate offset for the label position. */
+    //@ts-ignore
     public offsetTop: float;
 
     /** The GXT key or text string to display. */
+    //@ts-ignore
     public text: string;
 
     /** The text alignment. */
@@ -245,41 +265,52 @@ export class Label extends VisualElement {
     public wrapX: float;
 
     /** The X-axis scale of the text. */
+    //@ts-ignore
     public scaleX: float;
 
     /** The Y-axis scale of the text. */
+    //@ts-ignore
     public scaleY: float;
 
     /** The intensity of the text shadow. */
+    //@ts-ignore
     public shadowIntensity: int;
 
     /** The red component of the shadow color (0-255). */
+    //@ts-ignore
     public shadowR: int;
 
     /** The green component of the shadow color (0-255). */
+    //@ts-ignore
     public shadowG: int;
 
     /** The blue component of the shadow color (0-255). */
+    //@ts-ignore
     public shadowB: int;
 
     /** The alpha component of the shadow color (0-255). */
+    //@ts-ignore
     public shadowA: int;
 
     /** The intensity of the text edge (outline). */
+    //@ts-ignore
     public edgeIntensity: int;
 
     /** The red component of the edge color (0-255). */
+    //@ts-ignore
     public edgeR: int;
 
     /** The green component of the edge color (0-255). */
+    //@ts-ignore
     public edgeG: int;
 
     /** The blue component of the edge color (0-255). */
+    //@ts-ignore
     public edgeB: int;
 
     /** The alpha component of the edge color (0-255). */
+    //@ts-ignore
     public edgeA: int;
-
 
     /** Gets whether the text is formatted with arguments. */
     public get isFormatted(): boolean {
@@ -314,7 +345,7 @@ export class Label extends VisualElement {
         this.changeShadow(1, 0, 0, 0, 255);
         this.changeScale(1.0, 1.0, 0.0);
         this.changeText("DUMMY");
-        this._args = new Array<number>();
+        this._args = [];
         this.align = TextAlign.Left;
         this.font = TextFont.Subtitles;
         this.wrapX = 640.0;
@@ -434,7 +465,7 @@ export class Label extends VisualElement {
      */
     public changeText(gxt: string): void {
         this.text = gxt;
-        this._args = new Array<number>();
+        this._args = [];
         this._isFormatted = false;
     }
 
@@ -474,7 +505,7 @@ export class Canvas extends VisualElement {
      */
     public constructor(r: int, g: int, b: int, a: int = 255) {
         super(r, g, b, a);
-        this._elements = new Array<VisualElement>();
+        this._elements = [];
         this._elementsCount = 0;
     }
 

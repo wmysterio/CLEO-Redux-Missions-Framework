@@ -3,45 +3,19 @@ import { Core } from "./Core";
 import { Screen } from "./Drawing";
 import { Timer } from "./Timer";
 
-/** Represents a node in a race route. */
 class RouteNode {
 
-    /** The X coordinate of the node. */
     public x: float;
-
-    /** The Y coordinate of the node. */
     public y: float;
-
-    /** The Z coordinate of the node. */
     public z: float;
-
-    /** The heading angle of the node in degrees. */
     public heading: float;
-
-    /** The speed for the node in game units. */
     public speed: float;
-
-    /** Indicates whether the node is a checkpoint. */
     public isCheckpoint: boolean;
-
-    /** The ID of the checkpoint, or -1 if not a checkpoint. */
     public checkpointId: int;
-
-    /** The time limit for reaching the node in milliseconds. */
     public timeLimitMs: int;
 
 
 
-    /**
-     * Initializes a new route node.
-     * @param x - The X coordinate of the node.
-     * @param y - The Y coordinate of the node.
-     * @param z - The Z coordinate of the node.
-     * @param heading - The heading angle in degrees.
-     * @param speed - The speed for the node in game units.
-     * @param isCheckpoint - Whether the node is a checkpoint.
-     * @param timeLimitMs - The time limit for reaching the node in milliseconds.
-     */
     constructor(x: float, y: float, z: float, heading: float, speed: float, isCheckpoint: boolean, timeLimitMs: int) {
         this.x = x;
         this.y = y;
@@ -55,30 +29,18 @@ class RouteNode {
 
 }
 
-/** Represents a radar node with a blip and checkpoint in a radar race. */
 class RadarNode {
 
     private _blip: Blip;
     private _checkpoint: Checkpoint;
 
-    /** Indicates whether the radar has been passed by the player. */
     public isPassed: boolean;
-
-    /** X coordinate of the radar. */
     public x: float;
-
-    /** Y coordinate of the radar. */
     public y: float;
-
-    /** Z coordinate of the radar. */
     public z: float;
 
 
 
-    /**
-     * Creates a radar node based on the provided route node.
-     * @param routeNode - The route node containing coordinates for the radar.
-     */
     public constructor(routeNode: RouteNode) {
         this._blip = new Blip(-1);
         this._checkpoint = new Checkpoint(-1);
@@ -90,13 +52,11 @@ class RadarNode {
 
 
 
-    /** Creates the radar blip and checkpoint at the specified coordinates. */
     public create(): void {
         this._blip = Blip.AddForCoord(this.x, this.y, this.z);
         this._checkpoint = Checkpoint.Create(2, this.x, this.y, this.z, this.x, this.y, this.z, 6.0);
     }
 
-    /** Removes the radar blip and checkpoint. */
     public remove(): void {
         this._blip.remove();
         this._checkpoint.delete();
@@ -104,49 +64,21 @@ class RadarNode {
 
 }
 
-/** Represents a racer in a street race. */
 class Racer {
 
-    /** The unique ID of the racer. */
     public id: int;
-
-    /** The car used by the racer. */
     public car: Car;
-
-    /** The character of the racer. */
     public char: Char;
-
-    /** Indicates whether the racer is the player. */
     public isPlayer: boolean;
-
-    /** The last route node visited by the racer. */
     public lastNode: RouteNode;
-
-    /** The current lap number of the racer. */
     public currentLap: int;
-
-    /** The ID of the next route node to reach. */
     public nextNodeId: int;
-
-    /** The sum of speeds recorded at checkpoints. */
     public totalSpeed: float;
-
-    /** The available time for the racer in milliseconds. */
     public availableTime: int;
-
-    /** Indicates whether the racer is knocked out of the race. */
     public isKnockedOut: boolean;
 
 
 
-    /**
-     * Initializes a new street racer.
-     * @param id - The unique ID of the racer.
-     * @param char - The character of the racer.
-     * @param car - The car used by the racer.
-     * @param isPlayer - Whether the racer is the player.
-     * @param startNode - The starting route node for the racer.
-     */
     constructor(id: int, char: Char, car: Car, isPlayer: boolean, startNode: RouteNode) {
         this.id = id;
         this.car = car;
@@ -162,50 +94,20 @@ class Racer {
 
 }
 
-/** Contains information for initializing a street racer. */
 class RacerInfo {
 
-    /** The model ID of the racer's car. */
     public carModel: int;
-
-    /** The X coordinate of the starting position. */
     public x: float;
-
-    /** The Y coordinate of the starting position. */
     public y: float;
-
-    /** The Z coordinate of the starting position. */
     public z: float;
-
-    /** The heading angle of the starting position in degrees. */
     public heading: float;
-
-    /** The model ID of the racer's character, or -1 for random. */
     public charModelId: int;
-
-    /** The function to apply additional car settings, or undefined to skip. */
     public setupCar: (car: Car) => void;
-
-    /** The starting route node for the racer. */
     public startNode: RouteNode;
-
-    /** Indicates whether the racer is the player. */
     public isPlayer: boolean;
 
 
-    /**
-     * Initializes a new racer info.
-     * @param carModel - The model ID of the racer's car.
-     * @param x - The X coordinate of the starting position.
-     * @param y - The Y coordinate of the starting position.
-     * @param z - The Z coordinate of the starting position.
-     * @param heading - The heading angle in degrees.
-     * @param charModelId - The model ID of the racer's character, or -1 for random.
-     * @param setupCar - The function to apply additional car settings, or undefined to skip.
-     * @param speed - The speed for the starting node.
-     * @param timeLimitMs - The time limit for the starting node in milliseconds.
-     * @param isPlayer - Whether the racer is the player.
-     */
+
     constructor(carModel: int, x: float, y: float, z: float, heading: float, charModelId: int, setupCar: (car: Car) => void, speed: float, timeLimitMs: int, isPlayer: boolean) {
         this.carModel = carModel;
         this.x = x;
@@ -220,151 +122,67 @@ class RacerInfo {
 
 }
 
-/** Template for configuring street racer missions, including races and challenges. */
 class StreetRacerMissionTemplate {
 
-    /** Configures the default settings for a car in the mission. */
     public readonly defaultCarSettings: (car: Car) => void = (car: Car) => { };
 
-    /** GXT key for displaying the player's position in the mission. */
     public positionGxt: string = "RACES51";
-
-    /** GXT key for the message displayed when the wanted level starts. */
     public startWantedGxt: string = "RACES53";
-
-    /** GXT key for the message displayed when the wanted level is lost. */
     public lostWantedGxt: string = "DNC_003"; // ~r~BAD
-
-    /** GXT key for the message displayed when the wanted level is cleared. */
     public clearWantedGxt: string = "RACES54";
-
-    /** GXT key for displaying the player's current speed in the mission. */
     public currentSpeedGxt: string = "RACES55";
-
-    /** GXT key for displaying the player's accumulated speed in the mission. */
     public accumulatedSpeedGxt: string = "KICK1_9";
-
-    /** Multiplier for pedestrian density in the mission area. */
     public pedDensityMultiplier: float = 0.0;
-
-    /** Multiplier for car density in the mission area. */
     public carDensityMultiplier: float = 0.0;
-
-    /** Number of nodes in the mission route. */
     public nodesCount: int = 0;
-
-    /** Indicates whether the mission is a solo challenge rather than a competitive race. */
     public isChallenge: boolean = false;
-
-    /** Indicates whether the mission is a wanted challenge. */
     public isWantedChallenge: boolean = false;
-
-    /** Indicates whether checkpoint checking is enabled for the mission. */
     public isCheckpointsDisabled: boolean = false;
-
-    /** Minimum wanted level required for the mission. */
     public minWantedLevel: int = 0;
-
-    /** Whether to spawn cops during the mission. */
     public spawnCops: boolean = false;
-
-    /** Multiplier for wanted level intensity. */
     public wantedMultiplier: float = 0.0;
-
-    /** Number of laps in the mission. */
     public lapsCount: int = 1;
-
-    /** The racer object representing the player. */
-    public playerRacer: Racer = null;
-
-    /** The ID of the player racer. */
+    //@ts-ignore
+    public playerRacer: Racer = undefined;
     public playerRacerId: int = -1;
-
-    /** The car used by the player racer. */
     public playerRacerCar: Car = new Car(-1);
-
-    /** ID of the last checkpoint in the mission. */
     public lastCheckpointId: int = -1;
-
-    /** Whether the last checkpoint is designated for the player. */
     public isLastCheckpointForPlayer: boolean = false;
-
-    /** Path ID for the leading racer in the mission. */
     public bossPath: int = -1;
-
-    /** Speed of the leading racer's path. */
     public bossPathSpeed: float = 0.0;
-
-    /** Array of racers in the mission. */
-    public racers: Racer[] = new Array<Racer>();
-
-    /** Array of information for each racer. */
-    public racersInfo: RacerInfo[] = new Array<RacerInfo>();
-
-    /** Array of blips for racers on the map. */
-    public racersBlips: Blip[] = new Array<Blip>();
-
-    /** Number of racers in the mission. */
+    public racers: Racer[] = [];
+    public racersInfo: RacerInfo[] = [];
+    public racersBlips: Blip[] = [];
     public racersCount: int = 0;
-
-    /** Array of route nodes defining the mission path. */
-    public route: RouteNode[] = new Array<RouteNode>();
-
-    /** Tune code for mission checkpoints. */
+    public route: RouteNode[] = [];
     public checkpointTune = 1058;
-
-    /** Blip for the mission's current objective. */
     public blip: Blip = new Blip(-1);
-
-    /** Current checkpoint in the mission. */
     public checkpoint: Checkpoint = new Checkpoint(-1);
-
-    /** Starts the mission. */
+    //@ts-ignore
     public begin: () => void;
-
-    /** Updates the mission state. */
+    //@ts-ignore
     public update: () => void;
-
-    /** Renders mission information and visuals. */
+    //@ts-ignore
     public draw: () => void;
-
-    /** Handles the event when a racer passes a route node. */
+    //@ts-ignore
     public onRacerRouteNodePassedEvent: (racer: Racer, lastNode: RouteNode) => void;
-
-    /** Handles the event when a racer completes a lap. */
+    //@ts-ignore
     public onRacerLapPassedEvent: (racer: Racer, lastLap: int) => void;
 
-    /** Loads mission resources and initializes the mission. */
-    public load(): void {
-        Text.LoadMissionText("RACETOR");
-        FxtStore.insert("RACES51", "Position ~1~/~1~", true);
-        FxtStore.insert("RACES52", "~a~ is out of the race.", true);
-        FxtStore.insert("RACES53", "Maintain the wanted level for the allotted time!", true);
-        //You lowered the wanted level too early!
-        FxtStore.insert("RACES54", "Escape the pursuit!", true);
-        FxtStore.insert("RACES55", "Speed ~1~", true);
-    }
 
-    /** Unloads mission resources and cleans up. */
+
     public unload(): void {
-        FxtStore.delete("RACES51", true);
-        FxtStore.delete("RACES52", true);
-        FxtStore.delete("RACES53", true);
-        FxtStore.delete("RACES54", true);
-        FxtStore.delete("RACES55", true);
         this.blip.remove();
         this.checkpoint.delete();
         if (this.bossPath > -1)
             Streaming.RemoveCarRecording(this.bossPath);
     }
 
-    /** Adjusts traffic density based on mission settings. */
     public changeTraffic(): void {
         World.SetPedDensityMultiplier(this.pedDensityMultiplier);
         World.SetCarDensityMultiplier(this.carDensityMultiplier);
     }
 
-    /** Adjusts wanted level based on mission settings. */
     public changeWanted(): void {
         Game.SetPoliceIgnorePlayer(Core.Player, !this.spawnCops);
         Game.SetCreateRandomCops(this.spawnCops);
@@ -374,7 +192,6 @@ class StreetRacerMissionTemplate {
         Game.SetWantedMultiplier(this.wantedMultiplier);
     }
 
-    /** @returns The player's position in the mission based on distance to checkpoints. */
     public getPlayerPositionByDistance(): int {
         let position = 1;
         const currentPlayerCheckpointId = this.playerRacer.nextNodeId;
@@ -403,7 +220,6 @@ class StreetRacerMissionTemplate {
         return position;
     }
 
-    /** @returns The player's position in the mission based on speed. */
     public getPlayerPositionBySpeed(): int {
         let position = 1;
         const playerSpeed = this.playerRacer.totalSpeed;
@@ -417,11 +233,6 @@ class StreetRacerMissionTemplate {
         return position;
     }
 
-    /**
-     * Finds the ID of the next checkpoint in the mission.
-     * @param fromId - The current checkpoint ID.
-     * @returns The ID of the next checkpoint, or throws an error if none exists.
-     */
     public findNextCheckpointId(fromId: int): int {
         let nextId = fromId + 1;
         for (let i = nextId; i < this.nodesCount; ++i)
@@ -433,7 +244,6 @@ class StreetRacerMissionTemplate {
         throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
     }
 
-    /** @returns The ID of the last checkpoint in the mission. */
     public findLastCheckpointId(): int {
         for (let i = this.nodesCount - 1; i >= 0; --i)
             if (this.route[i].isCheckpoint)
@@ -441,7 +251,6 @@ class StreetRacerMissionTemplate {
         throw new Error("There are no checkpoints on the route or their number is less than the minimum!");
     }
 
-    /** @returns The total number of checkpoints in the mission. */
     public getCheckpointsCount(): int {
         let result = 0;
         for (let i = 0; i < this.nodesCount; ++i)
@@ -452,14 +261,17 @@ class StreetRacerMissionTemplate {
 
 }
 
-/** Global template for street racer missions. */
-let MissionTemplate: StreetRacerMissionTemplate = null;
+//@ts-ignore
+let MissionTemplate: StreetRacerMissionTemplate = undefined;
 
 /** Base class for race missions and challenges. */
 abstract class BaseRaceMission extends BaseMission {
 
+    //@ts-ignore
     private _disableSetup: boolean;
+    //@ts-ignore
     private _onStartEvent: () => void;
+    //@ts-ignore
     private _onUpdateEvent: () => void;
 
     /**
@@ -470,12 +282,16 @@ abstract class BaseRaceMission extends BaseMission {
         MissionTemplate.positionGxt = gxtKey;
     }
 
+    public setSubMission<TBaseMission extends BaseMission>(baseMissionType: new () => TBaseMission): void {
+        throw new Error(`The '${this.constructor.name}' class should not use sub-missions!`);
+    }
+
 
 
     public onInitEvent(): void {
         super.onInitEvent();
         MissionTemplate = new StreetRacerMissionTemplate();
-        MissionTemplate.load();
+        Text.LoadMissionText("RACETOR");
         this._disableSetup = true;
         this.successBigMessage.gxt = "RACES18";
 
@@ -490,7 +306,7 @@ abstract class BaseRaceMission extends BaseMission {
                 throw new Error("The number of participants must be from 1 to 7 inclusive.");
 
             let numPlayers = 0;
-            const usedModels = new Array<int>();
+            const usedModels: int[] = [];
             for (let i = 0; i < MissionTemplate.racersCount; ++i) {
                 usedModels.push(MissionTemplate.racersInfo[i].carModel);
                 const charModelId = MissionTemplate.racersInfo[i].charModelId;
@@ -655,7 +471,8 @@ abstract class BaseRaceMission extends BaseMission {
 
     public onEndEvent(): void {
         MissionTemplate.unload();
-        MissionTemplate = null;
+        //@ts-ignore
+        MissionTemplate = undefined;
         super.onEndEvent();
     }
 
@@ -676,6 +493,7 @@ abstract class BaseRaceMission extends BaseMission {
      * @param charModelId - The model ID of the racer's character, or -1 for random (default: -1).
      * @param setupCar - The function to apply additional car settings, or undefined to skip (default: undefined).
      */
+    //@ts-ignore
     public addRacer(carModel: int, x: float, y: float, z: float, heading: float, charModelId: int = -1, setupCar: (car: Car) => void = undefined): void {
         if (this._disableSetup)
             return;
@@ -694,6 +512,7 @@ abstract class BaseRaceMission extends BaseMission {
      * @param heading - The heading angle in degrees.
      * @param setupCar - The function to apply additional car settings (default: undefined).
      */
+    //@ts-ignore
     public addPlayerRacer(carModel: int, x: float, y: float, z: float, heading: float, setupCar: (car: Car) => void = undefined): void {
         if (this._disableSetup)
             return;
@@ -819,7 +638,9 @@ abstract class BaseRaceMission extends BaseMission {
 /** Base class implementing a sprint race, where the player competes against other racers to reach the final checkpoint first. */
 export abstract class BaseSprintRace extends BaseRaceMission {
 
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
 
 
@@ -873,7 +694,9 @@ export abstract class BaseSprintRace extends BaseRaceMission {
 /** Base class implementing circuit racing. */
 export abstract class BaseCircuitRace extends BaseRaceMission {
 
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
 
     /**
@@ -930,9 +753,13 @@ export abstract class BaseCircuitRace extends BaseRaceMission {
 /** Base class implementing a knockout race where the number of laps depends on the number of racers. */
 export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 
+    //@ts-ignore
     private _safeZCoordForCars: float;
+    //@ts-ignore
     private _randomNames: int[];
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
+    //@ts-ignore
     private _onBegin: () => void;
 
 
@@ -1008,7 +835,7 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 
 
     private _generateRandomStreetRacersNames(): void {
-        this._randomNames = new Array<int>();
+        this._randomNames = [];
         for (let i = 0; i < 10; ++i)
             this._randomNames.push(i);
         for (let i = this._randomNames.length - 1; i > 0; --i) {
@@ -1022,7 +849,9 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
 /** Base class implementing a speedtrap race, where the winner is determined by total speed at checkpoints. */
 export abstract class BaseSpeedtrapRace extends BaseRaceMission {
 
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
 
     /**
@@ -1119,15 +948,25 @@ export abstract class BaseSpeedtrapRace extends BaseRaceMission {
 /** Base class implementing a speed radar challenge, where the player must pass radars to achieve a required speed within an optional time limit. */
 export abstract class BaseRadarChallenge extends BaseRaceMission {
 
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _timeLimit: int;
+    //@ts-ignore
     private _radarTimer: Timer;
+    //@ts-ignore
     private _useTimer: boolean;
+    //@ts-ignore
     private _playerSpeed: float;
+    //@ts-ignore
     private _neededSpeed: float;
+    //@ts-ignore
     private _radarNodes: RadarNode[];
+    //@ts-ignore
     private _passedRadarsCount: int;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
+    //@ts-ignore
     private _onBegin: () => void;
 
     /**
@@ -1171,7 +1010,7 @@ export abstract class BaseRadarChallenge extends BaseRaceMission {
             this._neededSpeed = 0.0;
             this._playerSpeed = 0.0;
             this._useTimer = false;
-            this._radarNodes = new Array<RadarNode>();
+            this._radarNodes = [];
             this.__disableSetup = false;
             this._onRacerSetupEvent();
             this.__disableSetup = true;
@@ -1243,9 +1082,13 @@ export abstract class BaseRadarChallenge extends BaseRaceMission {
 /** Base class implementing a timed checkpoint challenge, where the player must pass checkpoints within time limits. */
 export abstract class BaseCheckpointChallenge extends BaseRaceMission {
 
+    //@ts-ignore
     private _checkpointTimer: Timer;
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
+    //@ts-ignore
     private _onBegin: () => void;
 
     /**
@@ -1322,11 +1165,17 @@ export abstract class BaseCheckpointChallenge extends BaseRaceMission {
 /** Base class implementing a wanted challenge, where the player must maintain a specified wanted level for a set time while evading cops. */
 export abstract class BaseWantedChallenge extends BaseRaceMission {
 
+    //@ts-ignore
     private __disableSetup: boolean;
+    //@ts-ignore
     private _chaseStage: int;
+    //@ts-ignore
     private _chaseTimer: Timer;
+    //@ts-ignore
     private _timeMinimum: int;
+    //@ts-ignore
     private _mandatoryToAvoidPolice: boolean;
+    //@ts-ignore
     private _onRacerSetupEvent: () => void;
 
     /** Sets the startup message. */

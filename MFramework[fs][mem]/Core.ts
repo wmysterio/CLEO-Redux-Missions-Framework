@@ -1,129 +1,182 @@
-import { App } from "./App";
-import { BaseProject } from "./BaseProject";
+import { FADE_TRANSITION_DURATION } from "./App";
 import { BaseMission } from "./BaseMission";
-import { BaseStoryline } from "./BaseStoryline";
+import { BaseProject } from "./BaseProject";
 import { BaseScriptedScene, ISequenceChaining } from "./BaseScriptedScene";
-import { NativeCamera } from "./Native";
+import { BaseStoryline } from "./BaseStoryline";
+import { Logger } from "./Logger";
 import { Timer } from "./Timer";
 
-class MissionInfo {
+class ProjectInfo {
 
-    public projectIndex: int;
-    public storylineIndex: int;
-    public missionIndex: int;
+    public projectIndex: int = -1;
+    public rootDirectory: string = "";
+    public iniSectionName: string = "";
     public titleGxtKey: string;
-    public create: () => BaseMission;
+    public storylines: Map<int, StorylineInfo>;
 
-
-
-    public constructor(titleGxtKey: string, create: () => BaseMission) {
+    public constructor(titleGxtKey: string) {
         this.titleGxtKey = titleGxtKey;
-        this.create = create;
+        this.storylines = new Map<int, StorylineInfo>();
     }
 
 }
 
 class StorylineInfo {
 
-    public progress: int;
-    public projectIndex: int;
-    public storylineIndex: int;
+    public progress: int = -1;
+    public projectIndex: int = -1;
+    public storylineIndex: int = -1;
     public titleGxtKey: string;
     public missions: Map<int, MissionInfo>;
 
-
-
-    public constructor(titleGxtKey: string, missions: Map<int, MissionInfo>) {
+    public constructor(titleGxtKey: string) {
         this.titleGxtKey = titleGxtKey;
-        this.missions = missions;
+        this.missions = new Map<int, MissionInfo>();
     }
 
 }
 
-class ProjectInfo {
+class MissionInfo {
 
-    public projectIndex: int;
+    public projectIndex: int = -1;
+    public storylineIndex: int = -1;
+    public missionIndex: int = -1;
+    public missionProgressCheckStorylineIndex: int = -1;
+    public missionProgressCheckStorylineProgress: int = -1;
     public titleGxtKey: string;
-    public rootDirectory: string;
-    public iniSectionName: string;
-    public storylines: Map<int, StorylineInfo>;
+    public create: new () => BaseMission;
 
-
-
-    public constructor(titleGxtKey: string, rootDirectory: string, iniSectionName: string, storylines: Map<int, StorylineInfo>) {
+    public constructor(titleGxtKey: string, create: new () => BaseMission) {
         this.titleGxtKey = titleGxtKey;
-        this.rootDirectory = rootDirectory;
-        this.iniSectionName = iniSectionName;
-        this.storylines = storylines;
+        this.create = create;
+    }
+
+    public canStartMission(): boolean {
+        if (0 > this.missionProgressCheckStorylineIndex || 0 > this.missionProgressCheckStorylineProgress)
+            return true;
+        return Core.GetStorylineInfoAt(this.projectIndex, this.missionProgressCheckStorylineIndex).progress > this.missionProgressCheckStorylineProgress;
     }
 
 }
 
-/**
- * Static class that manages core game logic, resources, missions, storylines, projects, and scripted scenes.
- * Provides centralized control for game state, player interactions, and resource management.
- */
+class StorylneProgressChecker {
+
+    public storylineIndex: int;
+    public storylineMinProgress: int;
+
+    public constructor(storylineIndex: int, storylineMinProgress: int) {
+        this.storylineIndex = storylineIndex;
+        this.storylineMinProgress = storylineMinProgress;
+    }
+
+}
+
 export class Core {
 
-    private static _isInitialized: boolean = false;
-    private static _gameDifficulty: int;
-    private static _missionState: int = 0;
-    private static _lastProjects: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
-    private static _lastStorylines: Map<int, StorylineInfo> = new Map<int, StorylineInfo>();
-    private static _lastMissions: Map<int, MissionInfo> = new Map<int, MissionInfo>();
-    private static _projectsMap: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
+    private static _GameDifficulty: int;
+    private static _MissionState: int = 0;
+    private static _CanSetSubMission: boolean = false;
+    private static _ProjectInfos: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
+
+    private static _ActiveProjectIndex: int = -1;
+    private static _ActiveStorylineIndex: int = -1;
+    private static _MissionToRegister: Array<new () => BaseMission> = [];
+    private static _StorylneProgressCheckers: StorylneProgressChecker[] = [];
+
     private static readonly SKIP_SCRIPTED_SCENE_ERROR = new Error();
 
     public static readonly SAVE_PATH: string = __dirname + "\\Save";
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
     public static readonly MISSION_SUCCESS_ERROR = new Error();
+
+    //@ts-ignore
     public static readonly ActiveMissionInfo: MissionInfo = new MissionInfo("DUMMY", undefined);
 
+    public static SubMission: BaseMission;
     public static GameRootDirectory: string;
     public static Player: Player;
     public static PlayerChar: Char;
     public static PlayerGroup: Group;
 
-    /** Gets the number of registered projects. */
     public static get ProjectsCount(): int {
-        return this._projectsMap.size;
+        return this._ProjectInfos.size;
     }
 
-    /** Gets the game difficulty level. */
     public static get GameDifficulty(): int {
-        return this._gameDifficulty;
+        return this._GameDifficulty;
     }
 
-    /**
-     * Saves the game difficulty level, clamping it between 0 and 2.
-     * @param level - The difficulty level to set.
-     */
     public static set GameDifficulty(level: int) {
-        if (level === this._gameDifficulty)
+        if (level === this._GameDifficulty)
             return;
-        this._gameDifficulty = this._clampGameDifficulty(level);
+        this._GameDifficulty = this._clampGameDifficulty(level);
         IniFile.WriteInt(level, this.CONFIG_PATH, "Application", "GameDifficulty");
     }
 
-
-
-    private constructor() { }
-
-
-
-    /**
-     * Checks if the player is in a non-playable state ({@link Player.isPlaying}, {@link Char.DoesExist}, {@link Char.IsDead}, and {@link Char.hasBeenArrested}).
-     * @returns True if the player cannot interact with the game world, false otherwise.
-     */
-    public static IsPlayerInactive(): boolean {
-        if (!this.Player.isPlaying() || !Char.DoesExist(+this.PlayerChar))
-            return true;
-        return Char.IsDead(+this.PlayerChar) || this.PlayerChar.hasBeenArrested();
+    public static get CanSetSubMission(): boolean {
+        return this._CanSetSubMission;
     }
 
+    public static GetProjectInfoAt(projectIndex: int): ProjectInfo {
+        //@ts-ignore
+        return this._ProjectInfos.get(projectIndex);
+    }
 
-    /** Clears all text elements from the screen, including help, prints, and big messages. */
+    public static GetStorylineInfoAt(projectIndex: int, storylineIndex: int): StorylineInfo {
+        //@ts-ignore
+        return this._ProjectInfos.get(projectIndex).storylines.get(storylineIndex);
+    }
+
+    public static GetMissionInfoAt(projectIndex: int, storylineIndex: int, missionIndex: int): MissionInfo {
+        //@ts-ignore
+        return this._ProjectInfos.get(projectIndex).storylines.get(storylineIndex).missions.get(missionIndex);
+    }
+
+    public static RegisterMission<TBaseMission extends BaseMission>(baseMissionType: new () => TBaseMission, storylineIndex: int, minStorylineProgress: int): void {
+        this._MissionToRegister.push(baseMissionType);
+        this._StorylneProgressCheckers.push(new StorylneProgressChecker(storylineIndex, minStorylineProgress));
+    }
+
+    public static RegisterStoryline<TBaseStoryline extends BaseStoryline>(baseStorylineType: new () => TBaseStoryline): void {
+        new baseStorylineType();
+        const missionCount = this._MissionToRegister.length;
+        if (missionCount === 0)
+            Logger.Exit(`Storyline must have at least one mission!`);
+        const storylineInfo = new StorylineInfo(baseStorylineType.name);
+        storylineInfo.projectIndex = this._ActiveProjectIndex;
+        //@ts-ignore
+        storylineInfo.storylineIndex = this._ProjectInfos.get(this._ActiveProjectIndex).storylines.size;
+        this._ActiveStorylineIndex = storylineInfo.storylineIndex;
+        for (let i = 0; i < missionCount; ++i) {
+            const missionInfo = new MissionInfo(this._MissionToRegister[i].name, this._MissionToRegister[i]);
+            missionInfo.projectIndex = this._ActiveProjectIndex;
+            missionInfo.storylineIndex = this._ActiveStorylineIndex;
+            missionInfo.missionIndex = i;
+            missionInfo.missionProgressCheckStorylineIndex = this._StorylneProgressCheckers[i].storylineIndex;
+            missionInfo.missionProgressCheckStorylineProgress = this._StorylneProgressCheckers[i].storylineMinProgress;
+            storylineInfo.missions.set(i, missionInfo);
+        }
+        storylineInfo.progress = this._loadProgress(storylineInfo.missions.size);
+        //@ts-ignore
+        this._ProjectInfos.get(this._ActiveProjectIndex).storylines.set(this._ActiveStorylineIndex, storylineInfo);
+        this._MissionToRegister = [];
+        this._StorylneProgressCheckers = [];
+    }
+
+    public static RegisterProject<TBaseProject extends BaseProject>(directoryName: string, baseProjectType: new () => TBaseProject): void {
+        const projectInfo = new ProjectInfo(baseProjectType.name);
+        projectInfo.projectIndex = this._ProjectInfos.size;
+        projectInfo.iniSectionName = `PROJECT_${directoryName}`;
+        projectInfo.rootDirectory = `${__dirname}\\${directoryName}`;
+        this._ProjectInfos.set(this._ProjectInfos.size, projectInfo);
+        this._ActiveProjectIndex = projectInfo.projectIndex;
+        new baseProjectType();
+        //@ts-ignore
+        if (this._ProjectInfos.get(this._ActiveProjectIndex).storylines.size === 0)
+            Logger.Exit(`Project must have at least one storyline!`);
+    }
+
     public static ClearText(): void {
         Text.ClearHelp();
         Text.ClearPrints();
@@ -135,21 +188,76 @@ export class Core {
         }
     }
 
-    /**
-     * Waits until all specified items are loaded.
-     * @param items - Array of items to check for loading.
-     * @param checkLoaded - Callback function to check if an item is loaded.
-     */
     public static WaitUntilLoaded<T>(items: T[], checkLoaded: (item: T) => boolean): void {
         do {
             wait(0);
         } while (items.some(item => !checkLoaded(item)));
     }
 
-    /** Runs a mission through its lifecycle and sets the global ONMISSION flag. */
+    public static IsPlayerInactive(): boolean {
+        if (!this.Player.isPlaying() || !Char.DoesExist(+this.PlayerChar))
+            return true;
+        return Char.IsDead(+this.PlayerChar) || this.PlayerChar.hasBeenArrested();
+    }
+
+    public static ResetProject(projectIndex: int): void {
+        const projectInfo = this._ProjectInfos.get(projectIndex);
+        //@ts-ignore
+        const storylines = projectInfo.storylines;
+        //@ts-ignore
+        IniFile.DeleteSection(this.SAVE_PATH, projectInfo.iniSectionName) || Logger.Print(`Failed to reset project!`);
+        for (const [_, storyline] of storylines)
+            storyline.progress = 0;
+    }
+
+    public static LoadFxtFile(projectIndex: int): void {
+        //@ts-ignore
+        const fxtPath = `${this._ProjectInfos.get(projectIndex).rootDirectory}\\PROJECT.fxt`;
+        if (Fs.DoesFileExist(fxtPath))
+            Text.LoadFxt(fxtPath) || Logger.Print(`Failed to load Fxt file!`);
+    }
+
+    public static UnloadFxtFile(projectIndex: int): void {
+        //@ts-ignore
+        const fxtPath = `${this._ProjectInfos.get(projectIndex).rootDirectory}\\PROJECT.fxt`;
+        //Text.UnloadFxt(fxtPath) || Logger.Print(`Failed to unload Fxt file!`); // always false?
+        if (Fs.DoesFileExist(fxtPath))
+            Text.UnloadFxt(fxtPath);
+    }
+
+    public static WriteIntValueToSaveFile(projectIndex: int, key: string, value: int): void {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        if (!IniFile.WriteInt(value, this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`))
+            Logger.Print(`Failed to write int value to save file!`);
+    }
+
+    public static ReadIntValueFromSaveFile(projectIndex: int, key: string, defaultValue: int = 0): int {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        const value = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
+        return value === undefined ? defaultValue : value;
+    }
+
+    public static InitializePlayer(): void {
+        this.Player = new Player(0);
+        while (!this.Player.isPlaying())
+            wait(250);
+        this.PlayerChar = Core.Player.getChar();
+        this.PlayerGroup = Core.Player.getGroup();
+    }
+
+    public static Run(): void {
+        this._initializeGameRootDirectory();
+        this._loadGameDifficulty(1);
+        this.InitializePlayer();
+        //@ts-ignore
+        this._MissionToRegister = undefined;
+        //@ts-ignore
+        this._StorylneProgressCheckers = undefined;
+    }
+
     public static RunMission(): void {
         const missionInfo = this.GetMissionInfoAt(this.ActiveMissionInfo.projectIndex, this.ActiveMissionInfo.storylineIndex, this.ActiveMissionInfo.missionIndex);
-        const mission = missionInfo.create();
+        let mission = new missionInfo.create();
         ONMISSION = true;
         TIMERA = 0;
         TIMERB = 0;
@@ -157,9 +265,14 @@ export class Core {
             do {
                 wait(0);
                 if (this.IsPlayerInactive())
-                    this._missionState = 3;
-                switch (this._missionState) {
+                    this._MissionState = 3;
+                switch (this._MissionState) {
                     case 0:
+                        this._CanSetSubMission = true;
+                        mission.onInitEvent();
+                        if (this.SubMission !== undefined)
+                            mission = this.SubMission;
+                        this._CanSetSubMission = false;
                         this._runMissionStartEvent(mission);
                         break;
                     case 1:
@@ -175,20 +288,18 @@ export class Core {
                         this._runMissionEndEvent(mission);
                         break;
                 }
-            } while (this._missionState !== 5);
-        } catch (error) {
-            log(error.message);
-            Text.PrintHelpFormatted("Mission error. Check logs.");
+            } while (this._MissionState !== 5);
+        } catch (error: any) {
+            this.ClearText();
+            Logger.Print(error.message, true);
         }
+        this._CanSetSubMission = false;
+        //@ts-ignore
+        this._SubMission = undefined;
         ONMISSION = false;
-        this._missionState = 0;
+        this._MissionState = 0;
     }
 
-    /**
-     * Runs a scripted scene through its lifecycle. Manages HUD, camera, player control, and world settings.
-     * @param scriptedScene - The scripted scene to run.
-     * @param debugMode - If true, bypasses standard scene setup for manual control.
-     */
     public static RunScriptedScene(scriptedScene: BaseScriptedScene, debugMode: boolean): void {
         this._runScriptedSceneBeforeInitEvent();
         scriptedScene.onInitEvent();
@@ -222,7 +333,7 @@ export class Core {
         scriptedScene.resetCamera();
         scriptedScene.onCleanupEvent();
         scriptedScene.onEndEvent();
-        wait(App.FADE_TRANSITION_DURATION);
+        wait(FADE_TRANSITION_DURATION);
         this._runScriptedSceneAfterEndEvent();
         this.PlayerChar.clearTasksImmediately();
         this.Player.setControl(true);
@@ -234,268 +345,32 @@ export class Core {
         scriptedScene.fadeToTransparent();
     }
 
-    /**
-     * Initializes the core game environment and player.
-     * @param useManualProjectLoading - Whether to use manual project loading (default: false).
-     * @returns True if initialization is successful, false otherwise.
-     */
-    public static Run(useManualProjectLoading: boolean): boolean {
-        if (useManualProjectLoading) {
-            if (this._isInitialized)
-                return false;
-            this._initializeProjectsMap();
-            this._isInitialized = this._projectsMap.size > 0;
-            if (!this._isInitialized)
-                return false;
-        } else {
-            this._initializeProjectsMap();
-            this._isInitialized = true;
+    public static ReadStringFromMemory(pBuffer: int, length: int): string {
+        let result = "";
+        for (let i = 0; i < length; ++i) {
+            const charCode = Memory.ReadU8(pBuffer + i, false);
+            if (charCode === 0)
+                break;
+            result += String.fromCharCode(charCode);
         }
-
-        this._initializeGameRootDirectory();
-        this._loadGameDifficulty(1);
-        this._initializePlayer();
-        return true;
-    }
-
-    /**
-     * Retrieves project information by its index.
-     * @param projectIndex - The index of the project.
-     * @returns The project information.
-     */
-    public static GetProjectInfoAt(projectIndex: int): ProjectInfo {
-        return this._projectsMap.get(projectIndex);
-    }
-
-    /**
-     * Retrieves storyline information by its index.
-     * @param projectIndex - The index of the storyline.
-     * @returns The storyline information.
-     */
-    public static GetStorylineInfoAt(projectIndex: int, storylineIndex: int): StorylineInfo {
-        return this._projectsMap.get(projectIndex).storylines.get(storylineIndex);
-    }
-
-    /**
-     * Retrieves mission information by project, storyline, and mission indices.
-     * @param projectIndex - The index of the project.
-     * @param storylineIndex - The index of the storyline within the project.
-     * @param missionIndex - The index of the mission within the storyline.
-     * @returns The mission information or undefined.
-     */
-    public static GetMissionInfoAt(projectIndex: int, storylineIndex: int, missionIndex: int): MissionInfo {
-        return this._projectsMap.get(projectIndex).storylines.get(storylineIndex).missions.get(missionIndex);
-    }
-
-    /**
-     * Registers a mission in the core system.
-     * @param mission - The base mission instance.
-     */
-    public static RegisterMission(mission: BaseMission): void {
-        if (this._isInitialized)
-            return;
-        const missionConstructor = mission.constructor as new () => BaseMission;
-        const create = (): BaseMission => {
-            const instance = new missionConstructor();
-            if (!(instance instanceof BaseMission))
-                throw new Error(`Created instance is not of type BaseMission: ${missionConstructor.name}`);
-            return instance;
-        };
-        this._lastMissions.set(this._lastMissions.size, new MissionInfo(mission.constructor.name, create));
-    }
-
-    /**
-     * Registers a storyline in the core system.
-     * @param storyline - The storyline to register.
-     */
-    public static RegisterStoryline(storyline: BaseStoryline): void {
-        if (this._isInitialized)
-            return;
-        this._lastStorylines.set(this._lastStorylines.size, new StorylineInfo(storyline.constructor.name, this._lastMissions));
-        this._lastMissions = new Map<int, MissionInfo>();
-    }
-
-    /**
-     * Registers a project in the core system.
-     * @param project - The project to register.
-     */
-    public static RegisterProject(project: BaseProject): void {
-        if (this._isInitialized)
-            return;
-        const projectRootDirectory = project.getRootDirectory();
-        const pathToTest = projectRootDirectory.replace(__dirname, '').replace(/^\\/g, '');
-        if (/[\[\]\\\/]/g.test(pathToTest))
-            exit(`Invalid project directory: ${projectRootDirectory}!`);
-        const projectTypeName = project.constructor.name;
-        if (projectTypeName !== "PROJECT")
-            exit(`Incorrect project name: ${projectTypeName}!`);
-        this._lastProjects.set(this._lastProjects.size, new ProjectInfo(projectTypeName, `${projectRootDirectory}\\`, `PROJECT_${pathToTest}`, this._lastStorylines));
-        this._lastStorylines = new Map<int, StorylineInfo>();
-    }
-
-    /**
-     * Removes all project data from the save file.
-     * @param projectIndex - The index of the project.
-     */
-    public static ResetProject(projectIndex: int): void {
-        const projectInfo = this._projectsMap.get(projectIndex);
-        const storylines = projectInfo.storylines;
-        IniFile.DeleteSection(this.SAVE_PATH, projectInfo.iniSectionName);
-        for (const [_, storyline] of storylines)
-            storyline.progress = 0;
-    }
-
-    /**
-     * Loads the text resources for the project from its FXT file.
-     * @param projectIndex - The index of the project.
-     * @remarks The FXT file is expected to be located in the project's root directory.
-     */
-    public static LoadFxtFile(projectIndex: int): void {
-        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}PROJECT.fxt`;
-        FxtStore.insert("TEXTW2N", "~1~ ~1~", true);
-        if (Fs.DoesFileExist(fxtPath))
-            Text.LoadFxt(fxtPath);
-    }
-
-    /**
-     * Unloads the text resources for the project from its FXT file.
-     * @param projectIndex - The index of the project.
-     * @remarks The FXT file is expected to be located in the project's root directory.
-     */
-    public static UnloadFxtFile(projectIndex: int): void {
-        const fxtPath = `${this._projectsMap.get(projectIndex).rootDirectory}PROJECT.fxt`;
-        FxtStore.delete("TEXTW2N", true);
-        if (Fs.DoesFileExist(fxtPath))
-            Text.UnloadFxt(fxtPath);
-    }
-
-    /**
-     * Validates that each project has at least one storyline and each storyline has at least one mission.
-     * @returns An object indicating errors in storylines or missions sizes.
-     */
-    public static ValidateSizes(): { hasStorylineErrors: boolean; hasMissionErrors: boolean } {
-        this._lastProjects = null;
-        this._lastStorylines = null;
-        this._lastMissions = null;
-        const errors = {
-            hasStorylineErrors: false,
-            hasMissionErrors: false
-        };
-        for (const [_, project] of this._projectsMap) {
-            if (project.storylines.size === 0) {
-                errors.hasStorylineErrors = true;
-                return errors;
-            }
-            for (const [_, storyline] of project.storylines) {
-                if (storyline.missions.size === 0) {
-                    errors.hasMissionErrors = true;
-                    return errors;
-                }
-            }
-        }
-        return errors;
-    }
-
-    /**
-     * Writes an integer value to the save file for for the specified project.
-     * @param projectIndex - The index of the project to write the value for.
-     * @param key - The key to write the value under.
-     * @param value - The integer value to write.
-     */
-    public static WriteIntValueToSaveFile(projectIndex: int, key: string, value: int): void {
-        const projectInfo = this.GetProjectInfoAt(projectIndex);
-        IniFile.WriteInt(value, this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
-    }
-
-    /**
-     * Reads an integer value from the save file for the specified project.
-     * @param projectIndex - The index of the project to read the value from.
-     * @param key - The key to read the value from.
-     * @param defaultValue - The default value to return if the key is not found (default: 0).
-     * @returns The integer value from the save file, or the default value if not found.
-     */
-    public static ReadIntValueFromSaveFile(projectIndex: int, key: string, defaultValue: int = 0): int {
-        const projectInfo = this.GetProjectInfoAt(projectIndex);
-        const value = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
-        return value === undefined ? defaultValue : value;
-    }
-
-
-
-    private static _initializePlayer(): void {
-        this.Player = new Player(0);
-        while (!this.Player.isPlaying())
-            wait(250);
-        this.PlayerChar = Core.Player.getChar();
-        this.PlayerGroup = Core.Player.getGroup();
-    }
-
-    private static _initializeProjectsMap(): void {
-        this._projectsMap = this._lastProjects;
-        for (const [projectKey, project] of this._projectsMap) {
-            project.projectIndex = projectKey;
-            for (const [storylineKey, storyline] of project.storylines) {
-                storyline.projectIndex = projectKey;
-                storyline.storylineIndex = storylineKey;
-                for (const [missionKey, mission] of storyline.missions) {
-                    mission.projectIndex = projectKey;
-                    mission.storylineIndex = storylineKey;
-                    mission.missionIndex = missionKey;
-                }
-                storyline.progress = this._loadProgress(project, storyline);
-            }
-        }
-    }
-
-    private static _initializeGameRootDirectory(): void {
-        const split = __dirname.split('\\');
-        const cleoIndex = split.findIndex(s => s.toUpperCase() === "CLEO");
-        if (cleoIndex === -1 || cleoIndex < 2)
-            exit(`Invalid framework directory: ${__dirname} `);
-        this.GameRootDirectory = split.slice(cleoIndex).join('\\').replace(/^\\/g, '');
-    }
-
-    public static _loadGameDifficulty(defaultValue: int): int {
-        defaultValue = this._clampGameDifficulty(defaultValue);
-        let result = IniFile.ReadInt(this.CONFIG_PATH, "Application", "GameDifficulty");
-        if (result === undefined)
-            result = defaultValue;
-        this.GameDifficulty = result;
         return result;
     }
 
-    private static _clampGameDifficulty(level: int): int {
-        if (level < 0)
-            return 0;
-        if (level > 2)
-            return 2;
-        return level;
+    public static AllocateMemoryFilled(size: int, byte: int = 0): int | undefined {
+        const pBuffer = Memory.Allocate(size);
+        if (pBuffer !== undefined)
+            this.FillBuffer(pBuffer, size, byte);
+        return pBuffer;
     }
 
-    private static _getMissionsPassedIniKey(storylineIndex: int): string {
-        return `STORYLINE_${storylineIndex}_MISSIONS_PASSED`;
+    public static FillBuffer(pBuffer: int, length: int, byte: int = 0): void {
+        for (let i = 0; i < length; ++i)
+            Memory.WriteU8(pBuffer + i, byte);
     }
 
-    private static _saveProgress(): void {
-        const nextProgress = this.ActiveMissionInfo.missionIndex + 1;
-        const storylineIndex = this.ActiveMissionInfo.storylineIndex;
-        const projectInfo = this.GetProjectInfoAt(this.ActiveMissionInfo.projectIndex);
-        IniFile.WriteInt(nextProgress, this.SAVE_PATH, projectInfo.iniSectionName, this._getMissionsPassedIniKey(storylineIndex));
-        projectInfo.storylines.get(storylineIndex).progress = nextProgress;
-    }
 
-    private static _loadProgress(projectInfo: ProjectInfo, storylineInfo: StorylineInfo): int {
-        let progress = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, this._getMissionsPassedIniKey(storylineInfo.storylineIndex));
-        if (progress === undefined || 0 > progress)
-            progress = 0;
-        const numMissions = storylineInfo.missions.size;
-        if (progress >= numMissions)
-            progress = numMissions;
-        return progress;
-    }
 
     private static _runMissionStartEvent(mission: BaseMission): void {
-        mission.onInitEvent();
         mission.clearText();
         Stat.RegisterMissionGiven();
         Stat.ShowUpdateStats(false);
@@ -510,11 +385,16 @@ export class Core {
         this.Player.setGroupRecruitment(false);
         mission.playerGroup.remove();
         mission.backgroundAudio.play(0, true);
-        if (mission.enableTitleMessage)
-            Text.PrintBig(this.ActiveMissionInfo.titleGxtKey, 1000, 2);
+        if (mission.enableTitleMessage) {
+            if (this.SubMission === undefined) {
+                Text.PrintBig(this.ActiveMissionInfo.titleGxtKey, 1000, 2);
+            } else {
+                Text.PrintBig(this.SubMission.constructor.name, 1000, 2);
+            }
+        }
         mission.onStartEvent();
         mission.backgroundAudio.play(0, true);
-        this._missionState = 1;
+        this._MissionState = 1;
     }
 
     private static _runMissionUpdateEvent(mission: BaseMission): void {
@@ -526,11 +406,11 @@ export class Core {
             throw this.MISSION_FAILURE_ERROR;
         } catch (error) {
             if (error === this.MISSION_SUCCESS_ERROR) {
-                this._missionState = 2;
+                this._MissionState = 2;
             } else if (error === this.MISSION_FAILURE_ERROR) {
-                this._missionState = 3;
+                this._MissionState = 3;
             } else {
-                this._missionState = 5;
+                this._MissionState = 5;
                 throw error;
             }
         }
@@ -572,7 +452,7 @@ export class Core {
         mission.onSuccessEvent();
         if (mission.enableProgressSaving)
             this._saveProgress();
-        this._missionState = 4;
+        this._MissionState = 4;
     }
 
     private static _runMissionFailureEvent(mission: BaseMission): void {
@@ -586,7 +466,7 @@ export class Core {
         const smallMessage = mission.failureSmallMessage;
         if (smallMessage.duration > 0)
             Text.PrintNow(smallMessage.gxt, smallMessage.duration, 1);
-        this._missionState = 4;
+        this._MissionState = 4;
     }
 
     private static _runMissionCleanupEvent(mission: BaseMission): void {
@@ -617,7 +497,7 @@ export class Core {
         Stat.ShowUpdateStats(true);
         Mission.Finish();
         mission.onEndEvent();
-        this._missionState = 5;
+        this._MissionState = 5;
     }
 
     private static _playSequenceChaining(sequenceChaining: ISequenceChaining): void {
@@ -625,13 +505,13 @@ export class Core {
         const _wait = wait;
         const _fade = Camera.DoFade;
         Camera.DoFade = (time, direction) => {
-            log("Do not use 'Camera.DoFade' method during a scripted scene. There may be bugs!");
+            Logger.Print("Do not use 'Camera.DoFade' method during a scripted scene. There may be bugs!", true);
         };
         //@ts-ignore
         wait = (time) => {
-            log("Do not use the 'wait' function during a scripted scene. There may be bugs!");
+            Logger.Print("Do not use the 'wait' function during a scripted scene. There may be bugs!", true);
         };
-        const scriptedWait = (time) => {
+        const scriptedWait = (time: int) => {
             _wait(time);
             if (Pad.IsSkipCutsceneButtonPressed())
                 throw this.SKIP_SCRIPTED_SCENE_ERROR;
@@ -665,22 +545,6 @@ export class Core {
         }
     }
 
-    private static _disableDefaultWorldSetting(): void {
-        World.SetPedDensityMultiplier(0.0);
-        World.SetCarDensityMultiplier(0.0);
-        Game.SetWantedMultiplier(0.0);
-        Game.SetPoliceIgnorePlayer(this.Player, true);
-        Game.SetEveryoneIgnorePlayer(this.Player, true);
-    }
-
-    private static _enableDefaultWorldSetting(): void {
-        World.SetPedDensityMultiplier(1.0);
-        World.SetCarDensityMultiplier(1.0);
-        Game.SetWantedMultiplier(1.0);
-        Game.SetPoliceIgnorePlayer(this.Player, false);
-        Game.SetEveryoneIgnorePlayer(this.Player, false);
-    }
-
     private static _runScriptedSceneBeforeInitEvent(): void {
         this.PlayerChar
             .hideWeaponForScriptedCutscene(true)
@@ -699,5 +563,72 @@ export class Core {
             .stopFacialTalk()
             .setCanBeKnockedOffBike(false);
     }
+
+    private static _disableDefaultWorldSetting(): void {
+        World.SetPedDensityMultiplier(0.0);
+        World.SetCarDensityMultiplier(0.0);
+        Game.SetWantedMultiplier(0.0);
+        Game.SetPoliceIgnorePlayer(this.Player, true);
+        Game.SetEveryoneIgnorePlayer(this.Player, true);
+    }
+
+    private static _enableDefaultWorldSetting(): void {
+        World.SetPedDensityMultiplier(1.0);
+        World.SetCarDensityMultiplier(1.0);
+        Game.SetWantedMultiplier(1.0);
+        Game.SetPoliceIgnorePlayer(this.Player, false);
+        Game.SetEveryoneIgnorePlayer(this.Player, false);
+    }
+
+    private static _clampGameDifficulty(level: int): int {
+        if (level < 0)
+            return 0;
+        if (level > 2)
+            return 2;
+        return level;
+    }
+
+    private static _loadGameDifficulty(defaultValue: int): int {
+        let result = IniFile.ReadInt(this.CONFIG_PATH, "Application", "GameDifficulty");
+        if (result === undefined)
+            result = defaultValue;
+        this.GameDifficulty = this._clampGameDifficulty(result);
+        return result;
+    }
+
+    private static _getMissionsPassedIniKey(storylineIndex: int): string {
+        return `STORYLINE_${storylineIndex}_MISSIONS_PASSED`;
+    }
+
+    private static _loadProgress(maxProgress: int): int {
+        //@ts-ignore
+        let progress = IniFile.ReadInt(this.SAVE_PATH, this._ProjectInfos.get(this._ActiveProjectIndex).iniSectionName, this._getMissionsPassedIniKey(this._ActiveStorylineIndex));
+        if (progress === undefined || 0 > progress)
+            progress = 0;
+        const numMissions = maxProgress;
+        if (progress >= numMissions)
+            progress = numMissions;
+        return progress;
+    }
+
+    private static _saveProgress(): void {
+        const nextProgress: int = this.ActiveMissionInfo.missionIndex + 1;
+        const projectIniSectionName = this.GetProjectInfoAt(this.ActiveMissionInfo.projectIndex).iniSectionName;
+        IniFile.WriteInt(nextProgress, this.SAVE_PATH, projectIniSectionName, this._getMissionsPassedIniKey(this.ActiveMissionInfo.storylineIndex));
+        //@ts-ignore
+        this._ProjectInfos.get(this.ActiveMissionInfo.projectIndex).storylines.get(this.ActiveMissionInfo.storylineIndex).progress = nextProgress;
+    }
+
+    private static _initializeGameRootDirectory(): void {
+        const split = __dirname.split('\\');
+        const cleoIndex = split.findIndex(s => s.toUpperCase() === "CLEO");
+        if (cleoIndex === -1 || cleoIndex < 2)
+            Logger.Exit(`Invalid framework directory: '${__dirname}'!`, true);
+        this.GameRootDirectory = split.slice(cleoIndex).join('\\').replace(/^\\/g, '');
+    }
+
+
+
+    private constructor() { }
 
 }

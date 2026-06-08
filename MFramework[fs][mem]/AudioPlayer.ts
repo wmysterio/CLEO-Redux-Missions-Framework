@@ -3,7 +3,6 @@ import { Core } from "./Core";
 /** Manages loading and playback of audio streams from .mp3 files. */
 export class AudioPlayer {
 
-    private _projectIndex: int;
     private _audioStreams: AudioStream[];
     private _trackCount: int;
     private _currentTrackIndex: int;
@@ -24,12 +23,10 @@ export class AudioPlayer {
 
     /**
      * Initializes a new instance of the AudioPlayer.
-     * @param projectIndex - The index of the project.
      * @param preserveAudioStreamType - If true, preserves the default audio stream type by setting it to 0 (default: false).
      */
-    public constructor(projectIndex: int, preserveAudioStreamType: boolean = false) {
-        this._projectIndex = projectIndex;
-        this._audioStreams = new Array<AudioStream>();
+    public constructor(preserveAudioStreamType: boolean = false) {
+        this._audioStreams = [];
         this._trackCount = 0;
         this._currentTrackIndex = -1;
         this._volume = preserveAudioStreamType ? 1.0 : 0.2;
@@ -48,7 +45,7 @@ export class AudioPlayer {
         if (0 > trackCount || 0 > skip || this._trackCount > 0)
             return;
         this._trackCount = trackCount;
-        const rootDir = `${Core.GetProjectInfoAt(this._projectIndex).rootDirectory}${relativeProjectDirectory}`;
+        const rootDir = `${Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex).rootDirectory}${relativeProjectDirectory}`;
         const end = trackCount + skip;
         for (let i = skip; i < end; ++i) {
             let nextFileName = `${rootDir}${i}.mp3`;
@@ -56,16 +53,18 @@ export class AudioPlayer {
                 const audioStream = AudioStream.Load(nextFileName);
                 if (audioStream !== undefined && this._preserveAudioStreamType)
                     audioStream.setType(0);
+                //@ts-ignore
                 this._audioStreams.push(audioStream);
                 continue;
             }
+            //@ts-ignore
             this._audioStreams.push(undefined);
         }
     }
 
     /**
      * Sets the volume level for the current track and future tracks.
-     * @param volume - The volume level.
+     * @param volume - The volume level in range between 0.0 and 1.0.
      */
     public setVolume(volume: float): void {
         this._volume = volume;
@@ -140,7 +139,7 @@ export class AudioPlayer {
             this._stopAudio(i, true);
         this._trackCount = 0;
         this._currentTrackIndex = -1;
-        this._audioStreams = new Array<AudioStream>();
+        this._audioStreams = [];
     }
 
     /**

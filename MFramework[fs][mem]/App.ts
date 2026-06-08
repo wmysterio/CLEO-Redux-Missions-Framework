@@ -1,12 +1,15 @@
-if (HOST !== "sa")
-    exit("Incorrect host!");
-
 import { Core } from "./Core";
 import { Canvas, Label, Rect, SCREEN_CENTER_X, SCREEN_CENTER_Y, SCREEN_WIDTH, TextAlign, TextFont } from "./Drawing";
 import { NativeCamera } from "./Native";
 
-/** Manages the application logic and user interface. */
+export const FADE_TRANSITION_DURATION: int = 800;
+export const INPUT_COOLDOWN: int = 200;
+
 export class App {
+
+    private static readonly NUM_TOP_STORYLINES_ROWS: int = 3;
+    private static readonly MIDDLE_STORYLINE_ROW: int = this.NUM_TOP_STORYLINES_ROWS + 1;
+    private static readonly ALL_STORYLINES_ROWS: int = this.NUM_TOP_STORYLINES_ROWS + this.MIDDLE_STORYLINE_ROW;
 
     private static _projectCount: int = 0;
     private static _storylineCount: int = 0;
@@ -20,37 +23,11 @@ export class App {
     private static _difficultyStars: Label[];
     private static _canvas: Canvas;
 
-    private static readonly NUM_TOP_STORYLINES_ROWS: int = 3;
-    private static readonly MIDDLE_STORYLINE_ROW: int = this.NUM_TOP_STORYLINES_ROWS + 1;
-    private static readonly ALL_STORYLINES_ROWS: int = this.NUM_TOP_STORYLINES_ROWS + this.MIDDLE_STORYLINE_ROW;
-
-    public static readonly FADE_TRANSITION_DURATION: int = 800;
-    public static readonly INPUT_COOLDOWN: int = 200;
 
 
-
-    private constructor() { }
-
-
-
-    /**
-     * Runs the application, initializing the core and handling menu interactions.
-     * @param useManualProjectLoading - Whether to use manual project loading (default: true).
-     * @returns True if the application runs successfully, false if no projects are loaded.
-     */
-    public static Run(useManualProjectLoading: boolean = true): boolean {
-        Core.Run(useManualProjectLoading);
+    public static Run(): void {
+        Core.Run();
         this._projectCount = Core.ProjectsCount;
-        if (1 > this._projectCount) {
-            if (!useManualProjectLoading)
-                exit("Application must have at least one project!");
-            return false;
-        }
-        const errorsState = Core.ValidateSizes();
-        if (errorsState.hasStorylineErrors)
-            exit("Project must have at least one storyline!");
-        if (errorsState.hasMissionErrors)
-            exit("Storyline must have at least one mission!");
         this._readActivationKeyCode();
         while (true) {
             wait(0);
@@ -59,13 +36,13 @@ export class App {
                 continue;
             }
             if (Pad.IsKeyDown(this._activationKeyCode))
-                this._updateMenu();
+                this._displayMenu();
         }
     }
 
 
 
-    private static _updateMenu(): void {
+    private static _displayMenu(): void {
         Core.ActiveMissionInfo.projectIndex = 0;
         Core.ActiveMissionInfo.storylineIndex = 0;
         Core.ActiveMissionInfo.missionIndex = -1;
@@ -77,7 +54,7 @@ export class App {
         TIMERA = 0;
         while (this._canPlayerOpenMenu()) {
             wait(0);
-            if (TIMERA > this.INPUT_COOLDOWN) {
+            if (TIMERA > INPUT_COOLDOWN) {
                 if (Pad.IsKeyDown(this._activationKeyCode)) { // (F2 by default)
                     Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
                     break;
@@ -87,7 +64,7 @@ export class App {
                     Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
                     break;
                 }
-                if (Pad.IsKeyPressed(32) || Pad.IsKeyPressed(13)) { // Space, Return      || Pad.IsKeyPressed(70) F
+                if (Pad.IsKeyPressed(32) || Pad.IsKeyPressed(13)) { // Space, Return
                     if (this._missionIndexToSelect !== -1) {
                         Core.ActiveMissionInfo.missionIndex = this._missionIndexToSelect;
                         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1054);
@@ -97,21 +74,21 @@ export class App {
                     TIMERA = 0;
                 }
             }
-            if (this._projectCount > 1 && TIMERA > this.INPUT_COOLDOWN) {
+            if (this._projectCount > 1 && TIMERA > INPUT_COOLDOWN) {
                 if (Pad.IsKeyPressed(65) || Pad.IsKeyPressed(37)) { // A, Left arrow
                     this._nextProject();
                 } else if (Pad.IsKeyPressed(68) || Pad.IsKeyPressed(39)) { // D, Right arrow
                     this._prevProject();
                 }
             }
-            if (this._storylineCount > 1 && TIMERA > this.INPUT_COOLDOWN) {
+            if (this._storylineCount > 1 && TIMERA > INPUT_COOLDOWN) {
                 if (Pad.IsKeyPressed(87) || Pad.IsKeyPressed(38)) { // W, Up arrow
                     this._prevStoryline();
                 } else if (Pad.IsKeyPressed(83) || Pad.IsKeyPressed(40)) { // S, Down arrow
                     this._nextStoryline();
                 }
             }
-            if (TIMERA > this.INPUT_COOLDOWN) {
+            if (TIMERA > INPUT_COOLDOWN) {
                 if (Pad.IsKeyPressed(49)) {
                     this._saveGameDifficulty(0);
                 } else if (Pad.IsKeyPressed(50)) {
@@ -131,10 +108,7 @@ export class App {
             wait(250);
         }
         Core.UnloadFxtFile(Core.ActiveMissionInfo.projectIndex);
-        while (!Core.Player.isPlaying())
-            wait(250);
-        Core.PlayerChar = Core.Player.getChar();
-        Core.PlayerGroup = Core.Player.getGroup();
+        Core.InitializePlayer();
     }
 
     private static _nextProject(): void {
@@ -152,7 +126,7 @@ export class App {
     }
 
     private static _selectProject(projectIndex: int): void {
-        Core.UnloadFxtFile(Core.ActiveMissionInfo.projectIndex)
+        Core.UnloadFxtFile(Core.ActiveMissionInfo.projectIndex);
         Core.LoadFxtFile(projectIndex);
         Core.ActiveMissionInfo.projectIndex = projectIndex;
         const projectInfo = Core.GetProjectInfoAt(projectIndex);
@@ -187,24 +161,33 @@ export class App {
                 continue;
             if (this._storylineCount > j) {
                 const storylineInfo = projectInfo.storylines.get(j);
+                //@ts-ignore
                 const missionsCount = storylineInfo.missions.size;
+                //@ts-ignore
                 const progress = storylineInfo.progress;
-                let storylineGxt = "BJ_HIDE";
+                let storylineGxt = "BJ_HIDE"; // 'BJ_HIDE ???'
                 if (missionsCount > progress) {
+                    //@ts-ignore
                     const missionInfo = storylineInfo.missions.get(progress);
-                    const canStartMission = missionInfo.create().onCheckStartConditions();
+                    //@ts-ignore
+                    const canStartMission = missionInfo.canStartMission();
                     if (canStartMission || progress > 0)
+                        //@ts-ignores
                         storylineGxt = storylineInfo.titleGxtKey;
                     if (j === nextIndex) {
                         this._selectedStorylineRect.changeColor(210, 45, 57, 172);
                         this._missionCounterLabel.changeFormattedText("%d/%d", progress, missionsCount);
-                        this._missionNameLabel.changeText(canStartMission ? missionInfo.titleGxtKey : "BJ_HIDE");
+                        //@ts-ignore
+                        this._missionNameLabel.changeText(canStartMission ? missionInfo.titleGxtKey : "BJ_HIDE"); // 'BJ_HIDE ???'
                         if (canStartMission) {
+                            //@ts-ignore
                             Core.ActiveMissionInfo.titleGxtKey = missionInfo.titleGxtKey;
+                            //@ts-ignore
                             this._missionIndexToSelect = missionInfo.missionIndex;
                         }
                     }
                 } else {
+                    //@ts-ignore
                     storylineGxt = storylineInfo.titleGxtKey;
                     if (j === nextIndex) {
                         this._selectedStorylineRect.changeColor(51, 125, 69, 172);
@@ -220,12 +203,7 @@ export class App {
         TIMERA = 0;
     }
 
-    private static _saveGameDifficulty(level: int) {
-        Core.GameDifficulty = level;
-        this._changeDifficultyStarsColors(level);
-        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
-        TIMERA = 0;
-    }
+
 
     private static _changeDifficultyStarsColors(level: int): void {
         for (let i = 0; i < 3; ++i)
@@ -234,14 +212,14 @@ export class App {
 
     private static _loadCanvas(): Canvas {
 
-        this._difficultyStars = new Array<Label>();
-        this._storylinesNames = new Array<Label>();
-
+        this._difficultyStars = [];
+        this._storylinesNames = [];
+        let alphaStep = 70;
+        let alpha = 255 - this.NUM_TOP_STORYLINES_ROWS * alphaStep;
         let globalCenterY = SCREEN_CENTER_Y - 110.0;
         const starCenterY = globalCenterY + 5.0;
         const storylineHeight = Label.CalculateRowHeight(1.8, 6.0);
-        let alphaStep = 70;
-        let alpha = 255 - this.NUM_TOP_STORYLINES_ROWS * alphaStep;
+        const middleStorylineRow = this.MIDDLE_STORYLINE_ROW - 1;
 
         const canvas = new Canvas(0, 0, 0, 0);
 
@@ -252,7 +230,7 @@ export class App {
         this._projectNameLabel.font = TextFont.Menu;
         this._projectNameLabel.changeScale(0.6, 2.8, 12.0);
 
-        canvas.insertAtStart(new Rect(SCREEN_CENTER_X, this._projectNameLabel.calculateYCenterForRect(globalCenterY), SCREEN_WIDTH, this._projectNameLabel.height, 37, 41, 46, 240))
+        canvas.insertAtStart(new Rect(SCREEN_CENTER_X, this._projectNameLabel.calculateYCenterForRect(globalCenterY), SCREEN_WIDTH, this._projectNameLabel.height, 37, 41, 46, 240));
 
         for (let i = 0, j = 636.0 - (2.0 * 26.0); i < 3; ++i, j += 26.0) {
             const star = canvas.addLabel(j, starCenterY, 255, 255, 255, 128);
@@ -274,7 +252,7 @@ export class App {
             storylinesName.shadowA = 0;
             storylinesName.changeScale(0.5, 1.8, 6.0);
             this._storylinesNames.push(storylinesName);
-            if (i === this.MIDDLE_STORYLINE_ROW - 1) {
+            if (i === middleStorylineRow) {
                 storylinesName.a = 255;
                 this._selectedStorylineRect.centerY = storylinePositionY + storylinesName.height - 2.0;
                 this._missionCounterLabel = canvas.addLabel(634.0, storylinePositionY, 255, 255, 255, 255);
@@ -301,13 +279,20 @@ export class App {
     }
 
     private static _unloadCanvas(): void {
-        this._selectedStorylineRect = null;
-        this._missionNameLabel = null;
-        this._missionCounterLabel = null;
-        this._projectNameLabel = null;
-        this._storylinesNames = null;
-        this._difficultyStars = null;
-        this._canvas = null;
+        //@ts-ignore
+        this._selectedStorylineRect = undefined;
+        //@ts-ignore
+        this._missionNameLabel = undefined;
+        //@ts-ignore
+        this._missionCounterLabel = undefined;
+        //@ts-ignore
+        this._projectNameLabel = undefined;
+        //@ts-ignore
+        this._storylinesNames = undefined;
+        //@ts-ignore
+        this._difficultyStars = undefined;
+        //@ts-ignore
+        this._canvas = undefined;
     }
 
     private static _clearCanvasTexts(): void {
@@ -317,6 +302,13 @@ export class App {
         }
         this._missionCounterLabel.changeFormattedText("");
         this._missionNameLabel.text = "DUMMY";
+    }
+
+    private static _saveGameDifficulty(level: int) {
+        Core.GameDifficulty = level;
+        this._changeDifficultyStarsColors(level);
+        Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
+        TIMERA = 0;
     }
 
     private static _canPlayerOpenMenu(requireControl: boolean = false): boolean {
@@ -335,11 +327,16 @@ export class App {
     private static _readActivationKeyCode(): void {
         this._activationKeyCode = 113;
         if (Fs.DoesFileExist(Core.CONFIG_PATH)) {
+            //@ts-ignore
             this._activationKeyCode = IniFile.ReadInt(Core.CONFIG_PATH, "Application", "ActivationKeyCode");
-            if (this._activationKeyCode === undefined || 0 > this._activationKeyCode || 256 > this._activationKeyCode)
+            if (this._activationKeyCode === undefined || 0 > this._activationKeyCode || this._activationKeyCode > 255 || this._activationKeyCode === 82)
                 this._activationKeyCode = 113;
         }
         IniFile.WriteInt(this._activationKeyCode, Core.CONFIG_PATH, "Application", "ActivationKeyCode");
     }
+
+
+
+    private constructor() { }
 
 }

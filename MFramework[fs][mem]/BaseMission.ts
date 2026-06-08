@@ -4,29 +4,45 @@ import { BaseScriptedScene } from "./BaseScriptedScene";
 import { Core } from "./Core";
 import { GxtTime } from "./GxtTime";
 
-
 /** Abstract base class for game missions, extending script functionality with mission-specific logic. */
 export abstract class BaseMission extends BaseScript {
 
+    //@ts-ignore
     private _backgroundAudio: AudioPlayer;
+    //@ts-ignore
     private _successBigMessage: GxtTime;
+    //@ts-ignore
     private _failureBigMessage: GxtTime;
+    //@ts-ignore
     private _failureSmallMessage: GxtTime;
-    private _projectIndex: int;
+    //@ts-ignore
     private _cashReward: int;
+    //@ts-ignore
     private _respectReward: int;
+    //@ts-ignore
     private _isSuccessSoundEnabled: boolean;
+    //@ts-ignore
     private _hasSavedPlayerWeapons: boolean;
+    //@ts-ignore
     private _savedPlayerWeaponsAmmo: int[];
+    //@ts-ignore
     private _decisionMakersChar: DecisionMakerChar[];
+    //@ts-ignore
     private _chars: Char[];
+    //@ts-ignore
     private _cars: Car[];
+    //@ts-ignore
     private _scriptObjects: ScriptObject[];
+    //@ts-ignore
     private _blips: Blip[];
+    //@ts-ignore
     private _pickups: Pickup[];
 
+    //@ts-ignore
     public enableProgressSaving: boolean;
+    //@ts-ignore
     public enableTitleMessage: boolean;
+    //@ts-ignore
     public stage: int;
 
     /** Gets the player group in the game. */
@@ -83,6 +99,7 @@ export abstract class BaseMission extends BaseScript {
     /**
      * Sets the respect reward for mission success.
      * @param respect - The amount of respect to reward.
+     * @remarks Not recommended without increasing the maximum respect limit ({@link Stat.SetMissionRespectTotal}).
      */
     public set respectReward(respect: int) {
         this._respectReward = respect;
@@ -108,33 +125,20 @@ export abstract class BaseMission extends BaseScript {
 
 
 
-    /** Initializes a new instance of the BaseMission and registers it with the Core. */
-    public constructor() {
-        super();
-        Core.RegisterMission(this);
-        this._projectIndex = Core.ActiveMissionInfo.projectIndex;
-    }
-
-
-
-    /**
-     * Handles the mission initialization event, called before the mission starts.
-     * @remarks `Used for internal framework operations. Do not call directly!`
-     */
     public onInitEvent(): void {
         super.onInitEvent();
-        this._backgroundAudio = new AudioPlayer(this._projectIndex);
+        this._backgroundAudio = new AudioPlayer();
         this._successBigMessage = new GxtTime("M_PASSD", 5000);
         this._failureSmallMessage = new GxtTime();
         this._failureBigMessage = new GxtTime("M_FAIL", 5000);
         this._hasSavedPlayerWeapons = false;
-        this._savedPlayerWeaponsAmmo = new Array<int>();
-        this._decisionMakersChar = new Array<DecisionMakerChar>();
-        this._chars = new Array<Char>();
-        this._cars = new Array<Car>();
-        this._scriptObjects = new Array<ScriptObject>();
-        this._blips = new Array<Blip>();
-        this._pickups = new Array<Pickup>();
+        this._savedPlayerWeaponsAmmo = [];
+        this._decisionMakersChar = [];
+        this._chars = [];
+        this._cars = [];
+        this._scriptObjects = [];
+        this._blips = [];
+        this._pickups = [];
         this._setupDecisionMakers();
         this._cashReward = 0;
         this._respectReward = 0;
@@ -147,10 +151,10 @@ export abstract class BaseMission extends BaseScript {
     /**
      * Handles the mission availability check event before launch.
      * @returns True if the mission can start, false otherwise.
-     */
+    
     public onCheckStartConditions(): boolean {
         return true;
-    }
+    } */
 
     /** Handles the mission update event, called each frame during the mission. */
     public onUpdateEvent(): void { }
@@ -161,16 +165,36 @@ export abstract class BaseMission extends BaseScript {
     /** Handles the mission failure event, called when the mission fails. */
     public onFailureEvent(): void { }
 
+    public onCleanupEvent(): void { }
+
     public onEndEvent(): void {
         super.onEndEvent();
         this._backgroundAudio.unload();
         this._restorePlayerWeapons();
         this.deleteAllAddedEntities();
         this._decisionMakersChar.forEach(dm => { dm.remove(); });
-        this._decisionMakersChar = new Array<DecisionMakerChar>();
+        this._decisionMakersChar = [];
     }
 
 
+
+    /**
+     * Assigns a different mission to the lifecycle, ignoring the current mission.
+     * @param baseMissionType - The constructor of a BaseMission subclass.
+     * @remarks Set inside {@link onInitEvent} method!
+     * @remarks Only one mission can be active at a time!
+     */
+    public setSubMission<TBaseMission extends BaseMission>(baseMissionType: new () => TBaseMission): void {
+        if (Core.CanSetSubMission) {
+            if (Core.SubMission !== undefined)
+                Core.SubMission.onEndEvent();
+            const mission = new baseMissionType();
+            mission.onInitEvent();
+            Core.SubMission = mission;
+            return;
+        }
+        throw new Error(`A sub-mission can only be assigned in the 'onInitEvent' method!`);
+    }
 
     /**
      * Plays a scripted scene for the mission.
@@ -178,15 +202,10 @@ export abstract class BaseMission extends BaseScript {
      * @param debugMode - If true, enables manual control for debugging (default: false).
      */
     public playScriptedScene<TScriptedScene extends BaseScriptedScene>(scriptedSceneType: new () => TScriptedScene, debugMode: boolean = false): void {
-        let scriptedScene = new scriptedSceneType();
-        Core.RunScriptedScene(scriptedScene, debugMode);
-        scriptedScene = null;
+        Core.RunScriptedScene(new scriptedSceneType(), debugMode);
     }
 
-    /**
-     * Aborts the mission with a success notification, displaying the specified GXT message.
-     * @param bigMessageGxt - The GXT key for the success message (default: "M_PASSD").
-     */
+    /** Aborts the mission with a success notification. */
     public complete(): void {
         Restart.CancelOverride();
         throw Core.MISSION_SUCCESS_ERROR;
@@ -202,15 +221,6 @@ export abstract class BaseMission extends BaseScript {
         this._failureSmallMessage.gxt = reasonSmallMessageGxt;
         this._failureSmallMessage.duration = duration;
         throw Core.MISSION_FAILURE_ERROR;
-    }
-
-    /**
-     * Gets the storyline progress, clamped between 0 and the total number of missions.
-     * @param storylineIndex - The index of the storyline.
-     * @returns The last successfully completed mission index.
-     */
-    public getStorylineProgress(storylineIndex: int): int {
-        return Core.GetStorylineInfoAt(this._projectIndex, storylineIndex).progress;
     }
 
     /** Saves the player's weapons and their ammo, then removes all weapons from the player. */
@@ -229,7 +239,7 @@ export abstract class BaseMission extends BaseScript {
      * @param value - The integer value to write.
      */
     public writeIntValueToSaveFile(key: string, value: int): void {
-        Core.WriteIntValueToSaveFile(this._projectIndex, key, value);
+        Core.WriteIntValueToSaveFile(Core.ActiveMissionInfo.projectIndex, key, value);
     }
 
     /**
@@ -239,7 +249,7 @@ export abstract class BaseMission extends BaseScript {
      * @returns The integer value from the save file, or the default value if not found.
      */
     public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
-        return Core.ReadIntValueFromSaveFile(this._projectIndex, key, defaultValue);
+        return Core.ReadIntValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
     }
 
     /**
@@ -377,7 +387,7 @@ export abstract class BaseMission extends BaseScript {
      * @param heading - Character's heading in degrees.
      * @returns The created character.
      */
-    public addFriendChar(modelId, x: float, y: float, z: float, heading: float): Char {
+    public addFriendChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
         return this._prepareChar(Char.Create(29, modelId, x, y, z).setHeading(heading), 29, 30);
     }
 
@@ -390,7 +400,7 @@ export abstract class BaseMission extends BaseScript {
      * @param heading - Character's heading in degrees.
      * @returns The created character.
      */
-    public addEnemyChar(modelId, x: float, y: float, z: float, heading: float): Char {
+    public addEnemyChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
         return this._prepareChar(Char.Create(30, modelId, x, y, z).setHeading(heading), 30, 29);
     }
 
@@ -429,7 +439,7 @@ export abstract class BaseMission extends BaseScript {
      * @param heading - Character's heading in degrees.
      * @returns The created character.
      */
-    public addNeutralChar(modelId, x: float, y: float, z: float, heading: float): Char {
+    public addNeutralChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
         return this._prepareChar(Char.Create(31, modelId, x, y, z).setHeading(heading), 31, 0);
     }
 
@@ -496,11 +506,11 @@ export abstract class BaseMission extends BaseScript {
                 this._deleteCarCarefully(car);
             });
         }
-        this._chars = new Array<Char>();
-        this._cars = new Array<Car>();
-        this._scriptObjects = new Array<ScriptObject>();
-        this._blips = new Array<Blip>();
-        this._pickups = new Array<Pickup>();
+        this._chars = [];
+        this._cars = [];
+        this._scriptObjects = [];
+        this._blips = [];
+        this._pickups = [];
     }
 
 
@@ -515,7 +525,7 @@ export abstract class BaseMission extends BaseScript {
                     this.unloadWeaponModels(i);
                 }
             }
-            this._savedPlayerWeaponsAmmo = new Array<int>();
+            this._savedPlayerWeaponsAmmo = [];
         }
     }
 

@@ -1,6 +1,5 @@
 import { BaseScript } from "./BaseScript";
 
-/** Represents a single action in a scripted scene sequence, such as a wait, condition, or executable action. */
 class ScriptedSceneAction {
 
     public duration: int;
@@ -9,12 +8,7 @@ class ScriptedSceneAction {
 
 
 
-    /**
-     * Creates a scripted scene action.
-     * @param duration - Duration to wait in milliseconds (default: -1).
-     * @param condition - Condition to check for continuation (default: undefined).
-     * @param action - Action to perform (default: undefined).
-     */
+    //@ts-ignore
     public constructor(duration: int = -1, condition: () => boolean = undefined, action: () => void = undefined) {
         this.duration = duration;
         this.condition = condition;
@@ -58,12 +52,19 @@ export interface ISequenceChaining {
 /** Base class for scripted scenes. */
 export abstract class BaseScriptedScene extends BaseScript implements ISequenceChaining {
 
+    //@ts-ignore
     private _sequenceActions: ScriptedSceneAction[];
+    //@ts-ignore
     private _decisionMakerChar: DecisionMakerChar;
+    //@ts-ignore
     private _chars: Char[];
+    //@ts-ignore
     private _cars: Car[];
+    //@ts-ignore
     private _scriptObjects: ScriptObject[];
+    //@ts-ignore
     private _hDecisionMakerChar: int;
+    //@ts-ignore
     private _preventFadeToTransparentAtEnd: boolean;
 
     /** Gets whether the transition to a transparent screen is prevented at the end of the scene. */
@@ -91,11 +92,11 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     public onInitEvent(): void {
         super.onInitEvent();
-        this.voiceAudio.unload();
-        this._sequenceActions = new Array<ScriptedSceneAction>();
-        this._chars = new Array<Char>();
-        this._cars = new Array<Car>();
-        this._scriptObjects = new Array<ScriptObject>();
+        //this.voiceAudio.unload(); // fix?
+        this._sequenceActions = [];
+        this._chars = [];
+        this._cars = [];
+        this._scriptObjects = [];
         this._decisionMakerChar = this.createClearedDecisionMakerChar();
         this._hDecisionMakerChar = +this._decisionMakerChar;
         this._preventFadeToTransparentAtEnd = false;
@@ -108,8 +109,8 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     /**
      * Handles the scripted scene run event by executing the sequence of scripted actions.
-     * @remarks Do not use the `{@link Camera.DoFade}` method during a scripted scene. There may be bugs!
-     * @remarks Do not use the `{@link wait}` method during a scripted scene. There may be bugs!
+     * @remarks Do not use the {@link Camera.DoFade} method during a scripted scene. There may be bugs!
+     * @remarks Do not use the {@link wait} method during a scripted scene. There may be bugs!
      */
     public onRunEvent(): void { }
 

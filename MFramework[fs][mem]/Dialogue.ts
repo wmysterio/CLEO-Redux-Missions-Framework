@@ -1,5 +1,4 @@
 import { AudioPlayer } from "./AudioPlayer";
-import { Core } from "./Core";
 import { DialogueLine } from "./GxtTime";
 import { Timer } from "./Timer";
 
@@ -8,10 +7,15 @@ export class Dialogue {
 
     private _voiceAudio: AudioPlayer;
     private _timer: Timer;
+    //@ts-ignore
     private _lines: DialogueLine[];
+    //@ts-ignore
     private _lineCount: int;
+    //@ts-ignore
     private _currentLine: DialogueLine;
+    //@ts-ignore
     private _currentLineIndex: int;
+    //@ts-ignore
     private _speakingCondition: () => boolean;
 
     /** Gets the index of the current dialogue line. */
@@ -23,7 +27,7 @@ export class Dialogue {
 
     /** Initializes a new dialogue sequence. */
     public constructor() {
-        this._voiceAudio = new AudioPlayer(Core.ActiveMissionInfo.projectIndex, true);
+        this._voiceAudio = new AudioPlayer(true);
         this._timer = new Timer();
         this._reset();
     }
@@ -131,8 +135,9 @@ export class Dialogue {
     }
 
     private _reset(): void {
-        this._lines = new Array<DialogueLine>();
+        this._lines = [];
         this._lineCount = 0;
+        //@ts-ignore
         this._currentLine = undefined;
         this._currentLineIndex = -1;
         this._speakingCondition = () => { return true; };

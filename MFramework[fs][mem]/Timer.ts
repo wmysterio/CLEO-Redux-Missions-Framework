@@ -4,6 +4,7 @@
  */
 export class Timer {
 
+    //@ts-ignore
     private _timerMilliseconds: int;
 
     /** Gets the number of milliseconds remaining. */
@@ -87,6 +88,18 @@ export class Timer {
         return this;
     }
 
+    /**
+    Gets the number of hours remaining. 
+    public get hoursLeft(): int {
+        return Math.floor((this._getCountdownDifference() / 3600000) % 24);
+    }
+        
+    Gets the number of hours that have passed. 
+    public get hoursPassed(): int {
+        return Math.floor((this._getElapsedDifference() / 3600000) % 24);
+    }
+    */
+
 
 
     private _getCountdownDifference(): int {
@@ -96,17 +109,5 @@ export class Timer {
     private _getElapsedDifference(): int {
         return TIMERB - this._timerMilliseconds;
     }
-
-    /**
-        Gets the number of hours remaining. 
-        public get hoursLeft(): int {
-            return Math.floor((this._getCountdownDifference() / 3600000) % 24);
-        }
-            
-        Gets the number of hours that have passed. 
-        public get hoursPassed(): int {
-            return Math.floor((this._getElapsedDifference() / 3600000) % 24);
-        }
-    */
 
 }

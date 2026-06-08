@@ -1,22 +1,15 @@
+import { BaseStoryline } from "./BaseStoryline";
 import { Core } from "./Core";
 
 /** Abstract base class for managing projects and their associated storylines. */
 export abstract class BaseProject {
 
-
-
-    /** Initializes a new project, creates an array of storylines, and registers it with the Core. */
-    public constructor() {
-        Core.RegisterProject(this);
-    }
-
-
-
     /**
-     * Returns the root directory of the project.
-     * @returns The path to the project's root directory.
-     * @remarks Derived classes must implement this method using `__dirname`.
+     * Registers a storyline in the core system.
+     * @param storyline - The storyline to register.
      */
-    public abstract getRootDirectory(): string;
+    public addStoryline<TBaseStoryline extends BaseStoryline>(baseStorylineType: new () => TBaseStoryline) {
+        Core.RegisterStoryline(baseStorylineType);
+    }
 
 }
