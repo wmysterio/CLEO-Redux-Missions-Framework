@@ -7,42 +7,24 @@ import { GxtTime } from "./GxtTime";
 /** Abstract base class for game missions, extending script functionality with mission-specific logic. */
 export abstract class BaseMission extends BaseScript {
 
-    //@ts-ignore
     private _backgroundAudio: AudioPlayer;
-    //@ts-ignore
     private _successBigMessage: GxtTime;
-    //@ts-ignore
     private _failureBigMessage: GxtTime;
-    //@ts-ignore
     private _failureSmallMessage: GxtTime;
-    //@ts-ignore
     private _cashReward: int;
-    //@ts-ignore
     private _respectReward: int;
-    //@ts-ignore
     private _isSuccessSoundEnabled: boolean;
-    //@ts-ignore
     private _hasSavedPlayerWeapons: boolean;
-    //@ts-ignore
     private _savedPlayerWeaponsAmmo: int[];
-    //@ts-ignore
     private _decisionMakersChar: DecisionMakerChar[];
-    //@ts-ignore
     private _chars: Char[];
-    //@ts-ignore
     private _cars: Car[];
-    //@ts-ignore
     private _scriptObjects: ScriptObject[];
-    //@ts-ignore
     private _blips: Blip[];
-    //@ts-ignore
     private _pickups: Pickup[];
 
-    //@ts-ignore
     public enableProgressSaving: boolean;
-    //@ts-ignore
     public enableTitleMessage: boolean;
-    //@ts-ignore
     public stage: int;
 
     /** Gets the player group in the game. */

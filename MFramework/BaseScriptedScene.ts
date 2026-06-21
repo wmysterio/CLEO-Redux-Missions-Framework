@@ -22,7 +22,7 @@ export interface ISequenceChaining {
 
     /**
      * Gets the array of actions in the scripted scene sequence.
-     * @remarks Used for internal framework operations. Do not change directly!
+     * @remarks `Used for internal framework operations. Do not change directly!`
      */
     get actionsSequence(): ScriptedSceneAction[];
 
@@ -52,19 +52,12 @@ export interface ISequenceChaining {
 /** Base class for scripted scenes. */
 export abstract class BaseScriptedScene extends BaseScript implements ISequenceChaining {
 
-    //@ts-ignore
     private _sequenceActions: ScriptedSceneAction[];
-    //@ts-ignore
     private _decisionMakerChar: DecisionMakerChar;
-    //@ts-ignore
     private _chars: Char[];
-    //@ts-ignore
     private _cars: Car[];
-    //@ts-ignore
     private _scriptObjects: ScriptObject[];
-    //@ts-ignore
     private _hDecisionMakerChar: int;
-    //@ts-ignore
     private _preventFadeToTransparentAtEnd: boolean;
 
     /** Gets whether the transition to a transparent screen is prevented at the end of the scene. */
@@ -82,7 +75,7 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     /**
      * The array of actions in the scripted scene sequence.
-     * @remarks Used for internal framework operations. Do not change directly!
+     * @remarks `Used for internal framework operations. Do not change directly!`
      */
     public get actionsSequence(): ScriptedSceneAction[] {
         return this._sequenceActions;

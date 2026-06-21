@@ -2,26 +2,16 @@ import { FADE_TRANSITION_DURATION } from "./App";
 import { AudioPlayer } from "./AudioPlayer";
 import { Core } from "./Core";
 import { Dialogue } from "./Dialogue";
+import { Logger } from "./Logger";
 import { NativeCamera, NativePed, NativeVehicle } from "./Native";
 import { Timer } from "./Timer";
 
 /** Abstract base class for game scripts. */
 export abstract class BaseScript {
 
-    //@ts-ignore
     private _dialogue: Dialogue;
-    //@ts-ignore
     private _timer: Timer;
-    //@ts-ignore
     private _voiceAudio: AudioPlayer;
-
-
-
-    public constructor() {
-        this._timer = new Timer();
-        this._dialogue = new Dialogue();
-        this._voiceAudio = new AudioPlayer(true);
-    }
 
     /** Gets the player. */
     public get player(): Player {
@@ -53,6 +43,36 @@ export abstract class BaseScript {
         return Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex).rootDirectory;
     }
 
+
+
+    public constructor() {
+        this._timer = new Timer();
+        this._dialogue = new Dialogue();
+        this._voiceAudio = new AudioPlayer(true);
+    }
+
+
+
+    /** Handles the script initialization event, called before the script starts. */
+    public onInitEvent(): void { }
+
+    /** Handles the script start event, called when the script begins. */
+    public onStartEvent(): void { }
+
+    /** Handles the script cleanup event, called to release resources before the script ends. */
+    public onCleanupEvent(): void { }
+
+    /** 
+     * Handles the script stop event, called when the script ends.
+     * @remarks `Used for internal framework operations. Do not call directly!`
+     */
+    public onEndEvent(): void {
+        this._dialogue.unload();
+        this._voiceAudio.unload();
+    }
+
+
+
     /**
      * Gets the storyline progress, clamped between 0 and the total number of missions.
      * @param storylineIndex - The index of the storyline.
@@ -80,28 +100,6 @@ export abstract class BaseScript {
     public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
         return Core.ReadIntValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
     }
-
-
-
-    /** Handles the script initialization event, called before the script starts. */
-    public onInitEvent(): void { }
-
-    /** Handles the script start event, called when the script begins. */
-    public onStartEvent(): void { }
-
-    /** Handles the script cleanup event, called to release resources before the script ends. */
-    public onCleanupEvent(): void { }
-
-    /** 
-     * Handles the script stop event, called when the script ends.
-     * @remarks `Used for internal framework operations. Do not call directly!`
-     */
-    public onEndEvent(): void {
-        this._dialogue.unload();
-        this._voiceAudio.unload();
-    }
-
-
 
     /**
      * Retrieves the maximum health of a character.
@@ -552,7 +550,7 @@ export abstract class BaseScript {
 
     private _getTrainModels(trainType: int): int[] {
         if (0 > trainType || trainType > 15)
-            throw Error(`Incorrect train type '${trainType}'!`);
+            Logger.Exit(`Incorrect train type '${trainType}'!`);
         if (trainType === 15)
             return [538];
         if ([8, 9, 14].includes(trainType))
