@@ -46,3 +46,22 @@ export class NativeVehicle {
     private constructor() { }
 
 }
+
+export class NativeTxdStore {
+
+    //public static readonly AddTxdSlot = Memory.Fn.Cdecl(0x731C80);
+    //public static readonly AddRef = Memory.Fn.Cdecl(0x731A00);
+    //public static readonly PushCurrentTxd = Memory.Fn.Cdecl(0x7316A0);
+    //public static readonly SetCurrentTxd = Memory.Fn.Cdecl(0x7319C0);
+    //public static readonly PopCurrentTxd = Memory.Fn.Cdecl(0x7316B0);
+    //public static readonly RemoveTxdSlot = Memory.Fn.Cdecl(0x731CD0);
+    //public static readonly RemoveScriptTextureDictionary = Memory.Fn.Cdecl(0x465A40);
+
+    public static readonly FindTxdSlot = Memory.Fn.CdeclI32(0x731850);
+    public static readonly LoadTxd = Memory.Fn.CdeclU8(0x7320B0);
+
+
+
+    private constructor() { }
+
+}

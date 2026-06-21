@@ -1,3 +1,4 @@
+import { Logger } from "./Logger";
 import { NativePed } from "./Native";
 import { Timer } from "./Timer";
 
@@ -115,7 +116,7 @@ export class Sprite extends VisualElement {
 
     /**
      * Creates a new sprite with the specified memory slot, position, and size.
-     * @param memorySlot - The memory slot ID (in range between 1 and ?).
+     * @param memorySlot - The memory slot ID (in range between 1 and 128).
      * @param centerX - The X-coordinate of the sprite's center in screen units.
      * @param centerY - The Y-coordinate of the sprite's center in screen units.
      * @param width - The width of the sprite in screen units.
@@ -123,8 +124,8 @@ export class Sprite extends VisualElement {
      */
     public constructor(memorySlot: int, centerX: float, centerY: float, width: float, height: float) {
         super(255, 255, 255, 255);
-        //if (0 > memorySlot || memorySlot > max)
-        //    Logger.Exit(``);
+        if (0 > memorySlot || memorySlot > 128)
+            Logger.Exit(`Incorrect memory slot ID!`);
         this.memorySlot = memorySlot;
         this.centerX = centerX;
         this.centerY = centerY;

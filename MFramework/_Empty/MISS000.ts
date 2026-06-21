@@ -3,7 +3,7 @@ import { BaseMission } from "../BaseMission";
 export class MISS000 extends BaseMission {
 
     public onStartEvent(): void {
-        //this.enableProgressSaving = true;
+        //this.enableProgressSaving = false;
     }
 
     public onUpdateEvent(): void {

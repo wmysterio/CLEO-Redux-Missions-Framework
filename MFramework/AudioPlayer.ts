@@ -189,7 +189,8 @@ export class AudioPlayer {
     private _getDuration(trackIndex: int, defaultDurationMs: int = 1000): int {
         if (this._audioStreams[trackIndex] === undefined)
             return defaultDurationMs;
-        return (this._audioStreams[trackIndex].getLength() + 1) * 1000;
+        return Math.fround(this._audioStreams[trackIndex].getDuration() * 1000.0) as int;
+        //return (this._audioStreams[trackIndex].getLength() + 1) * 1000;
     }
 
 }

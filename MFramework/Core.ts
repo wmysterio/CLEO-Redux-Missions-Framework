@@ -84,8 +84,8 @@ export class Core {
     private static _StorylneProgressCheckers: StorylneProgressChecker[] = [];
 
     private static readonly SKIP_SCRIPTED_SCENE_ERROR = new Error();
+    private static readonly SAVE_PATH: string = __dirname + "\\Save";
 
-    public static readonly SAVE_PATH: string = __dirname + "\\Save";
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
     public static readonly MISSION_SUCCESS_ERROR = new Error();
@@ -366,6 +366,28 @@ export class Core {
     public static FillBuffer(pBuffer: int, length: int, byte: int = 0): void {
         for (let i = 0; i < length; ++i)
             Memory.WriteU8(pBuffer + i, byte);
+    }
+
+    public static WriteStringToMemory(text: string): { pointer: int | undefined, length: int } {
+        const length = text.length;
+        let hasError = false;
+        for (let i = 0; i < length; ++i) {
+            const charCode = text.charCodeAt(i);
+            if (0x80 > charCode)
+                continue;
+            hasError = true;
+            break;
+        }
+        const result = {
+            length: 0,
+            pointer: hasError ? undefined : this.AllocateMemoryFilled(length + 1),
+        };
+        if (result.pointer !== undefined) {
+            result.length = length + 1;
+            Memory.WriteUtf8(result.pointer, text, false);
+            Memory.WriteI8(result.pointer + length, 0, false);
+        }
+        return result;
     }
 
 
