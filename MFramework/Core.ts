@@ -8,9 +8,12 @@ import { Timer } from "./Timer";
 
 class ProjectInfo {
 
+    public static readonly MAIN_INI_SECTION: string = "PROJECT";
+    public static readonly USER_DATA_INI_SECTION: string = "DATA";
+
     public projectIndex: int = -1;
     public rootDirectory: string = "";
-    public iniSectionName: string = "";
+    public savePath: string = "";
     public titleGxtKey: string;
     public storylines: Map<int, StorylineInfo>;
 
@@ -84,7 +87,6 @@ export class Core {
     private static _StorylneProgressCheckers: StorylneProgressChecker[] = [];
 
     private static readonly SKIP_SCRIPTED_SCENE_ERROR = new Error();
-    private static readonly SAVE_PATH: string = __dirname + "\\Save";
 
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
@@ -167,8 +169,8 @@ export class Core {
     public static RegisterProject<TBaseProject extends BaseProject>(directoryName: string, baseProjectType: new () => TBaseProject): void {
         const projectInfo = new ProjectInfo(baseProjectType.name);
         projectInfo.projectIndex = this._ProjectInfos.size;
-        projectInfo.iniSectionName = `PROJECT_${directoryName}`;
         projectInfo.rootDirectory = `${__dirname}\\${directoryName}`;
+        projectInfo.savePath = `${projectInfo.rootDirectory}\\PROJECT.save`;
         this._ProjectInfos.set(this._ProjectInfos.size, projectInfo);
         this._ActiveProjectIndex = projectInfo.projectIndex;
         new baseProjectType();
@@ -205,7 +207,9 @@ export class Core {
         //@ts-ignore
         const storylines = projectInfo.storylines;
         //@ts-ignore
-        IniFile.DeleteSection(this.SAVE_PATH, projectInfo.iniSectionName) || Logger.Print(`Failed to reset project!`);
+        if (Fs.DoesFileExist(projectInfo.savePath))
+            //@ts-ignore
+            Fs.DeleteFile(projectInfo.savePath) || Logger.Print(`Failed to reset project!`);
         for (const [_, storyline] of storylines)
             storyline.progress = 0;
     }
@@ -227,13 +231,13 @@ export class Core {
 
     public static WriteIntValueToSaveFile(projectIndex: int, key: string, value: int): void {
         const projectInfo = this.GetProjectInfoAt(projectIndex);
-        if (!IniFile.WriteInt(value, this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`))
+        if (!IniFile.WriteInt(value, projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key))
             Logger.Print(`Failed to write int value to save file!`);
     }
 
     public static ReadIntValueFromSaveFile(projectIndex: int, key: string, defaultValue: int = 0): int {
         const projectInfo = this.GetProjectInfoAt(projectIndex);
-        const value = IniFile.ReadInt(this.SAVE_PATH, projectInfo.iniSectionName, `INT_VALUE_${key}`);
+        const value = IniFile.ReadInt(projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key);
         return value === undefined ? defaultValue : value;
     }
 
@@ -624,7 +628,7 @@ export class Core {
 
     private static _loadProgress(maxProgress: int): int {
         //@ts-ignore
-        let progress = IniFile.ReadInt(this.SAVE_PATH, this._ProjectInfos.get(this._ActiveProjectIndex).iniSectionName, this._getMissionsPassedIniKey(this._ActiveStorylineIndex));
+        let progress = IniFile.ReadInt(this._ProjectInfos.get(this._ActiveProjectIndex).savePath, ProjectInfo.MAIN_INI_SECTION, this._getMissionsPassedIniKey(this._ActiveStorylineIndex));
         if (progress === undefined || 0 > progress)
             progress = 0;
         const numMissions = maxProgress;
@@ -635,8 +639,8 @@ export class Core {
 
     private static _saveProgress(): void {
         const nextProgress: int = this.ActiveMissionInfo.missionIndex + 1;
-        const projectIniSectionName = this.GetProjectInfoAt(this.ActiveMissionInfo.projectIndex).iniSectionName;
-        IniFile.WriteInt(nextProgress, this.SAVE_PATH, projectIniSectionName, this._getMissionsPassedIniKey(this.ActiveMissionInfo.storylineIndex));
+        //@ts-ignore
+        IniFile.WriteInt(nextProgress, this._ProjectInfos.get(this.ActiveMissionInfo.projectIndex).savePath, ProjectInfo.MAIN_INI_SECTION, this._getMissionsPassedIniKey(this.ActiveMissionInfo.storylineIndex));
         //@ts-ignore
         this._ProjectInfos.get(this.ActiveMissionInfo.projectIndex).storylines.get(this.ActiveMissionInfo.storylineIndex).progress = nextProgress;
     }

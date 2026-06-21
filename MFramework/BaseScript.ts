@@ -17,6 +17,12 @@ export abstract class BaseScript {
 
 
 
+    public constructor() {
+        this._timer = new Timer();
+        this._dialogue = new Dialogue();
+        this._voiceAudio = new AudioPlayer(true);
+    }
+
     /** Gets the player. */
     public get player(): Player {
         return Core.Player;
@@ -56,17 +62,29 @@ export abstract class BaseScript {
         return Core.GetStorylineInfoAt(Core.ActiveMissionInfo.projectIndex, storylineIndex).progress;
     }
 
-
+    /**
+     * Writes an integer value to the save file for for the current project.
+     * @param key - The key to write the value under.
+     * @param value - The integer value to write.
+     */
+    public writeIntValueToSaveFile(key: string, value: int): void {
+        Core.WriteIntValueToSaveFile(Core.ActiveMissionInfo.projectIndex, key, value);
+    }
 
     /**
-     * Handles the script initialization event, called before the script starts.
-     * @remarks `Used for internal framework operations. Do not call directly!`
+     * Reads an integer value from the save file for the current project.
+     * @param key - The key to read the value from.
+     * @param defaultValue - The default value to return if the key is not found (default: 0).
+     * @returns The integer value from the save file, or the default value if not found.
      */
-    public onInitEvent(): void {
-        this._timer = new Timer();
-        this._dialogue = new Dialogue();
-        this._voiceAudio = new AudioPlayer(true);
+    public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
+        return Core.ReadIntValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
     }
+
+
+
+    /** Handles the script initialization event, called before the script starts. */
+    public onInitEvent(): void { }
 
     /** Handles the script start event, called when the script begins. */
     public onStartEvent(): void { }

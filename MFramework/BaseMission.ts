@@ -125,8 +125,8 @@ export abstract class BaseMission extends BaseScript {
 
 
 
-    public onInitEvent(): void {
-        super.onInitEvent();
+    public constructor() {
+        super();
         this._backgroundAudio = new AudioPlayer();
         this._successBigMessage = new GxtTime("M_PASSD", 5000);
         this._failureSmallMessage = new GxtTime();
@@ -148,13 +148,7 @@ export abstract class BaseMission extends BaseScript {
         this.stage = 0;
     }
 
-    /**
-     * Handles the mission availability check event before launch.
-     * @returns True if the mission can start, false otherwise.
-    
-    public onCheckStartConditions(): boolean {
-        return true;
-    } */
+
 
     /** Handles the mission update event, called each frame during the mission. */
     public onUpdateEvent(): void { }
@@ -231,25 +225,6 @@ export abstract class BaseMission extends BaseScript {
         for (let i = 0; i < 47; ++i)
             this._savedPlayerWeaponsAmmo.push(this.playerChar.hasGotWeapon(i) ? this.playerChar.getAmmoInWeapon(i) : 0);
         this.playerChar.removeAllWeapons();
-    }
-
-    /**
-     * Writes an integer value to the save file for for the current project.
-     * @param key - The key to write the value under.
-     * @param value - The integer value to write.
-     */
-    public writeIntValueToSaveFile(key: string, value: int): void {
-        Core.WriteIntValueToSaveFile(Core.ActiveMissionInfo.projectIndex, key, value);
-    }
-
-    /**
-     * Reads an integer value from the save file for the current project.
-     * @param key - The key to read the value from.
-     * @param defaultValue - The default value to return if the key is not found (default: 0).
-     * @returns The integer value from the save file, or the default value if not found.
-     */
-    public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
-        return Core.ReadIntValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
     }
 
     /**

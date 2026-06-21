@@ -288,8 +288,8 @@ abstract class BaseRaceMission extends BaseMission {
 
 
 
-    public onInitEvent(): void {
-        super.onInitEvent();
+    public constructor() {
+        super();
         MissionTemplate = new StreetRacerMissionTemplate();
         Text.LoadMissionText("RACETOR");
         this._disableSetup = true;
@@ -468,6 +468,8 @@ abstract class BaseRaceMission extends BaseMission {
         };
 
     }
+
+
 
     public onEndEvent(): void {
         MissionTemplate.unload();

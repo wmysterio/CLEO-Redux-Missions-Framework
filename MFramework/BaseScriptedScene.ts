@@ -90,9 +90,8 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
 
 
-    public onInitEvent(): void {
-        super.onInitEvent();
-        //this.voiceAudio.unload(); // fix?
+    public constructor() {
+        super();
         this._sequenceActions = [];
         this._chars = [];
         this._cars = [];
@@ -101,6 +100,8 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
         this._hDecisionMakerChar = +this._decisionMakerChar;
         this._preventFadeToTransparentAtEnd = false;
     }
+
+
 
     public onEndEvent(): void {
         super.onEndEvent();
