@@ -25,6 +25,10 @@ Make changes to the file if the settings differ. This will help avoid issues wit
 ## Adding New Missions
 
 The modification in its basic configuration includes only the core for launching missions and a test project. To install new missions, download a project from other developers and add it to the `MFramework` folder. Each project has its own folder, so this should not cause issues. The modification will automatically load all necessary files.
+
+### Projects
+- [Examples](https://github.com/wmysterio/CLEO-Redux-Missions-Framework-Examples)
+
 > [!WARNING]
 > Before installing or removing projects, fully exit the game!
 
