@@ -12,7 +12,7 @@ You can choose mission difficulty by pressing `1`, `2`, or `3`. In the menu, dif
 The modification requires the classic PC version of GTA: San Andreas (version 1.0 US). Other game versions may not work correctly or may not be supported. Ensure that the latest versions of the libraries [CLEO 5](https://github.com/cleolibrary/CLEO5/releases) and [CLEO Redux](https://github.com/cleolibrary/CLEO-Redux/releases) are installed (the modification is tested on versions marked as Latest). Then, extract the archive to the `CLEO` folder in the game directory, so the path to the modification is:
 
 ```
-<game>\cleo\MFramework[fs][mem]\
+<game>\cleo\MFramework\
 ```
 
 By default, CLEO Redux imposes access restrictions. Ensure that the parameters `AllowJs`, `AllowFxt`, `mem`, and `fs` are set to `1`. To do this, open the file with a text editor:
@@ -24,7 +24,7 @@ Make changes to the file if the settings differ. This will help avoid issues wit
 
 ## Adding New Missions
 
-The modification in its basic configuration includes only the core for launching missions and a test project. To install new missions, download a project from other developers and add it to the `MFramework[fs][mem]` folder. Each project has its own folder, so this should not cause issues. The modification will automatically load all necessary files.
+The modification in its basic configuration includes only the core for launching missions and a test project. To install new missions, download a project from other developers and add it to the `MFramework` folder. Each project has its own folder, so this should not cause issues. The modification will automatically load all necessary files.
 > [!WARNING]
 > Before installing or removing projects, fully exit the game!
 
