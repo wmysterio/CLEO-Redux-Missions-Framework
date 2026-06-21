@@ -438,7 +438,7 @@ export abstract class BaseScript {
      * @param trainType - The type of train (0 to 15).
      */
     public loadTrainModels(trainType: int) {
-        const models = this._getTrainModels(trainType);
+        const models = Core.GetTrainModels(trainType);
         this.loadModels(...models);
     }
 
@@ -447,7 +447,7 @@ export abstract class BaseScript {
      * @param trainType - The type of train (0 to 15).
      */
     public unloadTrainModels(trainType: int) {
-        const models = this._getTrainModels(trainType);
+        const models = Core.GetTrainModels(trainType);
         this.unloadModels(...models);
     }
 
@@ -544,20 +544,6 @@ export abstract class BaseScript {
      */
     public clearBit(number: int, bitIndex: int): int {
         return number & ~(1 << bitIndex);
-    }
-
-
-
-    private _getTrainModels(trainType: int): int[] {
-        if (0 > trainType || trainType > 15)
-            Logger.Exit(`Incorrect train type '${trainType}'!`);
-        if (trainType === 15)
-            return [538];
-        if ([8, 9, 14].includes(trainType))
-            return [449];
-        if ([1, 2, 4, 5, 7, 11].includes(trainType))
-            return [538, 570];
-        return [537, 569];
     }
 
 }

@@ -394,6 +394,18 @@ export class Core {
         return result;
     }
 
+    public static GetTrainModels(trainType: int): int[] {
+        if (0 > trainType || trainType > 15)
+            throw new Error(`Incorrect train type '${trainType}'!`);
+        if (trainType === 15)
+            return [538];
+        if ([8, 9, 14].includes(trainType))
+            return [449];
+        if ([1, 2, 4, 5, 7, 11].includes(trainType))
+            return [538, 570];
+        return [537, 569];
+    }
+
 
 
     private static _runMissionStartEvent(mission: BaseMission): void {
