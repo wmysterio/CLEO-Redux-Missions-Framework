@@ -273,6 +273,31 @@ export abstract class BaseScript {
     }
 
     /**
+     * Pulls the player out of their car and places at the location.
+     * @param x - The x-coordinate in the game world.
+     * @param y - The y-coordinate in the game world.
+     * @param z - The z-coordinate in the game world.
+     * @param heading - The player's heading angle in degrees.
+     * @returns The player character after setting.
+     */
+    public warpPlayerFromCarToCoord(x: float, y: float, z: float, heading: float): Char {
+        return this.warpCharFromCarToCoord(Core.PlayerChar, x, y, z, heading);
+    }
+
+    /**
+     * Pulls the character out of their car and places at the location.
+     * @param char - The character to warp (must exist).
+     * @param x - The x-coordinate in the game world.
+     * @param y - The y-coordinate in the game world.
+     * @param z - The z-coordinate in the game world.
+     * @param heading - The character's heading angle in degrees.
+     * @returns The character after setting.
+     */
+    public warpCharFromCarToCoord(char: Char, x: float, y: float, z: float, heading: float): Char {
+        return char.warpFromCarToCoord(x, y, z).setHeading(heading);
+    }
+
+    /**
      * Clears the area, removing all vehicles and pedestrians that are not marked as needed by a mission
      * @param x - The x-coordinate in the game world.
      * @param y - The y-coordinate in the game world.

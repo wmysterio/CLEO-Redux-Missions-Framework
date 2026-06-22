@@ -48,7 +48,7 @@ export class AudioPlayer {
         const rootDir = `${Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex).rootDirectory}${relativeProjectDirectory}`;
         const end = trackCount + skip;
         for (let i = skip; i < end; ++i) {
-            let nextFileName = `${rootDir}${i}.mp3`;
+            let nextFileName = `${rootDir}\\${i}.mp3`;
             if (Fs.DoesFileExist(nextFileName)) {
                 const audioStream = AudioStream.Load(nextFileName);
                 if (audioStream !== undefined && this._preserveAudioStreamType)

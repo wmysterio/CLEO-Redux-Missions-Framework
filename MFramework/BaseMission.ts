@@ -25,6 +25,7 @@ export abstract class BaseMission extends BaseScript {
 
     public enableProgressSaving: boolean;
     public enableTitleMessage: boolean;
+    /** Current mission stage. */
     public stage: int;
 
     /** Gets the player group in the game. */
@@ -105,6 +106,10 @@ export abstract class BaseMission extends BaseScript {
         return this._isSuccessSoundEnabled;
     }
 
+    /** Gets the number of stages in the current mission. */
+    public get stageCount(): int {
+        return Core.MissionStages.length;
+    }
 
 
     public constructor() {
@@ -153,6 +158,23 @@ export abstract class BaseMission extends BaseScript {
     }
 
 
+
+    /**
+     * Adds a new mission stage.
+     * @param stageAction - The action executed when the stage is active.
+     */
+    public addStage(stageAction: () => boolean): void {
+        Core.MissionStages.push(stageAction);
+    }
+
+    /**
+     * Clears all mission stages.
+     * @param defaultStage - The {@link stage} index to set after clearing (default: 0).
+     */
+    public clearStages(defaultStage: int = 0): void {
+        Core.ClearMissionStages();
+        this.stage = defaultStage;
+    }
 
     /**
      * Assigns a different mission to the lifecycle, ignoring the current mission.

@@ -91,6 +91,7 @@ export class Core {
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
     public static readonly MISSION_SUCCESS_ERROR = new Error();
+    public static MissionStages: Function[] = [];
 
     //@ts-ignore
     public static readonly ActiveMissionInfo: MissionInfo = new MissionInfo("DUMMY", undefined);
@@ -265,13 +266,6 @@ export class Core {
         return value === undefined ? defaultValue : value;
     }
 
-
-
-
-
-
-
-
     public static InitializePlayer(): void {
         this.Player = new Player(0);
         while (!this.Player.isPlaying())
@@ -328,6 +322,7 @@ export class Core {
             this.ClearText();
             Logger.Print(error.message, true);
         }
+        this.ClearMissionStages();
         this._CanSetSubMission = false;
         //@ts-ignore
         this._SubMission = undefined;
@@ -437,6 +432,10 @@ export class Core {
         return [537, 569];
     }
 
+    public static ClearMissionStages(): void {
+        this.MissionStages = [];
+    }
+
 
 
     private static _runMissionStartEvent(mission: BaseMission): void {
@@ -470,6 +469,9 @@ export class Core {
         try {
             if (ONMISSION) {
                 mission.onUpdateEvent();
+                if (this.MissionStages.length > mission.stage && mission.stage > -1)
+                    if (this.MissionStages[mission.stage].call(mission))
+                        mission.stage = mission.stage + 1;
                 return;
             }
             throw this.MISSION_FAILURE_ERROR;
@@ -695,7 +697,6 @@ export class Core {
             Logger.Exit(`Invalid framework directory: '${__dirname}'!`, true);
         this.GameRootDirectory = split.slice(cleoIndex).join('\\').replace(/^\\/g, '');
     }
-
 
 
     private constructor() { }
