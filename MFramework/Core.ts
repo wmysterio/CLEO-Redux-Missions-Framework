@@ -241,6 +241,37 @@ export class Core {
         return value === undefined ? defaultValue : value;
     }
 
+    public static WriteFloatValueToSaveFile(projectIndex: int, key: string, value: float): void {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        if (!IniFile.WriteFloat(value, projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key))
+            Logger.Print(`Failed to write float value to save file!`);
+    }
+
+    public static ReadFloatValueFromSaveFile(projectIndex: int, key: string, defaultValue: float = 0.0): float {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        const value = IniFile.ReadFloat(projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key);
+        return value === undefined ? defaultValue : value;
+    }
+
+    public static WriteStringValueToSaveFile(projectIndex: int, key: string, value: string): void {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        if (!IniFile.WriteString(value, projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key))
+            Logger.Print(`Failed to write float value to save file!`);
+    }
+
+    public static ReadStringValueFromSaveFile(projectIndex: int, key: string, defaultValue: string = ""): string {
+        const projectInfo = this.GetProjectInfoAt(projectIndex);
+        const value = IniFile.ReadString(projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION, key);
+        return value === undefined ? defaultValue : value;
+    }
+
+
+
+
+
+
+
+
     public static InitializePlayer(): void {
         this.Player = new Player(0);
         while (!this.Player.isPlaying())

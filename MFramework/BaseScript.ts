@@ -2,7 +2,6 @@ import { FADE_TRANSITION_DURATION } from "./App";
 import { AudioPlayer } from "./AudioPlayer";
 import { Core } from "./Core";
 import { Dialogue } from "./Dialogue";
-import { Logger } from "./Logger";
 import { NativeCamera, NativePed, NativeVehicle } from "./Native";
 import { Timer } from "./Timer";
 
@@ -99,6 +98,44 @@ export abstract class BaseScript {
      */
     public readIntValueFromSaveFile(key: string, defaultValue: int = 0): int {
         return Core.ReadIntValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
+    }
+
+    /**
+     * Writes an float value to the save file for for the current project.
+     * @param key - The key to write the value under.
+     * @param value - The float value to write.
+     */
+    public writeFloatValueToSaveFile(key: string, value: float): void {
+        Core.WriteFloatValueToSaveFile(Core.ActiveMissionInfo.projectIndex, key, value);
+    }
+
+    /**
+     * Reads an float value from the save file for the current project.
+     * @param key - The key to read the value from.
+     * @param defaultValue - The default value to return if the key is not found (default: 0.0).
+     * @returns The float value from the save file, or the default value if not found.
+     */
+    public readFloatValueFromSaveFile(key: string, defaultValue: float = 0.0): float {
+        return Core.ReadFloatValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
+    }
+
+    /**
+     * Writes an string value to the save file for for the current project.
+     * @param key - The key to write the value under.
+     * @param value - The string value to write.
+     */
+    public writeStringValueToSaveFile(key: string, value: string): void {
+        Core.WriteStringValueToSaveFile(Core.ActiveMissionInfo.projectIndex, key, value);
+    }
+
+    /**
+     * Reads an string value from the save file for the current project.
+     * @param key - The key to read the value from.
+     * @param defaultValue - The default value to return if the key is not found (default: "").
+     * @returns The string value from the save file, or the default value if not found.
+     */
+    public readStringValueFromSaveFile(key: string, defaultValue: string = ""): string {
+        return Core.ReadStringValueFromSaveFile(Core.ActiveMissionInfo.projectIndex, key, defaultValue);
     }
 
     /**

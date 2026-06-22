@@ -4,6 +4,11 @@ import { NativeTxdStore } from "./Native";
 
 export class Experimental {
 
+    /**
+     * Loads the texture dictionary from project directory for use in drawing sprites (038D) on the screen.
+     * @param name - The file name
+     * @param spriteNamesToLoad - Texture names (max: 128 names)
+     */
     public static LoadTxdDictionary(name: string, ...spriteNamesToLoad: string[]): void {
         const path = `${Core.GetProjectInfoAt(Core.ActiveMissionInfo.projectIndex).rootDirectory}\\${name}.txd`
         const pathLength = path.length;
