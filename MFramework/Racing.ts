@@ -282,8 +282,12 @@ abstract class BaseRaceMission extends BaseMission {
         MissionTemplate.positionGxt = gxtKey;
     }
 
+    /**
+     * Sub-missions are not supported this feature.
+     * @throws Error
+     */
     public setSubMission<TBaseMission extends BaseMission>(baseMissionType: new () => TBaseMission): void {
-        throw new Error(`The '${this.constructor.name}' class should not use sub-missions!`);
+        throw new Error(`Sub-missions are not supported by the '${this.constructor.name}' class.`);
     }
 
 
@@ -367,9 +371,8 @@ abstract class BaseRaceMission extends BaseMission {
                     break;
                 }
             }
-            Audio.SetRadioChannel(12);
-            Audio.SetRadioChannel(-1);
             this.resetCamera();
+            Audio.SetRadioChannel(12);
             wait(1000);
             wait(this.fadeToTransparent());
             Text.PrintBig("RACES_4", 1100, 4); // 3
@@ -822,7 +825,7 @@ export abstract class BaseLapKnockoutRace extends BaseRaceMission {
         this._onBegin = MissionTemplate.begin;
 
         this.onRacerSetupEvent = () => {
-            this._safeZCoordForCars = -1000.0;
+            this._safeZCoordForCars = Core.SAVE_POSITION_Z;
             this._generateRandomStreetRacersNames();
             this._onRacerSetupEvent();
         };
@@ -1225,7 +1228,7 @@ export abstract class BaseWantedChallenge extends BaseRaceMission {
             this.__disableSetup = true;
             this.savePlayerWeapons();
             this.loadWeaponModelsNow(29);
-            this.playerChar.giveWeapon(29, 9999).setCurrentWeapon(29);
+            this.giveCharWeapon(this.playerChar, 29, 9999);
             this.unloadWeaponModels(29);
             MissionTemplate.isChallenge = true;
             MissionTemplate.isWantedChallenge = true;

@@ -91,11 +91,15 @@ export class Core {
     public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
     public static readonly MISSION_SUCCESS_ERROR = new Error();
-    public static MissionStages: Function[] = [];
+    public static readonly PED_TYPE_FRIEND: int = 29;
+    public static readonly PED_TYPE_ENEMY: int = 30;
+    public static readonly PED_TYPE_NEUTRAL: int = 31;
+    public static readonly SAVE_POSITION_Z: float = 10000.0;
 
     //@ts-ignore
     public static readonly ActiveMissionInfo: MissionInfo = new MissionInfo("DUMMY", undefined);
 
+    public static MissionStages: Function[] = [];
     public static SubMission: BaseMission;
     public static GameRootDirectory: string;
     public static Player: Player;
@@ -322,7 +326,7 @@ export class Core {
             this.ClearText();
             Logger.Print(error.message, true);
         }
-        this.ClearMissionStages();
+        this.MissionStages = [];
         this._CanSetSubMission = false;
         //@ts-ignore
         this._SubMission = undefined;
@@ -432,10 +436,14 @@ export class Core {
         return [537, 569];
     }
 
-    public static ClearMissionStages(): void {
-        this.MissionStages = [];
+    public static FindCharsByPedType(chars: Char[], type: int): Char[] {
+        const resullt: Char[] = [];
+        chars.forEach(char => {
+            if (char.getPedType() === type)
+                resullt.push(char);
+        });
+        return resullt;
     }
-
 
 
     private static _runMissionStartEvent(mission: BaseMission): void {
@@ -450,6 +458,18 @@ export class Core {
         Game.SwitchRandomTrains(false);
         Game.SwitchAmbientPlanes(false);
         Game.SwitchEmergencyServices(false);
+        Game.SetRelationship(0, this.PED_TYPE_NEUTRAL, 0);
+        Game.SetRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_NEUTRAL);
+        Game.SetRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_FRIEND);
+        Game.SetRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_ENEMY);
+        Game.SetRelationship(0, this.PED_TYPE_FRIEND, 0);
+        Game.SetRelationship(0, this.PED_TYPE_FRIEND, this.PED_TYPE_NEUTRAL);
+        Game.SetRelationship(0, this.PED_TYPE_FRIEND, this.PED_TYPE_FRIEND);
+        Game.SetRelationship(4, this.PED_TYPE_FRIEND, this.PED_TYPE_ENEMY);
+        Game.SetRelationship(4, this.PED_TYPE_ENEMY, 0);
+        Game.SetRelationship(0, this.PED_TYPE_ENEMY, this.PED_TYPE_NEUTRAL);
+        Game.SetRelationship(4, this.PED_TYPE_ENEMY, this.PED_TYPE_FRIEND);
+        Game.SetRelationship(0, this.PED_TYPE_ENEMY, this.PED_TYPE_ENEMY);
         this.Player.setGroupRecruitment(false);
         mission.playerGroup.remove();
         mission.backgroundAudio.play(0, true);
@@ -557,6 +577,18 @@ export class Core {
         Game.SwitchRandomTrains(true);
         Game.SwitchAmbientPlanes(true);
         Game.SwitchEmergencyServices(true);
+        Game.ClearRelationship(0, this.PED_TYPE_NEUTRAL, 0);
+        Game.ClearRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_NEUTRAL);
+        Game.ClearRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_FRIEND);
+        Game.ClearRelationship(0, this.PED_TYPE_NEUTRAL, this.PED_TYPE_ENEMY);
+        Game.ClearRelationship(0, this.PED_TYPE_FRIEND, 0);
+        Game.ClearRelationship(0, this.PED_TYPE_FRIEND, this.PED_TYPE_NEUTRAL);
+        Game.ClearRelationship(0, this.PED_TYPE_FRIEND, this.PED_TYPE_FRIEND);
+        Game.ClearRelationship(4, this.PED_TYPE_FRIEND, this.PED_TYPE_ENEMY);
+        Game.ClearRelationship(4, this.PED_TYPE_ENEMY, 0);
+        Game.ClearRelationship(0, this.PED_TYPE_ENEMY, this.PED_TYPE_NEUTRAL);
+        Game.ClearRelationship(4, this.PED_TYPE_ENEMY, this.PED_TYPE_FRIEND);
+        Game.ClearRelationship(0, this.PED_TYPE_ENEMY, this.PED_TYPE_ENEMY);
         this._runScriptedSceneAfterEndEvent();
         mission.resetHud();
         mission.resetCamera();

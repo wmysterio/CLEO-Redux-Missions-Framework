@@ -1,4 +1,5 @@
 import { BaseScript } from "./BaseScript";
+import { Core } from "./Core";
 
 class ScriptedSceneAction {
 
@@ -167,7 +168,7 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
      * @returns The created character.
      */
     public addChar(charModelId: int, x: float, y: float, z: float, heading: float = 0.0): Char {
-        return this._prepareChar(Char.Create(31, charModelId, x, y, z).setHeading(heading));
+        return this._prepareChar(Char.Create(Core.PED_TYPE_NEUTRAL, charModelId, x, y, z).setHeading(heading));
     }
 
     /**
@@ -179,8 +180,8 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
      */
     public addCharInsideCar(charModelId: int, car: Car, seat: int = -1): Char {
         if (seat === -1)
-            return this._prepareChar(Char.CreateInsideCar(car, 31, charModelId));
-        return this._prepareChar(Char.CreateAsPassenger(car, 31, charModelId, seat));
+            return this._prepareChar(Char.CreateInsideCar(car, Core.PED_TYPE_NEUTRAL, charModelId));
+        return this._prepareChar(Char.CreateAsPassenger(car, Core.PED_TYPE_NEUTRAL, charModelId, seat));
     }
 
     /**
@@ -227,7 +228,7 @@ export abstract class BaseScriptedScene extends BaseScript implements ISequenceC
 
     private _prepareChar(char: Char): Char {
         this._chars.push(char);
-        return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, 31)
+        return char.shutUp(true).setHealth(10000).addArmor(100).setRelationship(0, 0).setRelationship(0, Core.PED_TYPE_NEUTRAL)
             .setProofs(true, true, true, true, true).setMoney(0).setDropsWeaponsWhenDead(false)
             .setDrownsInWater(false).setDecisionMaker(this._hDecisionMakerChar);
     }

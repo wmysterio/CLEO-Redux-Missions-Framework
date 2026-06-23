@@ -255,6 +255,19 @@ export abstract class BaseScript {
     }
 
     /**
+     * Equips a character with a weapon.
+     * @param char - The character to equip (must exist).
+     * @param weaponType - The weapon type (must be loaded).
+     * @param ammo - The amount of ammunition (default: 1).
+     * @param accuracy - The weapon accuracy value (default: -2, ignore).
+     * @returns The same character.
+     */
+    public giveCharWeapon(char: Char, weaponType: int, ammo: int = 1, accuracy: int = -2): Char {
+        char.giveWeapon(weaponType, ammo).setCurrentWeapon(weaponType);
+        return accuracy === -2 ? char : char.setAccuracy(accuracy);
+    }
+
+    /**
      * Places the player at the specified coordinates with the given heading.
      * @param x - The x-coordinate in the game world.
      * @param y - The y-coordinate in the game world.

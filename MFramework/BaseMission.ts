@@ -172,7 +172,7 @@ export abstract class BaseMission extends BaseScript {
      * @param defaultStage - The {@link stage} index to set after clearing (default: 0).
      */
     public clearStages(defaultStage: int = 0): void {
-        Core.ClearMissionStages();
+        Core.MissionStages = [];
         this.stage = defaultStage;
     }
 
@@ -221,14 +221,18 @@ export abstract class BaseMission extends BaseScript {
         throw Core.MISSION_FAILURE_ERROR;
     }
 
-    /** Saves the player's weapons and their ammo, then removes all weapons from the player. */
-    public savePlayerWeapons(): void {
+    /**
+     * Saves the player's weapons and ammunition once. The saved equipment is restored when the mission ends.
+     * @param removePlayerWeapons - If true, removes all weapons from the player (default: true).
+     */
+    public savePlayerWeapons(removePlayerWeapons: boolean = true): void {
         if (this._hasSavedPlayerWeapons)
             return;
         this._hasSavedPlayerWeapons = true;
         for (let i = 0; i < 47; ++i)
             this._savedPlayerWeaponsAmmo.push(this.playerChar.hasGotWeapon(i) ? this.playerChar.getAmmoInWeapon(i) : 0);
-        this.playerChar.removeAllWeapons();
+        if (removePlayerWeapons)
+            this.playerChar.removeAllWeapons();
     }
 
     /**
@@ -316,7 +320,7 @@ export abstract class BaseMission extends BaseScript {
             if (ammo > weaponAmmo) {
                 ammo -= weaponAmmo;
             } else {
-                z = -1000.0;
+                z = Core.SAVE_POSITION_Z;
             }
         }
         const pickup = Pickup.CreateWithAmmo(Weapon.GetModel(weaponType), 3, ammo, x, y, z);
@@ -367,7 +371,7 @@ export abstract class BaseMission extends BaseScript {
      * @returns The created character.
      */
     public addFriendChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
-        return this._prepareChar(Char.Create(29, modelId, x, y, z).setHeading(heading), 29, 30);
+        return this._prepareChar(Char.Create(Core.PED_TYPE_FRIEND, modelId, x, y, z).setHeading(heading), Core.PED_TYPE_FRIEND, Core.PED_TYPE_ENEMY);
     }
 
     /**
@@ -380,7 +384,7 @@ export abstract class BaseMission extends BaseScript {
      * @returns The created character.
      */
     public addEnemyChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
-        return this._prepareChar(Char.Create(30, modelId, x, y, z).setHeading(heading), 30, 29);
+        return this._prepareChar(Char.Create(Core.PED_TYPE_ENEMY, modelId, x, y, z).setHeading(heading), Core.PED_TYPE_ENEMY, Core.PED_TYPE_FRIEND);
     }
 
     /**
@@ -392,8 +396,8 @@ export abstract class BaseMission extends BaseScript {
      */
     public addFriendCharInsideCar(modelId: int, car: Car, seat: int = -1): Char {
         if (seat === -1)
-            return this._prepareChar(Char.CreateInsideCar(car, 29, modelId), 29, 30)
-        return this._prepareChar(Char.CreateAsPassenger(car, 29, modelId, seat), 29, 30);
+            return this._prepareChar(Char.CreateInsideCar(car, Core.PED_TYPE_FRIEND, modelId), Core.PED_TYPE_FRIEND, Core.PED_TYPE_ENEMY)
+        return this._prepareChar(Char.CreateAsPassenger(car, Core.PED_TYPE_FRIEND, modelId, seat), Core.PED_TYPE_FRIEND, Core.PED_TYPE_ENEMY);
     }
 
     /**
@@ -405,8 +409,8 @@ export abstract class BaseMission extends BaseScript {
      */
     public addEnemyCharInsideCar(modelId: int, car: Car, seat: int = -1): Char {
         if (seat === -1)
-            return this._prepareChar(Char.CreateInsideCar(car, 30, modelId), 30, 29)
-        return this._prepareChar(Char.CreateAsPassenger(car, 30, modelId, seat), 30, 29);
+            return this._prepareChar(Char.CreateInsideCar(car, Core.PED_TYPE_ENEMY, modelId), Core.PED_TYPE_ENEMY, Core.PED_TYPE_FRIEND)
+        return this._prepareChar(Char.CreateAsPassenger(car, Core.PED_TYPE_ENEMY, modelId, seat), Core.PED_TYPE_ENEMY, Core.PED_TYPE_FRIEND);
     }
 
     /**
@@ -419,7 +423,7 @@ export abstract class BaseMission extends BaseScript {
      * @returns The created character.
      */
     public addNeutralChar(modelId: int, x: float, y: float, z: float, heading: float): Char {
-        return this._prepareChar(Char.Create(31, modelId, x, y, z).setHeading(heading), 31, 0);
+        return this._prepareChar(Char.Create(Core.PED_TYPE_NEUTRAL, modelId, x, y, z).setHeading(heading), Core.PED_TYPE_NEUTRAL, 0);
     }
 
     /**
@@ -431,8 +435,8 @@ export abstract class BaseMission extends BaseScript {
      */
     public addNeutralCharInsideCar(modelId: int, car: Car, seat: int = -1): Char {
         if (seat === -1)
-            return this._prepareChar(Char.CreateInsideCar(car, 31, modelId), 31, 0)
-        return this._prepareChar(Char.CreateAsPassenger(car, 31, modelId, seat), 31, 0);
+            return this._prepareChar(Char.CreateInsideCar(car, Core.PED_TYPE_NEUTRAL, modelId), Core.PED_TYPE_NEUTRAL, 0)
+        return this._prepareChar(Char.CreateAsPassenger(car, Core.PED_TYPE_NEUTRAL, modelId, seat), Core.PED_TYPE_NEUTRAL, 0);
     }
 
     /**
@@ -492,6 +496,21 @@ export abstract class BaseMission extends BaseScript {
         this._pickups = [];
     }
 
+    /** @returns An array of added enemy characters. */
+    public findAddedEnemyChars(): Char[] {
+        return Core.FindCharsByPedType(this._chars, Core.PED_TYPE_ENEMY);
+    }
+
+    /** @returns An array of added friendly characters. */
+    public findAddedFriendsChars(): Char[] {
+        return Core.FindCharsByPedType(this._chars, Core.PED_TYPE_FRIEND);
+    }
+
+    /** @returns Array of added neutral characters. */
+    public findAddedNeutralChars(): Char[] {
+        return Core.FindCharsByPedType(this._chars, Core.PED_TYPE_NEUTRAL);
+    }
+
 
 
     private _restorePlayerWeapons(): void {
@@ -511,10 +530,10 @@ export abstract class BaseMission extends BaseScript {
     private _prepareChar(char: Char, respectType: int, hateType: int): Char {
         this._chars.push(char);
         char.setDrownsInWater(false).setDropsWeaponsWhenDead(false).setMoney(0).setNeverLeavesGroup(true);
-        if (respectType === 31)
-            return char.setRelationship(0, 0).setRelationship(0, 29).setRelationship(0, 30).setRelationship(0, 31).setDecisionMaker(+this._decisionMakersChar[2]);
-        char.setRelationship(0, respectType).setRelationship(4, hateType).setRelationship(0, 31);
-        if (respectType === 29) {
+        if (respectType === Core.PED_TYPE_NEUTRAL)
+            return char.setRelationship(0, 0).setRelationship(0, Core.PED_TYPE_FRIEND).setRelationship(0, Core.PED_TYPE_ENEMY).setRelationship(0, Core.PED_TYPE_NEUTRAL).setDecisionMaker(+this._decisionMakersChar[2]);
+        char.setRelationship(0, respectType).setRelationship(4, hateType).setRelationship(0, Core.PED_TYPE_NEUTRAL);
+        if (respectType === Core.PED_TYPE_FRIEND) {
             return char.setNeverTargeted(true).setRelationship(0, 0).setDecisionMaker(+this._decisionMakersChar[1]);
         }
         return char.setRelationship(4, 0).setDecisionMaker(+this._decisionMakersChar[0]);
