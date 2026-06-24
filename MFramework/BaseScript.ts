@@ -255,12 +255,42 @@ export abstract class BaseScript {
     }
 
     /**
+     * Sets all proof flags for a character.
+     * @param char - The character to modify (must exist).
+     * @param state - True to enable all immunities; otherwise, false.
+     * @returns The same character instance.
+     */
+    public setCharAllProofs(char: Char, state: boolean): Char {
+        return char.setProofs(state, state, state, state, state);
+    }
+
+    /**
+     * Sets all proof flags for a vehicle.
+     * @param car - The vehicle to modify (must exist).
+     * @param state - True to enable all immunities; otherwise, false.
+     * @returns The same car instance.
+     */
+    public setCarAllProofs(car: Car, state: boolean): Car {
+        return car.setProofs(state, state, state, state, state);
+    }
+
+    /**
+     * Sets all proof flags for a script object.
+     * @param scriptObject - The script object to modify (must exist).
+     * @param state - True to enable all immunities; otherwise, false.
+     * @returns The same script object instance.
+     */
+    public setScriptObjectAllProofs(scriptObject: ScriptObject, state: boolean): ScriptObject {
+        return scriptObject.setProofs(state, state, state, state, state);
+    }
+
+    /**
      * Equips a character with a weapon.
      * @param char - The character to equip (must exist).
      * @param weaponType - The weapon type (must be loaded).
      * @param ammo - The amount of ammunition (default: 1).
      * @param accuracy - The weapon accuracy value (default: -2, ignore).
-     * @returns The same character.
+     * @returns The same character instance.
      */
     public giveCharWeapon(char: Char, weaponType: int, ammo: int = 1, accuracy: int = -2): Char {
         char.giveWeapon(weaponType, ammo).setCurrentWeapon(weaponType);
@@ -272,11 +302,11 @@ export abstract class BaseScript {
      * @param x - The x-coordinate in the game world.
      * @param y - The y-coordinate in the game world.
      * @param z - The z-coordinate in the game world.
-     * @param heading - The player's heading angle in degrees.
+     * @param heading - The player's heading angle in degrees (default: 0.0).
      * @param dontWarpGang - If true, prevents warping the player's gang to the coordinates (default: false).
-     * @returns The player character after setting.
+     * @returns The player character instance.
      */
-    public putPlayerAt(x: float, y: float, z: float, heading: float, dontWarpGang: boolean = false): Char {
+    public putPlayerAt(x: float, y: float, z: float, heading: float = 0.0, dontWarpGang: boolean = false): Char {
         if (dontWarpGang) {
             Core.PlayerChar.setCoordinatesDontWarpGang(x, y, z);
         } else {
@@ -290,10 +320,10 @@ export abstract class BaseScript {
      * @param x - The x-coordinate in the game world.
      * @param y - The y-coordinate in the game world.
      * @param z - The z-coordinate in the game world.
-     * @param heading - The player's heading angle in degrees.
-     * @returns The player character after setting.
+     * @param heading - The player's heading angle in degrees (default: 0.0).
+     * @returns The same player character instance.
      */
-    public warpPlayerFromCarToCoord(x: float, y: float, z: float, heading: float): Char {
+    public warpPlayerFromCarToCoord(x: float, y: float, z: float, heading: float = 0.0): Char {
         return this.warpCharFromCarToCoord(Core.PlayerChar, x, y, z, heading);
     }
 
@@ -303,10 +333,10 @@ export abstract class BaseScript {
      * @param x - The x-coordinate in the game world.
      * @param y - The y-coordinate in the game world.
      * @param z - The z-coordinate in the game world.
-     * @param heading - The character's heading angle in degrees.
-     * @returns The character after setting.
+     * @param heading - The character's heading angle in degrees (default: 0.0).
+     * @returns The same character instance.
      */
-    public warpCharFromCarToCoord(char: Char, x: float, y: float, z: float, heading: float): Char {
+    public warpCharFromCarToCoord(char: Char, x: float, y: float, z: float, heading: float = 0.0): Char {
         return char.warpFromCarToCoord(x, y, z).setHeading(heading);
     }
 
