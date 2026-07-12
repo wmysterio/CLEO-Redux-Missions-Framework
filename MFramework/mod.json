@@ -1,3 +1,6 @@
 {
-    "permissions": [ "fs", "mem" ]
+    "permissions": [
+        "fs",
+        "mem"
+    ]
 }

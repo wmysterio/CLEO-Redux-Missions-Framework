@@ -4,11 +4,11 @@ export class MISS000 extends BaseMission {
 
     public onStartEvent(): void {
         //this.enableProgressSaving = false;
-        //this.addStage(stage0);
+        //this.addStage(this.testStage); // 0
     }
 
     /*
-    private stage0(): boolean {
+    private testStage(): boolean {
         return false; // continue stage
         return true; //  next stage
     }

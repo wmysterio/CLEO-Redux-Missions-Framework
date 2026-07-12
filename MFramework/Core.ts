@@ -16,6 +16,8 @@ class ProjectInfo {
     public savePath: string = "";
     public titleGxtKey: string;
     public storylines: Map<int, StorylineInfo>;
+    public author: string = "";
+    public version: string = "";
 
     public constructor(titleGxtKey: string) {
         this.titleGxtKey = titleGxtKey;
@@ -77,12 +79,10 @@ class StorylneProgressChecker {
 export class Core {
 
     private static _GameDifficulty: int;
-    private static _MissionState: int = 0;
-    private static _CanSetSubMission: boolean = false;
+    private static _ActiveMissionState: int = 0;
     private static _ProjectInfos: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
-
-    private static _ActiveProjectIndex: int = -1;
-    private static _ActiveStorylineIndex: int = -1;
+    private static _ProjectIndexToRegister: int = -1;
+    private static _StorylineIndexToRegister: int = -1;
     private static _MissionToRegister: Array<new () => BaseMission> = [];
     private static _StorylneProgressCheckers: StorylneProgressChecker[] = [];
 
@@ -99,9 +99,14 @@ export class Core {
     //@ts-ignore
     public static readonly ActiveMissionInfo: MissionInfo = new MissionInfo("DUMMY", undefined);
 
-    public static MissionStages: Function[] = [];
-    public static SubMission: BaseMission;
+    public static CanSetSubMission: boolean = false;
+    public static ActiveSubMission: BaseMission;
+
+    public static ActiveMissionStageIndex: int = 0;
+    public static ActiveMissionStages: Function[] = [];
+
     public static GameRootDirectory: string;
+
     public static Player: Player;
     public static PlayerChar: Char;
     public static PlayerGroup: Group;
@@ -121,9 +126,7 @@ export class Core {
         IniFile.WriteInt(level, this.CONFIG_PATH, "Application", "GameDifficulty");
     }
 
-    public static get CanSetSubMission(): boolean {
-        return this._CanSetSubMission;
-    }
+
 
     public static GetProjectInfoAt(projectIndex: int): ProjectInfo {
         //@ts-ignore
@@ -151,14 +154,14 @@ export class Core {
         if (missionCount === 0)
             Logger.Exit(`Storyline must have at least one mission!`);
         const storylineInfo = new StorylineInfo(baseStorylineType.name);
-        storylineInfo.projectIndex = this._ActiveProjectIndex;
+        storylineInfo.projectIndex = this._ProjectIndexToRegister;
         //@ts-ignore
-        storylineInfo.storylineIndex = this._ProjectInfos.get(this._ActiveProjectIndex).storylines.size;
-        this._ActiveStorylineIndex = storylineInfo.storylineIndex;
+        storylineInfo.storylineIndex = this._ProjectInfos.get(this._ProjectIndexToRegister).storylines.size;
+        this._StorylineIndexToRegister = storylineInfo.storylineIndex;
         for (let i = 0; i < missionCount; ++i) {
             const missionInfo = new MissionInfo(this._MissionToRegister[i].name, this._MissionToRegister[i]);
-            missionInfo.projectIndex = this._ActiveProjectIndex;
-            missionInfo.storylineIndex = this._ActiveStorylineIndex;
+            missionInfo.projectIndex = this._ProjectIndexToRegister;
+            missionInfo.storylineIndex = this._StorylineIndexToRegister;
             missionInfo.missionIndex = i;
             missionInfo.missionProgressCheckStorylineIndex = this._StorylneProgressCheckers[i].storylineIndex;
             missionInfo.missionProgressCheckStorylineProgress = this._StorylneProgressCheckers[i].storylineMinProgress;
@@ -166,7 +169,7 @@ export class Core {
         }
         storylineInfo.progress = this._loadProgress(storylineInfo.missions.size);
         //@ts-ignore
-        this._ProjectInfos.get(this._ActiveProjectIndex).storylines.set(this._ActiveStorylineIndex, storylineInfo);
+        this._ProjectInfos.get(this._ProjectIndexToRegister).storylines.set(this._StorylineIndexToRegister, storylineInfo);
         this._MissionToRegister = [];
         this._StorylneProgressCheckers = [];
     }
@@ -177,10 +180,12 @@ export class Core {
         projectInfo.rootDirectory = `${__dirname}\\${directoryName}`;
         projectInfo.savePath = `${projectInfo.rootDirectory}\\PROJECT.save`;
         this._ProjectInfos.set(this._ProjectInfos.size, projectInfo);
-        this._ActiveProjectIndex = projectInfo.projectIndex;
-        new baseProjectType();
+        this._ProjectIndexToRegister = projectInfo.projectIndex;
+        const project = new baseProjectType();
+        projectInfo.author = this._cutProjectInfoAdditionalInfo(project.author);
+        projectInfo.version = this._cutProjectInfoAdditionalInfo(project.version);
         //@ts-ignore
-        if (this._ProjectInfos.get(this._ActiveProjectIndex).storylines.size === 0)
+        if (this._ProjectInfos.get(this._ProjectIndexToRegister).storylines.size === 0)
             Logger.Exit(`Project must have at least one storyline!`);
     }
 
@@ -204,7 +209,11 @@ export class Core {
     public static IsPlayerInactive(): boolean {
         if (!this.Player.isPlaying() || !Char.DoesExist(+this.PlayerChar))
             return true;
-        return Char.IsDead(+this.PlayerChar) || this.PlayerChar.hasBeenArrested();
+        return this.IsCharInactive(this.PlayerChar);
+    }
+
+    public static IsCharInactive(char: Char): boolean {
+        return !Char.DoesExist(+char) || Char.IsDead(+char) || char.hasBeenArrested();
     }
 
     public static ResetProject(projectIndex: int): void {
@@ -298,14 +307,15 @@ export class Core {
             do {
                 wait(0);
                 if (this.IsPlayerInactive())
-                    this._MissionState = 3;
-                switch (this._MissionState) {
+                    this._ActiveMissionState = 3;
+                switch (this._ActiveMissionState) {
                     case 0:
-                        this._CanSetSubMission = true;
+                        this.CanSetSubMission = true;
                         mission.onInitEvent();
-                        if (this.SubMission !== undefined)
-                            mission = this.SubMission;
-                        this._CanSetSubMission = false;
+                        if (this.ActiveSubMission !== undefined)
+                            mission = this.ActiveSubMission;
+                        this.CanSetSubMission = false;
+                        this.ClearActiveMissionStages();
                         this._runMissionStartEvent(mission);
                         break;
                     case 1:
@@ -321,17 +331,22 @@ export class Core {
                         this._runMissionEndEvent(mission);
                         break;
                 }
-            } while (this._MissionState !== 5);
+            } while (this._ActiveMissionState !== 5);
         } catch (error: any) {
             this.ClearText();
             Logger.Print(error.message, true);
         }
-        this.MissionStages = [];
-        this._CanSetSubMission = false;
+        this.ClearActiveMissionStages();
+        this.CanSetSubMission = false;
         //@ts-ignore
-        this._SubMission = undefined;
+        this._ActiveSubMission = undefined;
         ONMISSION = false;
-        this._MissionState = 0;
+        this._ActiveMissionState = 0;
+    }
+
+    public static ClearActiveMissionStages(): void {
+        this.ActiveMissionStageIndex = 0;
+        this.ActiveMissionStages = [];
     }
 
     public static RunScriptedScene(scriptedScene: BaseScriptedScene, debugMode: boolean): void {
@@ -474,34 +489,38 @@ export class Core {
         mission.playerGroup.remove();
         mission.backgroundAudio.play(0, true);
         if (mission.enableTitleMessage) {
-            if (this.SubMission === undefined) {
+            if (this.ActiveSubMission === undefined) {
                 Text.PrintBig(this.ActiveMissionInfo.titleGxtKey, 1000, 2);
             } else {
-                Text.PrintBig(this.SubMission.constructor.name, 1000, 2);
+                Text.PrintBig(this.ActiveSubMission.constructor.name, 1000, 2);
             }
         }
         mission.onStartEvent();
         mission.backgroundAudio.play(0, true);
-        this._MissionState = 1;
+        this._ActiveMissionState = 1;
     }
 
     private static _runMissionUpdateEvent(mission: BaseMission): void {
         try {
             if (ONMISSION) {
                 mission.onUpdateEvent();
-                if (this.MissionStages.length > mission.stage && mission.stage > -1)
-                    if (this.MissionStages[mission.stage].call(mission))
-                        mission.stage = mission.stage + 1;
+                const activeMissionStageIndex = this.ActiveMissionStageIndex;
+                if (this.ActiveMissionStages.length > activeMissionStageIndex && this.ActiveMissionStages[activeMissionStageIndex].call(mission)) {
+                    if (activeMissionStageIndex !== this.ActiveMissionStageIndex)
+                        return;
+                    if (this.ActiveMissionStages.length > 0)
+                        this.ActiveMissionStageIndex += 1;
+                }
                 return;
             }
             throw this.MISSION_FAILURE_ERROR;
         } catch (error) {
             if (error === this.MISSION_SUCCESS_ERROR) {
-                this._MissionState = 2;
+                this._ActiveMissionState = 2;
             } else if (error === this.MISSION_FAILURE_ERROR) {
-                this._MissionState = 3;
+                this._ActiveMissionState = 3;
             } else {
-                this._MissionState = 5;
+                this._ActiveMissionState = 5;
                 throw error;
             }
         }
@@ -543,7 +562,7 @@ export class Core {
         mission.onSuccessEvent();
         if (mission.enableProgressSaving)
             this._saveProgress();
-        this._MissionState = 4;
+        this._ActiveMissionState = 4;
     }
 
     private static _runMissionFailureEvent(mission: BaseMission): void {
@@ -557,7 +576,7 @@ export class Core {
         const smallMessage = mission.failureSmallMessage;
         if (smallMessage.duration > 0)
             Text.PrintNow(smallMessage.gxt, smallMessage.duration, 1);
-        this._MissionState = 4;
+        this._ActiveMissionState = 4;
     }
 
     private static _runMissionCleanupEvent(mission: BaseMission): void {
@@ -600,7 +619,7 @@ export class Core {
         Stat.ShowUpdateStats(true);
         Mission.Finish();
         mission.onEndEvent();
-        this._MissionState = 5;
+        this._ActiveMissionState = 5;
     }
 
     private static _playSequenceChaining(sequenceChaining: ISequenceChaining): void {
@@ -705,7 +724,7 @@ export class Core {
 
     private static _loadProgress(maxProgress: int): int {
         //@ts-ignore
-        let progress = IniFile.ReadInt(this._ProjectInfos.get(this._ActiveProjectIndex).savePath, ProjectInfo.MAIN_INI_SECTION, this._getMissionsPassedIniKey(this._ActiveStorylineIndex));
+        let progress = IniFile.ReadInt(this._ProjectInfos.get(this._ProjectIndexToRegister).savePath, ProjectInfo.MAIN_INI_SECTION, this._getMissionsPassedIniKey(this._StorylineIndexToRegister));
         if (progress === undefined || 0 > progress)
             progress = 0;
         const numMissions = maxProgress;
@@ -729,6 +748,16 @@ export class Core {
             Logger.Exit(`Invalid framework directory: '${__dirname}'!`, true);
         this.GameRootDirectory = split.slice(cleoIndex).join('\\').replace(/^\\/g, '');
     }
+
+    private static _cutProjectInfoAdditionalInfo(infoString: string): string {
+        if (infoString === undefined)
+            return "";
+        infoString = infoString.trim();
+        if (infoString.length > 30)
+            infoString = infoString.substring(0, 30);
+        return infoString;
+    }
+
 
 
     private constructor() { }

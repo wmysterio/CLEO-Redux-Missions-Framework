@@ -2,6 +2,7 @@ import { FADE_TRANSITION_DURATION } from "./App";
 import { AudioPlayer } from "./AudioPlayer";
 import { Core } from "./Core";
 import { Dialogue } from "./Dialogue";
+import { Logger } from "./Logger";
 import { NativeCamera, NativePed, NativeVehicle } from "./Native";
 import { Timer } from "./Timer";
 
@@ -605,6 +606,50 @@ export abstract class BaseScript {
      */
     public unloadAnimations(...ifpNames: string[]): void {
         ifpNames.forEach(ifpName => { Streaming.RemoveAnimation(ifpName); });
+    }
+
+    /**
+     * Requests a special character's model to be loaded into the specified slot.
+     * @param slotId - The slot ID for the special character (from 1 to 10 inclusive).
+     * @param modelName - The model name of the special character to load.
+     */
+    public loadSpecialCharacterBySlotId(slotId: int, modelName: string): void {
+        Streaming.LoadSpecialCharacter(slotId, modelName);
+        while (!Streaming.HasSpecialCharacterLoaded(slotId))
+            wait(0);
+    }
+
+    /**
+     * Requests special characters' models to be loaded and automatically assigns them to slots 1 to 10.
+     * @param modelNames - An array of model names for the special characters to load.
+     * @returns Assigned model IDs for the loaded special characters (starting from 290).
+     * @remarks The maximum number of special characters that can be loaded is 10.
+     */
+    public loadSpecialCharacter(...modelNames: string[]): int[] {
+        if (modelNames.length > 10)
+            Logger.Exit(`Too many special characters requested. Maximum is 10.`, true);
+        const models: int[] = [];
+        for (let i = 0, slotId = 1; i < modelNames.length; ++i, ++slotId) {
+            Streaming.LoadSpecialCharacter(slotId, modelNames[i]);
+            models.push(290 + i);
+            while (!Streaming.HasSpecialCharacterLoaded(slotId))
+                wait(0);
+        }
+        return models;
+    }
+
+    /**
+     * Releases the special character (023C), freeing game memory.
+     * @param slots - An array of slot IDs (from 1 to 10 inclusive) for the special characters to unload.
+     */
+    public unloadSpecialCharacterBySlotId(...slots: int[]): void {
+        slots.forEach(slotId => Streaming.UnloadSpecialCharacter(slotId));
+    }
+
+    /** Unloads all special characters from slots 1 to 10, freeing game memory. */
+    public unloadAllSpecialCharacters(): void {
+        for (let i = 1; i <= 10; ++i)
+            Streaming.UnloadSpecialCharacter(i);
     }
 
     /**

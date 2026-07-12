@@ -18,7 +18,10 @@ export class App {
     private static _selectedStorylineRect: Rect;
     private static _missionNameLabel: Label;
     private static _missionCounterLabel: Label;
+    private static _projectInfoRect: Rect;
     private static _projectNameLabel: Label;
+    private static _projectAuthorLabel: Label;
+    private static _projectVersionLabel: Label;
     private static _storylinesNames: Label[];
     private static _difficultyStars: Label[];
     private static _canvas: Canvas;
@@ -132,6 +135,9 @@ export class App {
         const projectInfo = Core.GetProjectInfoAt(projectIndex);
         this._projectNameLabel.text = projectInfo.titleGxtKey;
         this._storylineCount = projectInfo.storylines.size;
+        this._projectAuthorLabel.changeFormattedText(projectInfo.author);
+        this._projectVersionLabel.changeFormattedText(projectInfo.version);
+        this._projectInfoRect.visible = projectInfo.author.length > 0 || projectInfo.version.length > 0;
         this._selectStoryline(0, false);
         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
         TIMERA = 0;
@@ -274,6 +280,21 @@ export class App {
             alpha += alphaStep;
         }
 
+        const projectInfoHeight = Label.CalculateRowHeight(1.6, 4.0);
+        const halfProjectInfoHeight = projectInfoHeight * 0.5;
+
+        this._projectAuthorLabel = canvas.addLabel(halfProjectInfoHeight, halfProjectInfoHeight, 255, 255, 255, 255);
+        this._projectAuthorLabel.font = TextFont.Menu;
+        this._projectAuthorLabel.changeScale(0.4, 1.6, 4.0);
+        this._projectAuthorLabel.changeEdge(1, 0, 0, 0, 255);
+
+        this._projectVersionLabel = canvas.addLabel(halfProjectInfoHeight, halfProjectInfoHeight + projectInfoHeight, 255, 255, 255, 255);
+        this._projectVersionLabel.font = TextFont.Menu;
+        this._projectVersionLabel.changeScale(0.4, 1.6, 4.0);
+        this._projectVersionLabel.changeEdge(1, 0, 0, 0, 255);
+
+        this._projectInfoRect = canvas.addRect(SCREEN_CENTER_X * 0.5 + halfProjectInfoHeight, projectInfoHeight + halfProjectInfoHeight, SCREEN_CENTER_X + halfProjectInfoHeight, projectInfoHeight * 2.0, 37, 41, 46, 182);
+
         this._clearCanvasTexts();
         return canvas;
     }
@@ -291,6 +312,12 @@ export class App {
         this._storylinesNames = undefined;
         //@ts-ignore
         this._difficultyStars = undefined;
+        //@ts-ignore
+        this._projectAuthorLabel = undefined;
+        //@ts-ignore
+        this._projectVersionLabel = undefined;
+        //@ts-ignore
+        this._projectInfoRect = undefined;
         //@ts-ignore
         this._canvas = undefined;
     }

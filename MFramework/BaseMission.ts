@@ -25,8 +25,6 @@ export abstract class BaseMission extends BaseScript {
 
     public enableProgressSaving: boolean;
     public enableTitleMessage: boolean;
-    /** Current mission stage. */
-    public stage: int;
 
     /** Gets the player group in the game. */
     public get playerGroup(): Group {
@@ -108,8 +106,27 @@ export abstract class BaseMission extends BaseScript {
 
     /** Gets the number of stages in the current mission. */
     public get stageCount(): int {
-        return Core.MissionStages.length;
+        return Core.ActiveMissionStages.length;
     }
+
+    /** Gets current mission stage. */
+    public get stage(): int {
+        return Core.ActiveMissionStageIndex;
+    }
+
+    /**
+     * Sets current mission stage, clamped between 0 and the total stages of missions.
+     * @param index - The stage index.
+     */
+    public set stage(index: int) {
+        const maxStages = Core.ActiveMissionStages.length - 1;
+        if (0 > index)
+            index = 0;
+        if (index > maxStages)
+            index = maxStages;
+        Core.ActiveMissionStageIndex = index;
+    }
+
 
 
     public constructor() {
@@ -132,7 +149,6 @@ export abstract class BaseMission extends BaseScript {
         this._isSuccessSoundEnabled = true;
         this.enableProgressSaving = true;
         this.enableTitleMessage = true;
-        this.stage = 0;
     }
 
 
@@ -160,20 +176,18 @@ export abstract class BaseMission extends BaseScript {
 
 
     /**
-     * Adds a new mission stage.
-     * @param stageAction - The action executed when the stage is active.
+     * Adds a mission stage to the current mission, which will be executed in order.
+     * @param stageAction - A function that returns true to proceed to the next stage or false to continue the current stage.
      */
     public addStage(stageAction: () => boolean): void {
-        Core.MissionStages.push(stageAction);
+        if (Core.CanSetSubMission)
+            throw new Error(`Mission stages cannot be added in the 'onInitEvent' method!`);
+        Core.ActiveMissionStages.push(stageAction);
     }
 
-    /**
-     * Clears all mission stages.
-     * @param defaultStage - The {@link stage} index to set after clearing (default: 0).
-     */
-    public clearStages(defaultStage: int = 0): void {
-        Core.MissionStages = [];
-        this.stage = defaultStage;
+    /** Clears all mission stages. */
+    public clearStages(): void {
+        Core.ClearActiveMissionStages();
     }
 
     /**
@@ -184,11 +198,11 @@ export abstract class BaseMission extends BaseScript {
      */
     public setSubMission<TBaseMission extends BaseMission>(baseMissionType: new () => TBaseMission): void {
         if (Core.CanSetSubMission) {
-            if (Core.SubMission !== undefined)
-                Core.SubMission.onEndEvent();
+            if (Core.ActiveSubMission !== undefined)
+                Core.ActiveSubMission.onEndEvent();
             const mission = new baseMissionType();
             mission.onInitEvent();
-            Core.SubMission = mission;
+            Core.ActiveSubMission = mission;
             return;
         }
         throw new Error(`A sub-mission can only be assigned in the 'onInitEvent' method!`);
@@ -224,6 +238,7 @@ export abstract class BaseMission extends BaseScript {
     /**
      * Saves the player's weapons and ammunition once. The saved equipment is restored when the mission ends.
      * @param removePlayerWeapons - If true, removes all weapons from the player (default: true).
+     * @remarks `This method can only be called once per mission. Subsequent calls will have no effect.`
      */
     public savePlayerWeapons(removePlayerWeapons: boolean = true): void {
         if (this._hasSavedPlayerWeapons)
