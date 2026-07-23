@@ -5,23 +5,48 @@ import { BaseScriptedScene, ISequenceChaining } from "./BaseScriptedScene";
 import { BaseStoryline } from "./BaseStoryline";
 import { Logger } from "./Logger";
 import { Timer } from "./Timer";
+import modInfo from "./mod.json";
 
 class ProjectInfo {
 
     public static readonly MAIN_INI_SECTION: string = "PROJECT";
+    public static readonly GAME_DIFFICULTY_INI_KEY: string = "GAME_DIFFICUlTY";
     public static readonly USER_DATA_INI_SECTION: string = "DATA";
 
+    public difficulty: int = 1;
+    public titleGxtKey: string;
     public projectIndex: int = -1;
     public rootDirectory: string = "";
     public savePath: string = "";
-    public titleGxtKey: string;
-    public storylines: Map<int, StorylineInfo>;
+    public storylines: Map<int, StorylineInfo> = new Map<int, StorylineInfo>();
     public author: string = "";
     public version: string = "";
 
+    public changeDifficulty(level: int): boolean {
+        if (this.difficulty === level)
+            return true;
+        return this.forceChangeDifficulty(level);
+    }
+
+    public forceChangeDifficulty(level: int): boolean {
+        this.difficulty = this._clampGameDifficulty(level);
+        return IniFile.WriteInt(this.difficulty, this.savePath, ProjectInfo.MAIN_INI_SECTION, ProjectInfo.GAME_DIFFICULTY_INI_KEY);
+    }
+
+
+
     public constructor(titleGxtKey: string) {
         this.titleGxtKey = titleGxtKey;
-        this.storylines = new Map<int, StorylineInfo>();
+    }
+
+
+
+    private _clampGameDifficulty(level: int): int {
+        if (level < 0)
+            return 0;
+        if (level > 2)
+            return 2;
+        return level;
     }
 
 }
@@ -78,7 +103,6 @@ class StorylneProgressChecker {
 
 export class Core {
 
-    private static _GameDifficulty: int;
     private static _ActiveMissionState: int = 0;
     private static _ProjectInfos: Map<int, ProjectInfo> = new Map<int, ProjectInfo>();
     private static _ProjectIndexToRegister: int = -1;
@@ -88,7 +112,6 @@ export class Core {
 
     private static readonly SKIP_SCRIPTED_SCENE_ERROR = new Error();
 
-    public static readonly CONFIG_PATH: string = __dirname + "\\Config.ini";
     public static readonly MISSION_FAILURE_ERROR = new Error();
     public static readonly MISSION_SUCCESS_ERROR = new Error();
     public static readonly PED_TYPE_FRIEND: int = 29;
@@ -107,6 +130,9 @@ export class Core {
 
     public static GameRootDirectory: string;
 
+    public static ActivationKeyCode: int;
+    public static BuildVersion: int;
+
     public static Player: Player;
     public static PlayerChar: Char;
     public static PlayerGroup: Group;
@@ -115,15 +141,12 @@ export class Core {
         return this._ProjectInfos.size;
     }
 
-    public static get GameDifficulty(): int {
-        return this._GameDifficulty;
+    public static get ProjectDifficulty(): int {
+        return this.GetProjectInfoAt(this.ActiveMissionInfo.projectIndex).difficulty;
     }
 
-    public static set GameDifficulty(level: int) {
-        if (level === this._GameDifficulty)
-            return;
-        this._GameDifficulty = this._clampGameDifficulty(level);
-        IniFile.WriteInt(level, this.CONFIG_PATH, "Application", "GameDifficulty");
+    public static set ProjectDifficulty(level: int) {
+        this.GetProjectInfoAt(this.ActiveMissionInfo.projectIndex).changeDifficulty(level);
     }
 
 
@@ -152,7 +175,7 @@ export class Core {
         new baseStorylineType();
         const missionCount = this._MissionToRegister.length;
         if (missionCount === 0)
-            Logger.Exit(`Storyline must have at least one mission!`);
+            Logger.Exit(`Storyline must have at least one mission!`, true);
         const storylineInfo = new StorylineInfo(baseStorylineType.name);
         storylineInfo.projectIndex = this._ProjectIndexToRegister;
         //@ts-ignore
@@ -179,6 +202,10 @@ export class Core {
         projectInfo.projectIndex = this._ProjectInfos.size;
         projectInfo.rootDirectory = `${__dirname}\\${directoryName}`;
         projectInfo.savePath = `${projectInfo.rootDirectory}\\PROJECT.save`;
+        let result = IniFile.ReadInt(projectInfo.savePath, ProjectInfo.MAIN_INI_SECTION, ProjectInfo.GAME_DIFFICULTY_INI_KEY);
+        if (result === undefined)
+            result = 1;
+        projectInfo.forceChangeDifficulty(result);
         this._ProjectInfos.set(this._ProjectInfos.size, projectInfo);
         this._ProjectIndexToRegister = projectInfo.projectIndex;
         const project = new baseProjectType();
@@ -186,7 +213,7 @@ export class Core {
         projectInfo.version = this._cutProjectInfoAdditionalInfo(project.version);
         //@ts-ignore
         if (this._ProjectInfos.get(this._ProjectIndexToRegister).storylines.size === 0)
-            Logger.Exit(`Project must have at least one storyline!`);
+            Logger.Exit(`Project must have at least one storyline!`, true);
     }
 
     public static ClearText(): void {
@@ -221,9 +248,15 @@ export class Core {
         //@ts-ignore
         const storylines = projectInfo.storylines;
         //@ts-ignore
-        if (Fs.DoesFileExist(projectInfo.savePath))
+        if (Fs.DoesFileExist(projectInfo.savePath)) {
             //@ts-ignore
-            Fs.DeleteFile(projectInfo.savePath) || Logger.Print(`Failed to reset project!`);
+            IniFile.DeleteSection(projectInfo.savePath, ProjectInfo.MAIN_INI_SECTION);
+            //@ts-ignore
+            IniFile.DeleteSection(projectInfo.savePath, ProjectInfo.USER_DATA_INI_SECTION);
+            //@ts-ignore
+            projectInfo.forceChangeDifficulty(1);
+            //Fs.DeleteFile(projectInfo.savePath) || Logger.Print(`Failed to reset project!`);
+        }
         for (const [_, storyline] of storylines)
             storyline.progress = 0;
     }
@@ -288,8 +321,13 @@ export class Core {
     }
 
     public static Run(): void {
+        if (HOST !== "sa")
+            exit(`Unsupported game!`);
+        if (this.ProjectsCount === 0)
+            Logger.Exit(`Application must have at least one project!`, true);
+        this.ActivationKeyCode = modInfo.userData.activationKeyCode;
+        this.BuildVersion = modInfo.userData.buildVersion;
         this._initializeGameRootDirectory();
-        this._loadGameDifficulty(1);
         this.InitializePlayer();
         //@ts-ignore
         this._MissionToRegister = undefined;
@@ -700,22 +738,6 @@ export class Core {
         Game.SetWantedMultiplier(1.0);
         Game.SetPoliceIgnorePlayer(this.Player, false);
         Game.SetEveryoneIgnorePlayer(this.Player, false);
-    }
-
-    private static _clampGameDifficulty(level: int): int {
-        if (level < 0)
-            return 0;
-        if (level > 2)
-            return 2;
-        return level;
-    }
-
-    private static _loadGameDifficulty(defaultValue: int): int {
-        let result = IniFile.ReadInt(this.CONFIG_PATH, "Application", "GameDifficulty");
-        if (result === undefined)
-            result = defaultValue;
-        this.GameDifficulty = this._clampGameDifficulty(result);
-        return result;
     }
 
     private static _getMissionsPassedIniKey(storylineIndex: int): string {

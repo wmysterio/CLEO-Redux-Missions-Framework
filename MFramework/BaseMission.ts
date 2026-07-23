@@ -38,7 +38,7 @@ export abstract class BaseMission extends BaseScript {
 
     /** Gets the current game difficulty level for mission-specific logic. */
     public get gameDifficulty(): int {
-        return Core.GameDifficulty;
+        return Core.ProjectDifficulty;
     }
 
     /** Gets the big message displayed on mission failure. */

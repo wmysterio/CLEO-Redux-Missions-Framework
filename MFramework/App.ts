@@ -14,7 +14,6 @@ export class App {
     private static _projectCount: int = 0;
     private static _storylineCount: int = 0;
     private static _missionIndexToSelect: int = -1;
-    private static _activationKeyCode: int;
     private static _selectedStorylineRect: Rect;
     private static _missionNameLabel: Label;
     private static _missionCounterLabel: Label;
@@ -31,14 +30,13 @@ export class App {
     public static Run(): void {
         Core.Run();
         this._projectCount = Core.ProjectsCount;
-        this._readActivationKeyCode();
         while (true) {
             wait(0);
             if (!this._canPlayerOpenMenu(true)) {
                 wait(249);
                 continue;
             }
-            if (Pad.IsKeyDown(this._activationKeyCode))
+            if (Pad.IsKeyDown(Core.ActivationKeyCode))
                 this._displayMenu();
         }
     }
@@ -51,14 +49,13 @@ export class App {
         Core.ActiveMissionInfo.missionIndex = -1;
         Core.ActiveMissionInfo.titleGxtKey = "DUMMY";
         this._canvas = this._loadCanvas();
-        this._changeDifficultyStarsColors(Core.GameDifficulty);
         this._selectProject(Core.ActiveMissionInfo.projectIndex);
         Core.Player.setControl(false);
         TIMERA = 0;
         while (this._canPlayerOpenMenu()) {
             wait(0);
             if (TIMERA > INPUT_COOLDOWN) {
-                if (Pad.IsKeyDown(this._activationKeyCode)) { // (F2 by default)
+                if (Pad.IsKeyDown(Core.ActivationKeyCode)) { // (F2 by default)
                     Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
                     break;
                 }
@@ -138,6 +135,7 @@ export class App {
         this._projectAuthorLabel.changeFormattedText(projectInfo.author);
         this._projectVersionLabel.changeFormattedText(projectInfo.version);
         this._projectInfoRect.visible = projectInfo.author.length > 0 || projectInfo.version.length > 0;
+        this._changeDifficultyStarsColors(projectInfo.difficulty);
         this._selectStoryline(0, false);
         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
         TIMERA = 0;
@@ -332,7 +330,7 @@ export class App {
     }
 
     private static _saveGameDifficulty(level: int) {
-        Core.GameDifficulty = level;
+        Core.ProjectDifficulty = level;
         this._changeDifficultyStarsColors(level);
         Audio.ReportMissionAudioEventAtPosition(0.0, 0.0, 0.0, 1138);
         TIMERA = 0;
@@ -349,17 +347,6 @@ export class App {
             return Core.Player.isControlOn() && Core.PlayerChar.isOnFoot() && Core.PlayerChar.isStopped();
         }
         return true;
-    }
-
-    private static _readActivationKeyCode(): void {
-        this._activationKeyCode = 113;
-        if (Fs.DoesFileExist(Core.CONFIG_PATH)) {
-            //@ts-ignore
-            this._activationKeyCode = IniFile.ReadInt(Core.CONFIG_PATH, "Application", "ActivationKeyCode");
-            if (this._activationKeyCode === undefined || 0 > this._activationKeyCode || this._activationKeyCode > 255 || this._activationKeyCode === 82)
-                this._activationKeyCode = 113;
-        }
-        IniFile.WriteInt(this._activationKeyCode, Core.CONFIG_PATH, "Application", "ActivationKeyCode");
     }
 
 

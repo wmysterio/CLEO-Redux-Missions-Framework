@@ -2,5 +2,9 @@
     "permissions": [
         "fs",
         "mem"
-    ]
+    ],
+    "userData": {
+        "buildVersion": 202607210151,
+        "activationKeyCode": 113
+    }
 }
